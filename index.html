@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BARAM app_ver1.0 - 여행 룰렛</title>
+<!-- BARAM app_ver1.0 -->
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js" crossorigin></script>
+<style>
+*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.-right-1\.5{right:-.375rem}.-top-1\.5{top:-.375rem}.-top-3{top:-.75rem}.left-1\/2{left:50%}.right-1{right:.25rem}.top-1{top:.25rem}.top-1\/2{top:50%}.z-50{z-index:50}.z-\[60\]{z-index:60}.mx-auto{margin-left:auto;margin-right:auto}.my-3{margin-top:.75rem;margin-bottom:.75rem}.my-4{margin-top:1rem;margin-bottom:1rem}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-1\.5{margin-top:.375rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mt-8{margin-top:2rem}.line-clamp-1{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1}.block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.aspect-square{aspect-ratio:1/1}.h-10{height:2.5rem}.h-20{height:5rem}.h-9{height:2.25rem}.h-\[80vh\]{height:80vh}.h-full{height:100%}.max-h-\[80vh\]{max-height:80vh}.max-h-\[85vh\]{max-height:85vh}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-11{width:2.75rem}.w-20{width:5rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-0{min-width:0}.min-w-\[18px\]{min-width:18px}.min-w-\[44px\]{min-width:44px}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%}.-translate-x-1\/2,.-translate-y-1\/2{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-y-1\/2{--tw-translate-y:-50%}.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes spin{to{transform:rotate(1turn)}}.animate-spin{animation:spin 1s linear infinite}.resize-none{resize:none}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.flex-col{flex-direction:column}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.divide-y>:not([hidden])~:not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px*(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px*var(--tw-divide-y-reverse))}.divide-\[\#D9CBB0\]>:not([hidden])~:not([hidden]){--tw-divide-opacity:1;border-color:rgb(217 203 176/var(--tw-divide-opacity,1))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.whitespace-pre-line{white-space:pre-line}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-md{border-radius:.375rem}.rounded-xl{border-radius:.75rem}.rounded-t-2xl{border-top-left-radius:1rem;border-top-right-radius:1rem}.border{border-width:1px}.border-2{border-width:2px}.border-4{border-width:4px}.border-x{border-left-width:1px;border-right-width:1px}.border-t{border-top-width:1px}.border-dashed{border-style:dashed}.border-\[\#B8860B\]{--tw-border-opacity:1;border-color:rgb(184 134 11/var(--tw-border-opacity,1))}.border-\[\#D9CBB0\]{--tw-border-opacity:1;border-color:rgb(217 203 176/var(--tw-border-opacity,1))}.border-\[\#E3B79C\]{--tw-border-opacity:1;border-color:rgb(227 183 156/var(--tw-border-opacity,1))}.border-\[\#F6F1E7\]{--tw-border-opacity:1;border-color:rgb(246 241 231/var(--tw-border-opacity,1))}.bg-\[\#2B2620\]{--tw-bg-opacity:1;background-color:rgb(43 38 32/var(--tw-bg-opacity,1))}.bg-\[\#B8860B\]{--tw-bg-opacity:1;background-color:rgb(184 134 11/var(--tw-bg-opacity,1))}.bg-\[\#C4592F\]{--tw-bg-opacity:1;background-color:rgb(196 89 47/var(--tw-bg-opacity,1))}.bg-\[\#F5E4DA\]{--tw-bg-opacity:1;background-color:rgb(245 228 218/var(--tw-bg-opacity,1))}.bg-\[\#F6F1E7\]{--tw-bg-opacity:1;background-color:rgb(246 241 231/var(--tw-bg-opacity,1))}.bg-black\/20{background-color:rgba(0,0,0,.2)}.bg-black\/40{background-color:rgba(0,0,0,.4)}.bg-transparent{background-color:transparent}.bg-white\/40{background-color:hsla(0,0%,100%,.4)}.bg-white\/50{background-color:hsla(0,0%,100%,.5)}.bg-white\/60{background-color:hsla(0,0%,100%,.6)}.bg-white\/70{background-color:hsla(0,0%,100%,.7)}.bg-white\/80{background-color:hsla(0,0%,100%,.8)}.object-cover{-o-object-fit:cover;object-fit:cover}.p-1{padding:.25rem}.p-3{padding:.75rem}.p-5{padding:1.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-10{padding-top:2.5rem;padding-bottom:2.5rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pb-1{padding-bottom:.25rem}.pb-3{padding-bottom:.75rem}.pb-4{padding-bottom:1rem}.pt-2{padding-top:.5rem}.pt-3{padding-top:.75rem}.pt-5{padding-top:1.25rem}.text-left{text-align:left}.text-center{text-align:center}.font-serif{font-family:ui-serif,Georgia,Cambria,Times New Roman,Times,serif}.text-2xl{font-size:1.5rem;line-height:2rem}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.italic{font-style:italic}.leading-relaxed{line-height:1.625}.tracking-wide{letter-spacing:.025em}.text-\[\#1B4B91\]{--tw-text-opacity:1;color:rgb(27 75 145/var(--tw-text-opacity,1))}.text-\[\#2B2620\]{--tw-text-opacity:1;color:rgb(43 38 32/var(--tw-text-opacity,1))}.text-\[\#2F6E68\]{--tw-text-opacity:1;color:rgb(47 110 104/var(--tw-text-opacity,1))}.text-\[\#6B5F4F\]{--tw-text-opacity:1;color:rgb(107 95 79/var(--tw-text-opacity,1))}.text-\[\#A6987F\]{--tw-text-opacity:1;color:rgb(166 152 127/var(--tw-text-opacity,1))}.text-\[\#A8441F\]{--tw-text-opacity:1;color:rgb(168 68 31/var(--tw-text-opacity,1))}.text-\[\#B8860B\]{--tw-text-opacity:1;color:rgb(184 134 11/var(--tw-text-opacity,1))}.text-\[\#C4592F\]{--tw-text-opacity:1;color:rgb(196 89 47/var(--tw-text-opacity,1))}.text-\[\#DC2626\]{--tw-text-opacity:1;color:rgb(220 38 38/var(--tw-text-opacity,1))}.text-\[\#F6F1E7\]{--tw-text-opacity:1;color:rgb(246 241 231/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.outline-none{outline:2px solid transparent;outline-offset:2px}.drop-shadow-md{--tw-drop-shadow:drop-shadow(0 4px 3px rgba(0,0,0,.07)) drop-shadow(0 2px 2px rgba(0,0,0,.06))}.drop-shadow-md,.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.placeholder\:text-\[\#A6987F\]::-moz-placeholder{--tw-text-opacity:1;color:rgb(166 152 127/var(--tw-text-opacity,1))}.placeholder\:text-\[\#A6987F\]::placeholder{--tw-text-opacity:1;color:rgb(166 152 127/var(--tw-text-opacity,1))}.hover\:bg-white\/60:hover{background-color:hsla(0,0%,100%,.6)}.hover\:underline:hover{text-decoration-line:underline}.disabled\:opacity-50:disabled{opacity:.5}.disabled\:opacity-60:disabled{opacity:.6}</style>
+<style>
+  html, body, #root { height: 100%; margin: 0; }
+  body { font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useRef, useEffect, useMemo } = React;
+
+// lucide-react 대신, 외부 ESM 의존성 없이 동작하도록 최소 아이콘을 직접 SVG로 정의
+function Icon({ size = 20, className = "", children, ...rest }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...rest}>
+      {children}
+    </svg>
+  );
+}
+const MapPin = (p) => (<Icon {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></Icon>);
+const Search = (p) => (<Icon {...p}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></Icon>);
+const Package = (p) => (<Icon {...p}><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="M3.3 7 12 12l8.7-5" /><path d="M12 22V12" /></Icon>);
+const Moon = (p) => (<Icon {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></Icon>);
+const Zap = (p) => (<Icon {...p}><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" /></Icon>);
+const X = (p) => (<Icon {...p}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></Icon>);
+const Check = (p) => (<Icon {...p}><path d="M20 6 9 17l-5-5" /></Icon>);
+const RotateCcw = (p) => (<Icon {...p}><path d="M3 12a9 9 0 1 0 2.64-6.36" /><path d="M3 4v6h6" /></Icon>);
+const Car = (p) => (<Icon {...p}><path d="M5 17h14" /><path d="M19 17h1a1 1 0 0 0 1-1v-3l-2-5H5L3 13v3a1 1 0 0 0 1 1h1" /><circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" /></Icon>);
+const Compass = (p) => (<Icon {...p}><circle cx="12" cy="12" r="10" /><polygon points="16,8 13,13 8,16 11,11" /></Icon>);
+const Utensils = (p) => (<Icon {...p}><path d="M6 2v7a2 2 0 0 0 2 2 2 2 0 0 0 2-2V2" /><path d="M8 11v11" /><path d="M18 2c-1.5 2-2 4-2 6 0 2 .8 3 2 3s2-1 2-3c0-2-.5-4-2-6Z" /><path d="M18 11v11" /></Icon>);
+const BookOpen = (p) => (<Icon {...p}><path d="M12 7v14" /><path d="M3 5a2 2 0 0 1 2-2h4a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H3Z" /><path d="M21 5a2 2 0 0 0-2-2h-4a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7Z" /></Icon>);
+const Music = (p) => (<Icon {...p}><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></Icon>);
+const PartyPopper = (p) => (<Icon {...p}><path d="M4 20 9 9l7 7-11 4Z" /><path d="M9 9 20 4" /><circle cx="19" cy="9" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="21" cy="14" r="1" /></Icon>);
+const Loader2 = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${className} animate-spin`}>
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+  </svg>
+);
+const Settings = (p) => (<Icon {...p}><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></Icon>);
+const Plus = (p) => (<Icon {...p}><path d="M12 5v14" /><path d="M5 12h14" /></Icon>);
+const Trash2 = (p) => (<Icon {...p}><path d="M4 7h16" /><path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" /><path d="M19 7l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 7" /><path d="M10 11v6" /><path d="M14 11v6" /></Icon>);
+const ExternalLink = (p) => (<Icon {...p}><path d="M14 3h7v7" /><path d="M21 3 10 14" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></Icon>);
+const Stamp = (p) => (<Icon {...p}><circle cx="12" cy="9" r="4" /><path d="M8 15h8l2 5H6l2-5Z" /><path d="M12 5V2" /></Icon>);
+const Camera = (p) => (<Icon {...p}><path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z" /><circle cx="12" cy="14" r="3.5" /></Icon>);
+const Coffee = (p) => (<Icon {...p}><path d="M17 8h1a3 3 0 0 1 0 6h-1" /><path d="M3 8h14v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" /><path d="M6 2v2M10 2v2M14 2v2" /></Icon>);
+
+// ==========================================
+// 1. 실제 전국 지역 데이터베이스 (134곳)
+// [이름, 권역, 위도, 경도] - 좌표는 대표 근사치
+// ==========================================
+const RAW_LOCATIONS = [
+  ["서울 종로구", "서울", 37.5735, 126.9788], ["서울 중구", "서울", 37.5636, 126.9976],
+  ["서울 용산구", "서울", 37.5326, 126.9909], ["서울 성동구", "서울", 37.5633, 127.0371],
+  ["서울 마포구", "서울", 37.5663, 126.9019], ["서울 강남구", "서울", 37.5172, 127.0473],
+  ["서울 서초구", "서울", 37.4837, 127.0324], ["서울 송파구", "서울", 37.5145, 127.1059],
+  ["서울 영등포구", "서울", 37.5264, 126.8963], ["서울 강서구", "서울", 37.5509, 126.8495],
+  ["서울 관악구", "서울", 37.4784, 126.9516], ["서울 노원구", "서울", 37.6542, 127.0568],
+  ["수원시", "경기", 37.2636, 127.0286], ["성남시", "경기", 37.4201, 127.1265],
+  ["고양시", "경기", 37.6584, 126.8320], ["용인시", "경기", 37.2411, 127.1776],
+  ["부천시", "경기", 37.5035, 126.7660], ["안산시", "경기", 37.3219, 126.8309],
+  ["안양시", "경기", 37.3943, 126.9568], ["남양주시", "경기", 37.6360, 127.2165],
+  ["화성시", "경기", 37.1996, 126.8312], ["평택시", "경기", 36.9921, 127.1129],
+  ["의정부시", "경기", 37.7381, 127.0338], ["파주시", "경기", 37.7599, 126.7800],
+  ["김포시", "경기", 37.6152, 126.7159], ["광명시", "경기", 37.4786, 126.8646],
+  ["이천시", "경기", 37.2721, 127.4348], ["하남시", "경기", 37.5392, 127.2148],
+  ["여주시", "경기", 37.2984, 127.6373], ["가평군", "경기", 37.8314, 127.5095],
+  ["양평군", "경기", 37.4917, 127.4874],
+  ["인천 중구", "인천", 37.4738, 126.6215], ["인천 연수구", "인천", 37.4102, 126.6784],
+  ["인천 남동구", "인천", 37.4468, 126.7314], ["인천 부평구", "인천", 37.5074, 126.7217],
+  ["강화군", "인천", 37.7466, 126.4880], ["옹진군", "인천", 37.4467, 126.6367],
+  ["춘천시", "강원", 37.8813, 127.7298], ["원주시", "강원", 37.3422, 127.9202],
+  ["강릉시", "강원", 37.7519, 128.8761], ["동해시", "강원", 37.5247, 129.1143],
+  ["속초시", "강원", 38.2070, 128.5918], ["삼척시", "강원", 37.4500, 129.1655],
+  ["태백시", "강원", 37.1641, 128.9856], ["홍천군", "강원", 37.6971, 127.8887],
+  ["횡성군", "강원", 37.4915, 127.9848], ["영월군", "강원", 37.1836, 128.4616],
+  ["평창군", "강원", 37.3706, 128.3899], ["정선군", "강원", 37.3806, 128.6608],
+  ["철원군", "강원", 38.1465, 127.3132], ["인제군", "강원", 38.0698, 128.1704],
+  ["양양군", "강원", 38.0754, 128.6191], ["고성군(강원)", "강원", 38.3806, 128.4680],
+  ["청주시", "충청", 36.6424, 127.4890], ["충주시", "충청", 36.9910, 127.9259],
+  ["제천시", "충청", 37.1326, 128.1908], ["천안시", "충청", 36.8151, 127.1139],
+  ["공주시", "충청", 36.4465, 127.1189], ["보령시", "충청", 36.3334, 126.6128],
+  ["아산시", "충청", 36.7898, 127.0018], ["서산시", "충청", 36.7846, 126.4503],
+  ["논산시", "충청", 36.1872, 127.0989], ["당진시", "충청", 36.8929, 126.6283],
+  ["단양군", "충청", 36.9846, 128.3655], ["보은군", "충청", 36.4894, 127.7295],
+  ["영동군", "충청", 36.1750, 127.7764], ["금산군", "충청", 36.1088, 127.4880],
+  ["부여군", "충청", 36.2757, 126.9099], ["서천군", "충청", 36.0803, 126.6919],
+  ["청양군", "충청", 36.4592, 126.8022], ["홍성군", "충청", 36.6013, 126.6608],
+  ["예산군", "충청", 36.6820, 126.8443], ["태안군", "충청", 36.7455, 126.2977],
+  ["포항시", "영남", 36.0190, 129.3435], ["경주시", "영남", 35.8562, 129.2247],
+  ["김천시", "영남", 36.1398, 128.1135], ["안동시", "영남", 36.5684, 128.7294],
+  ["구미시", "영남", 36.1195, 128.3446], ["영주시", "영남", 36.8055, 128.6239],
+  ["상주시", "영남", 36.4108, 128.1591], ["문경시", "영남", 36.5866, 128.1867],
+  ["경산시", "영남", 35.8251, 128.7411], ["창원시", "영남", 35.2280, 128.6812],
+  ["진주시", "영남", 35.1800, 128.1076], ["통영시", "영남", 34.8544, 128.4331],
+  ["사천시", "영남", 35.0034, 128.0642], ["김해시", "영남", 35.2285, 128.8894],
+  ["밀양시", "영남", 35.5039, 128.7469], ["거제시", "영남", 34.8804, 128.6210],
+  ["양산시", "영남", 35.3350, 129.0378], ["부산 해운대구", "영남", 35.1631, 129.1636],
+  ["부산 수영구", "영남", 35.1454, 129.1132], ["부산 사하구", "영남", 35.1041, 128.9744],
+  ["대구 수성구", "영남", 35.8582, 128.6304], ["대구 중구", "영남", 35.8693, 128.6064],
+  ["울산 남구", "영남", 35.5437, 129.3300], ["울산 동구", "영남", 35.5049, 129.4167],
+  ["전주시", "호남", 35.8242, 127.1480], ["군산시", "호남", 35.9676, 126.7369],
+  ["익산시", "호남", 35.9483, 126.9576], ["정읍시", "호남", 35.5699, 126.8560],
+  ["남원시", "호남", 35.4164, 127.3904], ["김제시", "호남", 35.8034, 126.8809],
+  ["완주군", "호남", 35.9048, 127.1621], ["진안군", "호남", 35.7917, 127.4247],
+  ["무주군", "호남", 36.0068, 127.6608], ["임실군", "호남", 35.6178, 127.2894],
+  ["순창군", "호남", 35.3745, 127.1379], ["고창군", "호남", 35.4353, 126.7017],
+  ["부안군", "호남", 35.7318, 126.7333], ["목포시", "호남", 34.8118, 126.3922],
+  ["여수시", "호남", 34.7604, 127.6622], ["순천시", "호남", 34.9506, 127.4872],
+  ["나주시", "호남", 35.0158, 126.7108], ["광양시", "호남", 34.9406, 127.6958],
+  ["담양군", "호남", 35.3211, 126.9882], ["곡성군", "호남", 35.2822, 127.2921],
+  ["구례군", "호남", 35.2024, 127.4629], ["고흥군", "호남", 34.6112, 127.2851],
+  ["보성군", "호남", 34.7715, 127.0801], ["화순군", "호남", 35.0645, 126.9864],
+  ["장흥군", "호남", 34.6816, 126.9070], ["강진군", "호남", 34.6421, 126.7674],
+  ["해남군", "호남", 34.5734, 126.5992], ["영암군", "호남", 34.8003, 126.6968],
+  ["무안군", "호남", 34.9903, 126.4816], ["함평군", "호남", 35.0658, 126.5165],
+  ["영광군", "호남", 35.2772, 126.5121], ["장성군", "호남", 35.3018, 126.7847],
+  ["완도군", "호남", 34.3111, 126.7551], ["진도군", "호남", 34.4869, 126.2633],
+  ["신안군", "호남", 34.8320, 126.1073], ["광주 동구", "호남", 35.1461, 126.9231],
+  ["광주 서구", "호남", 35.1517, 126.8908],
+];
+
+const LOCATIONS = RAW_LOCATIONS.map(([name, region, lat, lng]) => ({ name, region, lat, lng }));
+const REGION_LIST = ["전체", "서울", "경기", "인천", "강원", "충청", "영남", "호남"];
+// 지역 배너(필터 칩)마다 구분되는 고유 색상
+const REGION_COLORS = {
+  "전체": "#2B2620",
+  "서울": "#2B4C7E", // 도심 - 네이비
+  "경기": "#3D7A5C", // 평야/신도시 - 그린
+  "인천": "#1D8A99", // 항구 - 청록
+  "강원": "#2F6E45", // 산악 - 짙은 그린
+  "충청": "#C08A2E", // 고도/역사 - 골드브라운
+  "영남": "#C15B2A", // 해안/산업 - 테라코타
+  "호남": "#3D8361", // 곡창지대 - 청록빛 그린
+};
+
+// 134곳을 감성 67 / 활기 67로 균등 분리 (지역 순서를 섞은 뒤 절반씩 배정해
+// 특정 권역이 한쪽 테마에 몰리지 않도록 함)
+function buildSpots() {
+  const shuffledIdx = shuffle(LOCATIONS.map((_, i) => i));
+  const moodByLocIndex = new Array(LOCATIONS.length);
+  shuffledIdx.forEach((locIdx, order) => {
+    moodByLocIndex[locIdx] = order < LOCATIONS.length / 2 ? "emotional" : "energetic";
+  });
+
+  return LOCATIONS.map((loc, i) => {
+    const mood = moodByLocIndex[i];
+    return {
+      id: `spot_${i}`,
+      name: loc.name,
+      region: loc.region,
+      lat: loc.lat,
+      lng: loc.lng,
+      mood,
+      description:
+        mood === "emotional"
+          ? `고요한 ${loc.name}의 골목과 풍경을 여유롭게 걸어보는 감성 코스예요.`
+          : `${loc.name}에서 액티비티와 로컬 명소를 부지런히 둘러보는 활기찬 코스예요.`,
+      isVisited: false,
+      visitedDate: null,
+      photos: [null, null],
+      memo: "",
+    };
+  });
+}
+
+// ==========================================
+// 1-1. 도장깨기 진행 상황(정복 여부/사진/메모) IndexedDB 저장
+// localStorage(보통 5~10MB 한도)보다 훨씬 넉넉한 저장공간(브라우저별로 다르지만
+// 보통 수백 MB~수 GB)을 쓰기 위해 IndexedDB로 저장한다. 도시 한 곳당 레코드 하나씩
+// 저장해서, 사진 한 장이 바뀔 때마다 134곳 전체를 다시 쓰지 않고 그 도시 레코드만 갱신한다.
+// ==========================================
+const IDB_NAME = "baram-db";
+const IDB_VERSION = 1;
+const IDB_STORE = "spots_progress";
+const LEGACY_LOCALSTORAGE_KEY = "baram_spots_progress"; // 이전 버전(localStorage)에서 쓰던 키
+
+function openSpotsDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      reject(new Error("이 브라우저는 IndexedDB를 지원하지 않아요."));
+      return;
+    }
+    const req = window.indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error("IndexedDB를 열 수 없어요."));
+  });
+}
+
+// 이전 버전에서 localStorage에 저장해둔 진행 기록이 있으면 IndexedDB로 한 번만 옮긴다.
+async function migrateLegacyLocalStorageProgress(db) {
+  try {
+    const raw = window.localStorage.getItem(LEGACY_LOCALSTORAGE_KEY);
+    if (!raw) return;
+    const oldProgress = JSON.parse(raw);
+    const ids = Object.keys(oldProgress || {});
+    if (ids.length === 0) {
+      window.localStorage.removeItem(LEGACY_LOCALSTORAGE_KEY);
+      return;
+    }
+    await new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, "readwrite");
+      const store = tx.objectStore(IDB_STORE);
+      ids.forEach((id) => store.put({ id, ...oldProgress[id] }));
+      tx.oncomplete = resolve;
+      tx.onerror = resolve;
+    });
+    window.localStorage.removeItem(LEGACY_LOCALSTORAGE_KEY);
+  } catch {
+    // 이관 실패해도 무시 (다음 실행 때 다시 시도되지 않도록 조용히 넘어감)
+  }
+}
+
+async function loadSpotsProgress() {
+  try {
+    const db = await openSpotsDB();
+    await migrateLegacyLocalStorageProgress(db);
+    return await new Promise((resolve) => {
+      const tx = db.transaction(IDB_STORE, "readonly");
+      const req = tx.objectStore(IDB_STORE).getAll();
+      req.onsuccess = () => {
+        const map = {};
+        (req.result || []).forEach((rec) => { map[rec.id] = rec; });
+        resolve(map);
+      };
+      req.onerror = () => resolve({});
+    });
+  } catch {
+    return {};
+  }
+}
+
+function mergeSpotsWithProgress(baseSpots, progress) {
+  if (!progress || Object.keys(progress).length === 0) return baseSpots;
+  return baseSpots.map((s) => {
+    const p = progress[s.id];
+    if (!p) return s;
+    return {
+      ...s,
+      isVisited: !!p.isVisited,
+      visitedDate: p.visitedDate || null,
+      photos: p.photos && p.photos.length === 2 ? p.photos : [null, null],
+      memo: p.memo || "",
+    };
+  });
+}
+
+// 도시 한 곳의 진행 기록만 IndexedDB에 기록한다 (fire-and-forget: 실패해도 화면의
+// React state는 그대로 유지되니 앱 동작에는 지장이 없다).
+async function saveSpotProgress(spot) {
+  try {
+    const db = await openSpotsDB();
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    tx.objectStore(IDB_STORE).put({
+      id: spot.id,
+      isVisited: spot.isVisited,
+      visitedDate: spot.visitedDate,
+      photos: spot.photos,
+      memo: spot.memo,
+    });
+  } catch {
+    // 저장 실패해도 앱은 계속 동작한다.
+  }
+}
+
+function distanceEta(lat1, lng1, lat2, lng2) {
+  const p = 0.017453292519943295;
+  const a = 0.5 - Math.cos((lat2 - lat1) * p) / 2 +
+    Math.cos(lat1 * p) * Math.cos(lat2 * p) * (1 - Math.cos((lng2 - lng1) * p)) / 2;
+  const straightKm = 12742 * Math.asin(Math.sqrt(a));
+  const roadKm = straightKm * 1.32;
+  const totalMinutes = Math.round((roadKm / 80) * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return { distance: `${roadKm.toFixed(1)}km`, duration: h > 0 ? `${h}시간 ${m}분` : `${m}분` };
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function formatDate(d) {
+  if (!d) return "";
+  const dt = new Date(d);
+  return `${dt.getFullYear()}.${String(dt.getMonth() + 1).padStart(2, "0")}.${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+// ==========================================
+// 1-1a. 사주(四柱) 계산 엔진
+// 명식(년/월/일/시주, 오행) 계산은 실제 만세력 공식을 따른다. 절기 경계일은 매해 ±1일
+// 정도 움직이는데, 여기서는 대표적인 고정 날짜로 근사한다(대부분의 해에 정확히 맞음).
+// 음력 생년월일은 지원하지 않는다(변환표 없이는 정확도를 보장할 수 없어서 양력만 받는다).
+// 일주(日柱) 기준일: 2024-01-01 = 병인일(인덱스 2) — 1900-01-01(병자)·2000-01-01(경신)·
+// 2000-02-04(갑오)·2000-02-29(기미)·2000-12-31(을축)·2010-01-01(계축)·2020-01-01(을사)·
+// 2020-02-29(갑진)·2024-01-04(기사) 총 10개 지점과 대조해 전부 일치함을 검증함.
+// ==========================================
+const STEMS = ["갑", "을", "병", "정", "무", "기", "경", "신", "임", "계"];
+const BRANCHES = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"];
+const STEM_ELEMENT = ["목", "목", "화", "화", "토", "토", "금", "금", "수", "수"];
+const BRANCH_ELEMENT = ["수", "토", "목", "목", "토", "화", "화", "토", "금", "금", "토", "수"];
+const ELEMENTS = ["목", "화", "토", "금", "수"];
+
+function mod(n, m) {
+  return ((n % m) + m) % m;
+}
+
+function ganjiLabel(stemIdx, branchIdx) {
+  return `${STEMS[stemIdx]}${BRANCHES[branchIdx]}`;
+}
+
+// 일주: 2024-01-01(UTC 자정 기준 날짜)을 병인(인덱스 2)로 두고 날짜 차이를 60으로 나눈 나머지
+function dayGanjiIndex(y, m, d) {
+  const target = Date.UTC(y, m - 1, d);
+  const epoch = Date.UTC(2024, 0, 1);
+  const diffDays = Math.round((target - epoch) / 86400000);
+  return mod(diffDays + 2, 60);
+}
+
+// 연주: 입춘(양력 2/4 근사)을 새해 기준으로 삼는다. 2024년 = 갑진년(간지 인덱스: 갑0/진4)
+function yearGanjiIndex(y, m, d) {
+  let year = y;
+  if (m < 2 || (m === 2 && d < 4)) year -= 1;
+  const offset = year - 2024;
+  return { stemIdx: mod(offset, 10), branchIdx: mod(4 + offset, 12) };
+}
+
+// 절기(월 경계) 근사 날짜 - 각 절입일부터 해당 지지(월건)가 시작됨
+const MONTH_CUTOFFS = [
+  { m: 2, d: 4, branch: 2 },   // 입춘 -> 인월
+  { m: 3, d: 6, branch: 3 },   // 경칩 -> 묘월
+  { m: 4, d: 5, branch: 4 },   // 청명 -> 진월
+  { m: 5, d: 5, branch: 5 },   // 입하 -> 사월
+  { m: 6, d: 6, branch: 6 },   // 망종 -> 오월
+  { m: 7, d: 7, branch: 7 },   // 소서 -> 미월
+  { m: 8, d: 8, branch: 8 },   // 입추 -> 신월
+  { m: 9, d: 8, branch: 9 },   // 백로 -> 유월
+  { m: 10, d: 8, branch: 10 }, // 한로 -> 술월
+  { m: 11, d: 7, branch: 11 }, // 입동 -> 해월
+  { m: 12, d: 7, branch: 0 },  // 대설 -> 자월
+];
+
+function monthBranchIndex(y, m, d) {
+  const key = m * 100 + d;
+  if (key < 106) return 0; // 1/1~1/5 -> 직전 해 대설 이후, 여전히 자월
+  if (key < 204) return 1; // 1/6~2/3 -> 소한 이후, 축월
+  let branch = 1;
+  for (const c of MONTH_CUTOFFS) {
+    if (key >= c.m * 100 + c.d) branch = c.branch;
+  }
+  return branch;
+}
+
+// 오호둔월법: 연간에 따라 인월(寅月)의 천간이 정해지고, 이후 월지 순서대로 천간이 循環한다
+function monthGanjiIndex(yearStemIdx, monthBranchIdx) {
+  const startStemForIn = mod(2 * mod(yearStemIdx, 5) + 2, 10); // 인월의 천간
+  const steps = mod(monthBranchIdx - 2, 12); // 인(2)로부터 몇 걸음 떨어져 있는지
+  return { stemIdx: mod(startStemForIn + steps, 10), branchIdx: monthBranchIdx };
+}
+
+// 오서둔시법: 일간에 따라 자시(子時)의 천간이 정해지고, 이후 시지 순서대로 천간이 循環한다
+function hourGanjiIndex(dayStemIdx, hour) {
+  const branchIdx = hour === 23 || hour === 0 ? 0 : mod(Math.floor((hour + 1) / 2), 12);
+  const startStemForJa = mod(2 * mod(dayStemIdx, 5), 10);
+  return { stemIdx: mod(startStemForJa + branchIdx, 10), branchIdx };
+}
+
+// birthInfo: { date: "YYYY-MM-DD", time: "HH:MM" | null, gender: "M"|"F" }
+function computeSaju(birthInfo) {
+  if (!birthInfo || !birthInfo.date) return null;
+  const [y, m, d] = birthInfo.date.split("-").map(Number);
+  if (!y || !m || !d) return null;
+
+  const year = yearGanjiIndex(y, m, d);
+  const mBranch = monthBranchIndex(y, m, d);
+  const month = monthGanjiIndex(year.stemIdx, mBranch);
+  const dayIdx = dayGanjiIndex(y, m, d);
+  const day = { stemIdx: mod(dayIdx, 10), branchIdx: mod(dayIdx, 12) };
+
+  let hourPillar = null;
+  if (birthInfo.time) {
+    const [hh] = birthInfo.time.split(":").map(Number);
+    if (Number.isFinite(hh)) hourPillar = hourGanjiIndex(day.stemIdx, hh);
+  }
+
+  const pillars = [year, month, day, hourPillar].filter(Boolean);
+  const elementCounts = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
+  pillars.forEach((p) => {
+    elementCounts[STEM_ELEMENT[p.stemIdx]] += 1;
+    elementCounts[BRANCH_ELEMENT[p.branchIdx]] += 1;
+  });
+
+  return {
+    year, month, day, hour: hourPillar,
+    hasHour: !!hourPillar,
+    labels: {
+      year: ganjiLabel(year.stemIdx, year.branchIdx),
+      month: ganjiLabel(month.stemIdx, month.branchIdx),
+      day: ganjiLabel(day.stemIdx, day.branchIdx),
+      hour: hourPillar ? ganjiLabel(hourPillar.stemIdx, hourPillar.branchIdx) : null,
+    },
+    elementCounts,
+  };
+}
+
+// 오늘 날짜의 일진(하루의 간지) - 여행운 카드에서 "오늘의 기운"으로 사용
+function todayGanji() {
+  const now = new Date();
+  const idx = dayGanjiIndex(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const stemIdx = mod(idx, 10);
+  const branchIdx = mod(idx, 12);
+  return { stemIdx, branchIdx, element: STEM_ELEMENT[stemIdx], label: ganjiLabel(stemIdx, branchIdx) };
+}
+
+// 오행별 방향/색상/아이템 - 전통 오행 배속을 그대로 따름(재미 코너용 표현만 가볍게)
+const ELEMENT_THEME = {
+  목: { direction: "동쪽", colors: "초록·청록 계열", item: "화분이나 책 한 권" },
+  화: { direction: "남쪽", colors: "빨강·주황 계열", item: "따뜻한 조명이 있는 카페" },
+  토: { direction: "중부·근교", colors: "노랑·갈색 계열", item: "도자기나 향이 좋은 소품" },
+  금: { direction: "서쪽", colors: "흰색·금색 계열", item: "반짝이는 액세서리" },
+  수: { direction: "북쪽", colors: "검정·파랑 계열", item: "물가 풍경, 잔잔한 음악" },
+};
+
+// 오행 상생(서로 밀어주는 관계): 목생화, 화생토, 토생금, 금생수, 수생목
+const GENERATES = { 목: "화", 화: "토", 토: "금", 금: "수", 수: "목" };
+
+// 재미로 보는 오늘의 여행운 - 명식의 오행 분포와 오늘 일진의 오행을 비교해 4가지 패턴 중 하나를 고른다.
+// 전통 명리학 전문 풀이가 아니라, 방향/색상 같은 오행 배속을 가지고 가볍게 구성한 엔터테인먼트 콘텐츠.
+function getTravelFortune(saju) {
+  const today = todayGanji();
+  const counts = saju.elementCounts;
+  const maxCount = Math.max(...ELEMENTS.map((e) => counts[e]));
+  const minCount = Math.min(...ELEMENTS.map((e) => counts[e]));
+  const dominant = ELEMENTS.filter((e) => counts[e] === maxCount);
+  const lacking = ELEMENTS.filter((e) => counts[e] === minCount);
+  const todayEl = today.element;
+  const theme = ELEMENT_THEME[todayEl];
+
+  let mood, headline;
+  if (lacking.includes(todayEl) && minCount < maxCount) {
+    mood = "fill";
+    headline = "그동안 명식에서 다소 비어있던 기운이 오늘 채워지는 날입니다. 미뤄뒀던 결정을 내리기에 좋은 타이밍이에요.";
+  } else if (dominant.includes(todayEl) && maxCount > minCount) {
+    mood = "overflow";
+    headline = "안 그래도 강한 기운이 오늘 한층 더 세집니다. 무리한 일정보다 한 박자 늦추는 편이 여행을 더 오래 즐기는 비결이에요.";
+  } else if (dominant.some((e) => GENERATES[e] === todayEl)) {
+    mood = "boost";
+    headline = "원래 가진 기운이 오늘의 기운을 밀어주는 날입니다. 사람들과 어울리는 여행, 우연한 대화 속에서 뜻밖의 즐거움을 만날 수 있어요.";
+  } else {
+    mood = "calm";
+    headline = "잠시 템포를 늦추고 주변을 정돈해야 하는 시기입니다. 흐르는 대로 몸을 맡기는 여정이 가장 큰 길운을 불러옵니다.";
+  }
+
+  const oneLiners = {
+    fill: "오늘은 망설이지 말고, 정한 곳으로 곧장 떠나보세요.",
+    overflow: "오늘은 속도를 늦추는 것이 곧 행운입니다.",
+    boost: "오늘의 즐거움은 혼자가 아니라 함께에서 옵니다.",
+    calm: "목적지보다 중요한 건, 그 순간 나를 비워내는 것입니다.",
+  };
+
+  return {
+    todayLabel: today.label,
+    todayElement: todayEl,
+    mood,
+    headline,
+    direction: theme.direction,
+    colors: theme.colors,
+    item: theme.item,
+    oneLiner: oneLiners[mood],
+  };
+}
+
+// ==========================================
+// 1-2. 하루 일정표 (10:00 도착 ~ 16:00 마무리) + 추천 음악
+// 음악은 지역과 실시간으로 연결된 공식 API가 없어, 잘 알려진 곡 목록에서 매번 무작위로 하나씩 추천합니다.
+// ==========================================
+const GAYO_SONGS = [
+  { title: "밤편지", artist: "아이유" },
+  { title: "모든 날, 모든 순간", artist: "폴킴" },
+  { title: "여행", artist: "볼빨간사춘기" },
+  { title: "청춘", artist: "버스커 버스커" },
+  { title: "주저하는 연인들을 위해", artist: "잔나비" },
+  { title: "봄날", artist: "방탄소년단" },
+  { title: "좋은 날", artist: "아이유" },
+  { title: "그대라는 사치", artist: "옥상달빛" },
+];
+const POP_SONGS = [
+  { title: "Perfect", artist: "Ed Sheeran" },
+  { title: "Yellow", artist: "Coldplay" },
+  { title: "Here Comes the Sun", artist: "The Beatles" },
+  { title: "Riptide", artist: "Vance Joy" },
+  { title: "Sunflower", artist: "Post Malone & Swae Lee" },
+  { title: "Budapest", artist: "George Ezra" },
+  { title: "Best Day of My Life", artist: "American Authors" },
+  { title: "Fly Me to the Moon", artist: "Frank Sinatra" },
+];
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function pickRandomN(arr, n) {
+  return shuffle(arr).slice(0, n);
+}
+
+// 결과로 뽑힌 지역의 하루 일정표(10:00 도착 ~ 16:00 마무리)를 보여줌.
+// 명소/맛집은 공공데이터포털(TourAPI) 위치기반 조회 결과가 있으면 실제 장소명을,
+// 없으면(키 미설정/로딩/오류 시) 일반적인 문구를 보여준다. 서점/카페는 지도 검색 링크로 대체.
+function DayItinerary({ spot, entry, gayoSongs, popSongs }) {
+  const isLoading = !entry || entry.status === "loading";
+  const data = entry && entry.status === "success" ? entry.data : null;
+  const firstOf = (list) => (list && list.length > 0 ? list[0] : null);
+  const landmark = firstOf(data?.landmarks);
+  const restaurant = firstOf(data?.restaurants);
+  const bookstoreLinks = buildMapSearchLinks(spot, "서점");
+  const cafeLinks = buildMapSearchLinks(spot, "카페");
+
+  const steps = [
+    { time: "10:00", title: "도착", desc: `${spot.name}에 도착해서 하루 여행을 시작해요.`, links: null },
+    { time: "10:30", title: "명소 둘러보기", desc: landmark ? `${landmark.name} (${landmark.distanceKm}km)` : `${spot.name}의 대표 명소를 천천히 둘러보세요.`, links: null },
+    { time: "12:30", title: "점심 식사", desc: restaurant ? `${restaurant.name} (${restaurant.distanceKm}km)` : "근처 맛집에서 점심을 즐겨보세요.", links: null },
+    { time: "14:00", title: "서점 나들이", desc: "동네 서점에 들러 책 한 권 골라보세요.", links: bookstoreLinks },
+    { time: "15:00", title: "카페에서 휴식", desc: "카페에 앉아 잠시 쉬어가요.", links: cafeLinks },
+    { time: "16:00", title: "일정 마무리", desc: "오늘 하루도 좋은 여행이었길 바라요.", links: null },
+  ];
+
+  return (
+    <div className="mt-4">
+      <p className="text-xs font-medium text-[#2B2620] mb-2">오늘의 일정 (10:00 ~ 16:00)</p>
+      {isLoading && <p className="text-[11px] text-[#A6987F] mb-2">장소 정보를 불러오는 중…</p>}
+      {entry?.status === "error" && (
+        <p className="text-[11px] text-[#A8441F] mb-2">{entry.message}</p>
+      )}
+      <ul className="space-y-2">
+        {steps.map((s, i) => (
+          <li key={i} className="flex gap-3">
+            <span className="text-xs font-bold text-[#B8860B] w-11 shrink-0 pt-2">{s.time}</span>
+            <div className="flex-1 bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2 min-w-0">
+              <p className="text-sm font-medium text-[#2B2620]">{s.title}</p>
+              <p className="text-xs text-[#6B5F4F] line-clamp-1">{s.desc}</p>
+              {s.links && (
+                <div className="flex gap-2 mt-1">
+                  {s.links.map((l) => (
+                    <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="text-[11px] text-[#2F6E68] hover:underline">
+                      {l.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2 flex items-center gap-1">
+        <Music size={12} /> 오늘의 추천 음악
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        {gayoSongs.map((s, i) => (
+          <div key={`g${i}`} className="bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2">
+            <p className="text-[10px] text-[#A6987F]">가요</p>
+            <p className="text-sm text-[#2B2620] truncate">{s.title}</p>
+            <p className="text-xs text-[#6B5F4F] truncate">{s.artist}</p>
+          </div>
+        ))}
+        {popSongs.map((s, i) => (
+          <div key={`p${i}`} className="bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2">
+            <p className="text-[10px] text-[#A6987F]">팝송</p>
+            <p className="text-sm text-[#2B2620] truncate">{s.title}</p>
+            <p className="text-xs text-[#6B5F4F] truncate">{s.artist}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 1-1. 외부 API 연동 레이어
+// 주의: 브라우저(클라이언트)에서 직접 호출하는 데모 구현입니다.
+// - 구글 커스텀 검색(Custom Search JSON API)은 2026년부터 신규 프로젝트에는 접근이
+//   막혀 있어(공식 정책 변경) 더 이상 사용하지 않습니다. 대신 명소·맛집·축제는 전부
+//   한국관광공사 TourAPI(공공데이터포털)의 위치기반 조회로 대체했습니다.
+// - 서점/카페는 TourAPI에 해당 카테고리가 없어(관광시설 위주 분류), 네이버/카카오
+//   지도 검색으로 바로 연결되는 링크만 제공합니다 (API 호출 없이 URL만 구성).
+// - 공공데이터포털 API는 브라우저에서 직접 fetch하면 CORS로 막히는 경우가 있습니다.
+//   프로덕션에서는 자체 백엔드에서 프록시하는 것을 권장합니다.
+// ==========================================
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const p = 0.017453292519943295;
+  const a = 0.5 - Math.cos((lat2 - lat1) * p) / 2 +
+    Math.cos(lat1 * p) * Math.cos(lat2 * p) * (1 - Math.cos((lng2 - lng1) * p)) / 2;
+  return 12742 * Math.asin(Math.sqrt(a));
+}
+
+// 서비스키는 이제 클라이언트에 전혀 없다 - Netlify Function(/api/tourapi)이
+// 서버 환경변수(TOUR_API_SERVICE_KEY)로 대신 TourAPI를 호출하고 결과만 돌려준다.
+async function tourApiProxyFetch(action, extraParams) {
+  const params = new URLSearchParams({ action, ...extraParams });
+  const res = await fetch(`/api/tourapi?${params.toString()}`);
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    // 응답이 JSON이 아니면 아래에서 HTTP 상태 기반 에러로 처리
+  }
+  if (!res.ok || (data && data.error)) {
+    const isServerNoKey = data && data.error === "SERVER_NO_KEY";
+    const err = new Error(
+      isServerNoKey
+        ? "서버에 공공데이터포털 키가 설정돼 있지 않아요. 관리자에게 문의해주세요."
+        : `공공데이터 API 응답 오류 (HTTP ${res.status})`
+    );
+    err.code = isServerNoKey ? "SERVER_NO_KEY" : "HTTP_ERROR";
+    throw err;
+  }
+  return (data && data.items) || [];
+}
+
+// 명소(contentTypeId=12) / 맛집(contentTypeId=39)을 위경도 기반으로 가까운 순 조회
+async function fetchNearbyTourSpots({ lat, lng, contentTypeId, radius = 20000, num = 5 }) {
+  const arr = await tourApiProxyFetch("nearby", {
+    lat: String(lat),
+    lng: String(lng),
+    contentTypeId: String(contentTypeId),
+    radius: String(radius),
+    num: String(num),
+  });
+  return arr.slice(0, num).map((it) => ({
+    id: it.contentid,
+    name: it.title,
+    category: it.addr2 || "",
+    address: it.addr1 || "",
+    distanceKm: it.dist ? (parseFloat(it.dist) / 1000).toFixed(1) : null,
+  }));
+}
+
+// 축제(contentTypeId 없이 searchFestival2 사용) - 진행 중/예정 축제 중 거리순으로 가까운 것만 추림
+async function fetchLocalFestivals({ regionKeyword, lat, lng }) {
+  const today = new Date();
+  const eventStartDate = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}01`;
+  const arr = await tourApiProxyFetch("festival", { eventStartDate, numOfRows: "30" });
+
+  const withDistance = arr.map((it) => {
+    const itLat = parseFloat(it.mapy);
+    const itLng = parseFloat(it.mapx);
+    const dist = Number.isFinite(itLat) && Number.isFinite(itLng) ? haversineKm(lat, lng, itLat, itLng) : Infinity;
+    return { it, dist };
+  });
+
+  // 1순위: 반경 60km 이내, 거리순
+  let picked = withDistance.filter((x) => x.dist <= 60).sort((a, b) => a.dist - b.dist);
+  // 2순위: 그래도 없으면 주소 문자열에 지역명이 포함된 항목
+  if (picked.length === 0) {
+    const shortRegion = (regionKeyword || "").replace(/(시|군|구)$/, "");
+    picked = withDistance.filter((x) => shortRegion && (x.it.addr1 || "").includes(shortRegion));
+  }
+  // 그래도 없으면 전국 목록을 보여주지 않고 "없음"으로 처리 (엉뚱한 지역 축제가 나오지 않도록)
+
+  return picked.slice(0, 5).map(({ it, dist }) => ({
+    id: it.contentid,
+    title: it.title,
+    period: it.eventstartdate && it.eventenddate ? `${it.eventstartdate} ~ ${it.eventenddate}` : "일정 미정",
+    location: it.addr1 || "위치 정보 없음",
+    distanceKm: Number.isFinite(dist) ? dist.toFixed(1) : null,
+  }));
+}
+
+// 서점/카페는 TourAPI 분류에 없어 지도 앱 검색으로 바로 연결만 해준다 (API 호출 없음)
+function buildMapSearchLinks(spot, keyword) {
+  const q = encodeURIComponent(`${spot.name} ${keyword}`);
+  return [
+    { id: "naver", label: "네이버 지도에서 찾기", url: `https://map.naver.com/p/search/${q}` },
+    { id: "kakao", label: "카카오맵에서 찾기", url: `https://map.kakao.com/?q=${q}` },
+  ];
+}
+
+// ==========================================
+// 2. 룰렛 휠 (SVG)
+// ==========================================
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function sliceDPath(cx, cy, r, startDeg, endDeg) {
+  const start = polarToCartesian(cx, cy, r, endDeg);
+  const end = polarToCartesian(cx, cy, r, startDeg);
+  const largeArc = endDeg - startDeg <= 180 ? "0" : "1";
+  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y} Z`;
+}
+
+const BLUE_PALETTE = ["#AFC9EA", "#C7DAF2", "#98BBE2"];
+const RED_PALETTE = ["#F0B3AE", "#F5C9C5", "#EAA19B"];
+
+function RouletteWheel({ spots, wheelRef }) {
+  const cx = 150, cy = 150, r = 140;
+  const n = spots.length;
+  const vertical = true; // 감성/활기 여행 룰렛 모두 지역명을 세로로 표기
+  const labelColor = "#2B2620"; // 팔레트가 연해져서 밝은 글씨 대신 진한 잉크색 사용
+  if (n === 0) return null;
+  const sweep = 360 / n;
+  const lineHeight = 12;
+  // 슬라이스마다 색을 감성(파랑)/활기(빨강)의 각자 팔레트에서 순환시켜, 두 테마가 사이사이에 섞여 보이도록 함
+  let blueCounter = 0, redCounter = 0;
+
+  return (
+    <div ref={wheelRef} style={{ transform: "rotate(0deg)", willChange: "transform" }} className="w-full h-full">
+      <svg viewBox="0 0 300 300" className="w-full h-full">
+        {spots.map((s, i) => {
+          const start = i * sweep;
+          const end = start + sweep;
+          const mid = start + sweep / 2;
+          const labelPos = polarToCartesian(cx, cy, r * (vertical ? 0.62 : 0.66), mid);
+          const chars = vertical ? Array.from(s.name.replace(/\s/g, "")) : null;
+          const startY = vertical ? labelPos.y - ((chars.length - 1) * lineHeight) / 2 : 0;
+          const palette = s.mood === "emotional" ? BLUE_PALETTE : RED_PALETTE;
+          const fillColor = s.mood === "emotional" ? palette[blueCounter++ % palette.length] : palette[redCounter++ % palette.length];
+          return (
+            <g key={s.id}>
+              <path d={sliceDPath(cx, cy, r, start, end)} fill={fillColor} stroke="#F6F1E7" strokeWidth="1.5" />
+              {vertical ? (
+                // 세로로 쌓은 글자 블록을 섹터의 중심 각도(mid)만큼 회전시켜, 부채꼴 모양(방사형)에 맞춰 눕힌다
+                <text
+                  x={labelPos.x} fill={labelColor} fontSize="11" fontWeight="700"
+                  textAnchor="middle"
+                  transform={`rotate(${mid}, ${labelPos.x}, ${labelPos.y})`}
+                >
+                  {chars.map((c, ci) => (
+                    <tspan key={ci} x={labelPos.x} y={startY + ci * lineHeight}>{c}</tspan>
+                  ))}
+                </text>
+              ) : (
+                <text
+                  x={labelPos.x} y={labelPos.y}
+                  fill={labelColor} fontSize="11" fontWeight="700"
+                  textAnchor="middle"
+                  transform={`rotate(${mid}, ${labelPos.x}, ${labelPos.y})`}
+                >
+                  {s.name}
+                </text>
+              )}
+            </g>
+          );
+        })}
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#B8860B" strokeWidth="2" />
+      </svg>
+    </div>
+  );
+}
+
+// ==========================================
+// 3. 위치 검색 다이얼로그
+// ==========================================
+function LocationDialog({ currentLocation, onSelect, onClose }) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.replace(/\s/g, "");
+    return LOCATIONS.filter((l) => l.name.replace(/\s/g, "").includes(q));
+  }, [query]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] flex flex-col max-h-[80vh]">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <h2 className="font-serif text-lg text-[#2B2620]">내 위치 검색</h2>
+          <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="px-5 pb-3">
+          <div className="flex items-center gap-2 bg-white/60 border border-[#D9CBB0] rounded-lg px-3 py-2">
+            <Search size={16} className="text-[#6B5F4F]" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="지역명 입력 (예: 강릉, 해운대)"
+              className="flex-1 bg-transparent outline-none text-sm text-[#2B2620] placeholder:text-[#A6987F]"
+            />
+          </div>
+          <p className="text-xs text-[#6B5F4F] mt-2">{filtered.length}개 지역</p>
+        </div>
+        <div className="overflow-y-auto px-2 pb-4">
+          {filtered.length === 0 ? (
+            <p className="text-center text-sm text-[#6B5F4F] py-8">검색 결과가 없습니다.</p>
+          ) : (
+            filtered.map((loc) => {
+              const isCurrent = loc.name === currentLocation.name;
+              return (
+                <button
+                  key={loc.name}
+                  onClick={() => onSelect(loc)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/60 text-left"
+                >
+                  <span className="text-sm text-[#2B2620]">{loc.name}</span>
+                  {isCurrent && <Check size={16} className="text-[#2F6E68]" />}
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 3-1. 생년월일/생시/성별 입력 모달 (여행사주용, 최초 1회)
+// ==========================================
+function BirthInfoModal({ initial, onSave, onClose }) {
+  const [date, setDate] = useState(initial?.date || "");
+  const [time, setTime] = useState(initial?.time || "");
+  const [timeUnknown, setTimeUnknown] = useState(!initial?.time);
+  const [gender, setGender] = useState(initial?.gender || "F");
+
+  function handleSave() {
+    if (!date) return;
+    onSave({ date, time: timeUnknown ? null : (time || null), gender });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-5 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-serif text-lg text-[#2B2620]">나만의 여행운 보기</h2>
+          <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
+        </div>
+        <p className="text-xs text-[#6B5F4F] mb-4 leading-relaxed">
+          입력하신 정보는 이 브라우저에만 저장되고 서버로 전송되지 않아요. 양력 생년월일만 지원합니다.
+        </p>
+
+        <label className="block text-xs font-medium text-[#2B2620] mb-1">생년월일 (양력)</label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="w-full bg-white/70 border border-[#D9CBB0] rounded-lg px-3 py-2 text-sm outline-none mb-3"
+        />
+
+        <label className="block text-xs font-medium text-[#2B2620] mb-1">태어난 시간</label>
+        <input
+          type="time"
+          value={time}
+          disabled={timeUnknown}
+          onChange={(e) => setTime(e.target.value)}
+          className="w-full bg-white/70 border border-[#D9CBB0] rounded-lg px-3 py-2 text-sm outline-none mb-2 disabled:opacity-50"
+        />
+        <label className="flex items-center gap-1.5 text-xs text-[#6B5F4F] mb-3">
+          <input type="checkbox" checked={timeUnknown} onChange={(e) => setTimeUnknown(e.target.checked)} />
+          태어난 시간을 몰라요 (시주 없이 3주로만 계산)
+        </label>
+
+        <label className="block text-xs font-medium text-[#2B2620] mb-1">성별</label>
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setGender("F")}
+            className="flex-1 py-2 rounded-lg text-sm border"
+            style={{ borderColor: gender === "F" ? "#B8860B" : "#D9CBB0", background: gender === "F" ? "#F3E6C4" : "transparent", color: "#2B2620" }}
+          >
+            여성
+          </button>
+          <button
+            onClick={() => setGender("M")}
+            className="flex-1 py-2 rounded-lg text-sm border"
+            style={{ borderColor: gender === "M" ? "#B8860B" : "#D9CBB0", background: gender === "M" ? "#F3E6C4" : "transparent", color: "#2B2620" }}
+          >
+            남성
+          </button>
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={!date}
+          className="w-full py-2.5 rounded-lg text-sm font-medium text-[#F6F1E7] bg-[#2B2620] disabled:opacity-50"
+        >
+          저장하고 보기
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 3-2. 오늘의 여행운 카드
+// ==========================================
+function TravelFortuneCard({ fortune, onEdit }) {
+  return (
+    <div className="mt-4 rounded-xl px-4 py-3 border border-[#D9CBB0] bg-white/50">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-[#B8860B]">✦ 오늘의 여행운 (재미로 보는 코너예요)</p>
+        <button onClick={onEdit} className="text-[10px] text-[#A6987F] underline">내 정보 수정</button>
+      </div>
+      <p className="text-sm text-[#2B2620] mt-1.5 leading-relaxed">{fortune.headline}</p>
+      <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+        <div className="bg-white/60 rounded-lg py-2">
+          <p className="text-[10px] text-[#A6987F]">방향</p>
+          <p className="text-xs font-medium text-[#2B2620] mt-0.5">{fortune.direction}</p>
+        </div>
+        <div className="bg-white/60 rounded-lg py-2">
+          <p className="text-[10px] text-[#A6987F]">색상</p>
+          <p className="text-xs font-medium text-[#2B2620] mt-0.5">{fortune.colors}</p>
+        </div>
+        <div className="bg-white/60 rounded-lg py-2">
+          <p className="text-[10px] text-[#A6987F]">아이템</p>
+          <p className="text-xs font-medium text-[#2B2620] mt-0.5">{fortune.item}</p>
+        </div>
+      </div>
+      <p className="text-xs text-[#6B5F4F] italic mt-2 text-center">"{fortune.oneLiner}"</p>
+    </div>
+  );
+}
+
+// ==========================================
+// 4. 정복 도시함 (드로어)
+// ==========================================
+function DrawerModal({ spots, onUnvisit, onOpenStamp, onClose }) {
+  const [query, setQuery] = useState("");
+  const [tab, setTab] = useState("visited");
+
+  const visited = useMemo(
+    () => spots.filter((s) => s.isVisited).sort((a, b) => new Date(b.visitedDate) - new Date(a.visitedDate)),
+    [spots]
+  );
+  const source = tab === "visited" ? visited : spots;
+  const q = query.replace(/\s/g, "");
+  const filtered = q === "" ? source : source.filter((s) => s.name.replace(/\s/g, "").includes(q));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20">
+      <div className="w-full max-w-sm bg-[#F6F1E7] rounded-t-2xl border-t border-x border-[#D9CBB0] flex flex-col h-[80vh]">
+        <div className="flex items-center justify-between px-5 pt-5 pb-1">
+          <h2 className="font-serif text-lg text-[#2B2620] flex items-center gap-1.5"><Stamp size={16} className="text-[#B8860B]" /> 도장깨기</h2>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[#6B5F4F]">{visited.length} / {spots.length}</span>
+            <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
+          </div>
+        </div>
+        <div className="px-5 pt-3">
+          <div className="flex items-center gap-2 bg-white/60 border border-[#D9CBB0] rounded-lg px-3 py-2">
+            <Search size={16} className="text-[#6B5F4F]" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="도시 이름 검색"
+              className="flex-1 bg-transparent outline-none text-sm text-[#2B2620] placeholder:text-[#A6987F]"
+            />
+          </div>
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => setTab("visited")}
+              className={`text-xs px-3 py-1.5 rounded-full border font-medium ${tab === "visited" ? "bg-[#B8860B] text-[#2B2620] border-[#B8860B]" : "border-[#D9CBB0] text-[#6B5F4F]"}`}
+            >
+              깬 도장
+            </button>
+            <button
+              onClick={() => setTab("all")}
+              className={`text-xs px-3 py-1.5 rounded-full border font-medium ${tab === "all" ? "bg-[#B8860B] text-[#2B2620] border-[#B8860B]" : "border-[#D9CBB0] text-[#6B5F4F]"}`}
+            >
+              전체 도시
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-3">
+          {filtered.length === 0 ? (
+            <p className="text-center text-sm text-[#6B5F4F] py-10 whitespace-pre-line">
+              {tab === "visited" ? "아직 깬 도장이 없어요.\n룰렛을 돌려보세요!" : "검색 결과가 없습니다."}
+            </p>
+          ) : (
+            <ul className="divide-y divide-[#D9CBB0]">
+              {filtered.map((s) => {
+                const hasMemory = (s.photos && s.photos.some(Boolean)) || (s.memo && s.memo.trim().length > 0);
+                return (
+                  <li key={s.id} className="flex items-center gap-2 py-3">
+                    {s.isVisited ? (
+                      <button onClick={() => onOpenStamp(s.id)} className="flex-1 flex items-center gap-3 text-left min-w-0">
+                        <span
+                          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2"
+                          style={{ borderColor: "#B8860B", background: hasMemory ? "#F3E6C4" : "transparent" }}
+                        >
+                          <Stamp size={15} className="text-[#B8860B]" />
+                        </span>
+                        <span className="min-w-0">
+                          <p className="text-sm text-[#2B2620] truncate">{s.name}</p>
+                          <p className="text-xs text-[#6B5F4F] mt-0.5">
+                            {formatDate(s.visitedDate)} 정복 · {s.region}{hasMemory ? " · 추억 저장됨" : ""}
+                          </p>
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="flex-1 flex items-center gap-3 min-w-0">
+                        <span className="w-9 h-9 rounded-full border-2 border-dashed border-[#D9CBB0] shrink-0" />
+                        <span className="min-w-0">
+                          <p className="text-sm text-[#2B2620] truncate">{s.name}</p>
+                          <p className="text-xs text-[#6B5F4F] mt-0.5">
+                            {s.region} · {s.mood === "emotional" ? "감성" : "활기"} 코스
+                          </p>
+                        </span>
+                      </div>
+                    )}
+                    {s.isVisited && (
+                      <button
+                        onClick={() => onUnvisit(s.id)}
+                        className="flex items-center gap-1 text-xs text-[#C4592F] px-2 py-1 shrink-0"
+                      >
+                        <RotateCcw size={12} /> 정복 취소
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 여행지에 대한 추억(사진 2컷 + 메모)을 남기는 "도장깨기" 상세 모달
+function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, onClose }) {
+  const fileInputRefA = useRef(null);
+  const fileInputRefB = useRef(null);
+  const fileInputRefs = [fileInputRefA, fileInputRefB];
+  const photos = spot.photos && spot.photos.length === 2 ? spot.photos : [null, null];
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 px-4">
+      <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-5 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-1.5 text-[#B8860B]">
+            <Stamp size={16} />
+            <span className="text-[11px] tracking-wide text-[#A6987F]">도장깨기</span>
+          </div>
+          <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
+        </div>
+        <h2 className="font-serif text-xl text-[#2B2620]">{spot.name}</h2>
+        <p className="text-xs text-[#6B5F4F] mt-0.5">{spot.region} · {formatDate(spot.visitedDate)} 정복</p>
+
+        <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2">사진 2컷</p>
+        <div className="grid grid-cols-2 gap-2">
+          {[0, 1].map((i) => (
+            <div
+              key={i}
+              className="relative aspect-square rounded-lg overflow-hidden border border-dashed border-[#D9CBB0] bg-white/80 flex items-center justify-center"
+            >
+              {photos[i] ? (
+                <>
+                  <img src={photos[i]} alt={`${spot.name} 추억 사진 ${i + 1}`} className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => onRemovePhoto(i)}
+                    className="absolute top-1 right-1 bg-black/40 text-white rounded-full p-1"
+                    aria-label="사진 삭제"
+                  >
+                    <X size={12} />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => fileInputRefs[i].current && fileInputRefs[i].current.click()}
+                  className="flex flex-col items-center gap-1 text-[#B8860B]"
+                >
+                  <Camera size={20} />
+                  <span className="text-[10px]">사진 추가</span>
+                </button>
+              )}
+              <input
+                ref={fileInputRefs[i]}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files && e.target.files[0];
+                  if (file) onChangePhoto(i, file);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2">메모</p>
+        <textarea
+          value={spot.memo || ""}
+          onChange={(e) => onChangeMemo(e.target.value)}
+          placeholder="이곳에서의 추억을 남겨보세요."
+          rows={4}
+          className="w-full bg-white/80 border border-[#D9CBB0] rounded-lg px-3 py-2 text-sm outline-none resize-none"
+        />
+
+        <button
+          onClick={onClose}
+          className="w-full mt-4 py-2.5 rounded-lg text-sm font-bold text-[#2B2620] bg-[#B8860B]"
+        >
+          완료
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 6. 맛집·서점·축제·플레이리스트 상세 탭
+// ==========================================
+function StatusBlock({ status, error, emptyText }) {
+  if (status === "loading") {
+    return (
+      <div className="flex items-center gap-2 text-sm text-[#6B5F4F] py-6 justify-center">
+        <Loader2 size={16} className="animate-spin" /> 불러오는 중…
+      </div>
+    );
+  }
+  if (status === "error") {
+    return (
+      <div className="text-xs text-[#A8441F] bg-[#F5E4DA] border border-[#E3B79C] rounded-lg p-3 leading-relaxed">
+        {error}
+      </div>
+    );
+  }
+  if (status === "empty") {
+    return <p className="text-sm text-[#6B5F4F] py-6 text-center">{emptyText}</p>;
+  }
+  return null;
+}
+
+function RestaurantList({ items }) {
+  return (
+    <ul className="space-y-2">
+      {items.map((p) => (
+        <li key={p.id} className="bg-white/50 border border-[#D9CBB0] rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-[#2B2620]">{p.name}</p>
+            {p.distanceKm && <span className="text-[10px] text-[#A6987F] shrink-0">{p.distanceKm}km</span>}
+          </div>
+          <p className="text-xs text-[#6B5F4F] mt-0.5">{p.category}</p>
+          <p className="text-xs text-[#A6987F] mt-0.5">{p.address}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function FestivalList({ items }) {
+  return (
+    <ul className="space-y-2">
+      {items.map((f) => (
+        <li key={f.id} className="bg-white/50 border border-[#D9CBB0] rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-[#2B2620]">{f.title}</p>
+            {f.distanceKm && <span className="text-[10px] text-[#A6987F] shrink-0">{f.distanceKm}km</span>}
+          </div>
+          <p className="text-xs text-[#6B5F4F] mt-0.5">{f.period}</p>
+          <p className="text-xs text-[#A6987F] mt-0.5">{f.location}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// 서점/카페처럼 API로 조회하지 않고, 지도 앱 검색 링크만 보여주는 목록
+function MapLinkList({ links }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {links.map((l) => (
+        <a
+          key={l.id} href={l.url} target="_blank" rel="noreferrer"
+          className="flex items-center justify-between bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2.5 text-sm text-[#2B2620]"
+        >
+          {l.label}
+          <ExternalLink size={13} className="text-[#2F6E68]" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// 탭별 데이터 출처 정의: 명소·맛집은 TourAPI 위치기반 조회, 서점·카페는 지도 검색 링크,
+// 축제는 TourAPI 거리 필터링, 음악은 무작위 추천 목록
+const TAB_CONFIG = {
+  landmark: { label: "명소", icon: Compass, kind: "tour", contentTypeId: 12 },
+  restaurant: { label: "맛집", icon: Utensils, kind: "tour", contentTypeId: 39 },
+  bookstore: { label: "서점", icon: BookOpen, kind: "map" },
+  cafe: { label: "카페", icon: Coffee, kind: "map" },
+  festival: { label: "축제/공연", icon: PartyPopper, kind: "festival" },
+};
+
+function ResultDetailTabs({ spot, cache, setCache }) {
+  const [tab, setTab] = useState("landmark");
+  const cfg = TAB_CONFIG[tab];
+  const needsFetch = cfg.kind === "tour" || cfg.kind === "festival";
+  const cacheKey = `${spot.id}:${tab}`;
+  const entry = needsFetch ? cache[cacheKey] : null;
+
+  useEffect(() => {
+    if (!needsFetch) return;
+    if (cache[cacheKey]) return;
+    let cancelled = false;
+    setCache((prev) => ({ ...prev, [cacheKey]: { status: "loading" } }));
+
+    async function run() {
+      try {
+        let data = [];
+        if (cfg.kind === "festival") {
+          data = await fetchLocalFestivals({ regionKeyword: spot.name, lat: spot.lat, lng: spot.lng });
+        } else if (cfg.kind === "tour") {
+          data = await fetchNearbyTourSpots({ lat: spot.lat, lng: spot.lng, contentTypeId: cfg.contentTypeId, num: 5 });
+        }
+        if (cancelled) return;
+        setCache((prev) => ({ ...prev, [cacheKey]: { status: data.length > 0 ? "success" : "empty", data } }));
+      } catch (err) {
+        if (cancelled) return;
+        const message = `${err.message}${err.code === "HTTP_ERROR" ? " 네트워크 문제일 수 있어요." : ""}`;
+        setCache((prev) => ({ ...prev, [cacheKey]: { status: "error", message } }));
+      }
+    }
+    run();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, spot.id]);
+
+  return (
+    <div className="mt-4">
+      <div className="flex gap-1 bg-white/40 rounded-lg p-1 overflow-x-auto">
+        {Object.entries(TAB_CONFIG).map(([key, t]) => {
+          const Icon = t.icon;
+          const active = tab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className="flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-md text-[10px] font-medium min-w-[44px]"
+              style={{ background: active ? "#2B2620" : "transparent", color: active ? "#F6F1E7" : "#6B5F4F" }}
+            >
+              <Icon size={13} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-3">
+        {cfg.kind === "map" ? (
+          <MapLinkList links={buildMapSearchLinks(spot, tab === "bookstore" ? "서점" : "카페")} />
+        ) : !entry || entry.status === "loading" ? (
+          <StatusBlock status="loading" />
+        ) : entry.status === "error" ? (
+          <StatusBlock status="error" error={entry.message} />
+        ) : entry.status === "empty" ? (
+          <StatusBlock status="empty" emptyText="검색된 정보가 없어요." />
+        ) : cfg.kind === "festival" ? (
+          <FestivalList items={entry.data} />
+        ) : (
+          <RestaurantList items={entry.data} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// 7. 메인 화면
+// ==========================================
+// API 키처럼 새로고침해도 유지됐으면 하는 값을 localStorage와 동기화하는 훅.
+// localStorage를 쓸 수 없는 환경(일부 미리보기 iframe, 프라이빗 모드 등)에서는
+// 조용히 실패하고 평범한 메모리 state로만 동작한다 (에러로 앱이 죽지 않음).
+function usePersistentState(key, initialValue) {
+  const [value, setValue] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem(key);
+      return saved !== null ? saved : initialValue;
+    } catch {
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // 저장 불가 환경 - 무시하고 메모리 state만 유지
+    }
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
+function BaramApp() {
+  const [spots, setSpots] = useState(() => buildSpots());
+  const [region, setRegion] = useState("전체");
+  const [currentLocation, setCurrentLocation] = useState(() => LOCATIONS.find((l) => l.name === "하남시"));
+  const [rouletteSpots, setRouletteSpots] = useState([]);
+  const [result, setResult] = useState(null);
+  const [phase, setPhase] = useState("idle"); // idle | ramping | spinning | stopping
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [detailCache, setDetailCache] = useState({});
+  const [stampSpotId, setStampSpotId] = useState(null);
+  const [birthInfoRaw, setBirthInfoRaw] = usePersistentState("baram_birthInfo", "");
+  const [birthModalOpen, setBirthModalOpen] = useState(false);
+
+  const birthInfo = useMemo(() => {
+    try {
+      return birthInfoRaw ? JSON.parse(birthInfoRaw) : null;
+    } catch {
+      return null;
+    }
+  }, [birthInfoRaw]);
+  const saju = useMemo(() => (birthInfo ? computeSaju(birthInfo) : null), [birthInfo]);
+  const travelFortune = useMemo(() => (saju ? getTravelFortune(saju) : null), [saju]);
+
+  function saveBirthInfo(info) {
+    setBirthInfoRaw(JSON.stringify(info));
+    setBirthModalOpen(false);
+  }
+
+  const wheelRef = useRef(null);
+  const angleRef = useRef(0);
+  const rafRef = useRef(null);
+  const rampTimeoutRef = useRef(null);
+
+  const visitedCount = spots.filter((s) => s.isVisited).length;
+  // 감성/활기를 더 이상 따로 고르지 않으므로, 뽑힌 결과의 테마에 맞춰 강조색이 바뀐다
+  const accent = result ? (result.mood === "emotional" ? "#1B4B91" : "#B3261E") : "#2B2620";
+
+  // 감성 여행 + 활기찬 여행을 하나로 합쳐, 두 테마가 최대한 번갈아 나오도록 15곳을 뽑는다
+  function pick15(currentSpots, currentRegion, currentLoc) {
+    const candidates = currentSpots.filter((s) => {
+      if (s.isVisited) return false;
+      if (s.name === currentLoc.name) return false;
+      if (currentRegion !== "전체" && s.region !== currentRegion) return false;
+      return true;
+    });
+    const emotional = shuffle(candidates.filter((s) => s.mood === "emotional"));
+    const energetic = shuffle(candidates.filter((s) => s.mood === "energetic"));
+
+    // 감성/활기 두 목록을 하나씩 번갈아 채워서 사이사이에 섞이도록 구성
+    const interleaved = [];
+    let ei = 0, gi = 0;
+    let turnEmotional = true;
+    while (interleaved.length < 15 && (ei < emotional.length || gi < energetic.length)) {
+      if (turnEmotional && ei < emotional.length) {
+        interleaved.push(emotional[ei++]);
+      } else if (!turnEmotional && gi < energetic.length) {
+        interleaved.push(energetic[gi++]);
+      } else if (ei < emotional.length) {
+        interleaved.push(emotional[ei++]);
+      } else if (gi < energetic.length) {
+        interleaved.push(energetic[gi++]);
+      }
+      turnEmotional = !turnEmotional;
+    }
+
+    setRouletteSpots(interleaved);
+    setResult(null);
+    angleRef.current = 0;
+    if (wheelRef.current) wheelRef.current.style.transform = "rotate(0deg)";
+  }
+
+  // 앱이 처음 열릴 때 IndexedDB에 저장된 도장깨기 진행 기록을 불러와 병합한 뒤 룰렛을 뽑는다.
+  // (IndexedDB는 비동기라 useState 초기값으로는 못 쓰고, 마운트 후 이렇게 불러와야 한다)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const progress = await loadSpotsProgress();
+      if (cancelled) return;
+      const merged = mergeSpotsWithProgress(spots, progress);
+      setSpots(merged);
+      pick15(merged, region, currentLocation);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function changeRegion(next) {
+    if (phase !== "idle") return;
+    setRegion(next);
+    pick15(spots, next, currentLocation);
+  }
+
+  function selectLocation(loc) {
+    setCurrentLocation(loc);
+    setLocationDialogOpen(false);
+    pick15(spots, region, loc);
+  }
+
+  function conquerSpot(id) {
+    setSpots((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, isVisited: true, visitedDate: new Date().toISOString() } : s));
+      const updated = next.find((s) => s.id === id);
+      if (updated) saveSpotProgress(updated);
+      pick15(next, region, currentLocation);
+      return next;
+    });
+  }
+
+  function unvisitSpot(id) {
+    setSpots((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, isVisited: false, visitedDate: null } : s));
+      const updated = next.find((s) => s.id === id);
+      if (updated) saveSpotProgress(updated);
+      pick15(next, region, currentLocation);
+      return next;
+    });
+  }
+
+  // 도장깨기: 여행지에 남기는 추억(사진 2컷 + 메모)
+  function updateSpotMemo(id, text) {
+    setSpots((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, memo: text } : s));
+      const updated = next.find((s) => s.id === id);
+      if (updated) saveSpotProgress(updated);
+      return next;
+    });
+  }
+
+  // 원본 사진을 그대로 base64로 저장하면 장당 수 MB씩 쌓여 브라우저 메모리를 많이 차지한다.
+  // 캔버스에 그려서 가로 최대 900px, JPEG 품질 0.75로 줄인 뒤 저장한다 (보통 장당 100~200KB 수준).
+  function compressImage(file, maxWidth = 900, quality = 0.75) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const scale = Math.min(1, maxWidth / img.width);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("이미지를 불러올 수 없어요."));
+      };
+      img.src = objectUrl;
+    });
+  }
+
+  function updateSpotPhoto(id, slotIndex, file) {
+    compressImage(file)
+      .then((dataUrl) => {
+        setSpots((prev) => {
+          const next = prev.map((s) => {
+            if (s.id !== id) return s;
+            const photos = s.photos && s.photos.length === 2 ? [...s.photos] : [null, null];
+            photos[slotIndex] = dataUrl;
+            return { ...s, photos };
+          });
+          const updated = next.find((s) => s.id === id);
+          if (updated) saveSpotProgress(updated);
+          return next;
+        });
+      })
+      .catch(() => {
+        // 압축 실패(지원 안 되는 파일 등) 시 조용히 무시 - 사진 슬롯은 비어있는 채로 유지
+      });
+  }
+
+  function removeSpotPhoto(id, slotIndex) {
+    setSpots((prev) => {
+      const next = prev.map((s) => {
+        if (s.id !== id) return s;
+        const photos = s.photos && s.photos.length === 2 ? [...s.photos] : [null, null];
+        photos[slotIndex] = null;
+        return { ...s, photos };
+      });
+      const updated = next.find((s) => s.id === id);
+      if (updated) saveSpotProgress(updated);
+      return next;
+    });
+  }
+
+  function startSpin() {
+    if (rouletteSpots.length === 0 || phase !== "idle") return;
+    setResult(null);
+    setPhase("ramping");
+    const el = wheelRef.current;
+    const rampTarget = angleRef.current + 720;
+    el.style.transition = "transform 0.6s cubic-bezier(0.55,0,1,0.45)";
+    el.style.transform = `rotate(${rampTarget}deg)`;
+    angleRef.current = rampTarget;
+    rampTimeoutRef.current = setTimeout(() => {
+      el.style.transition = "none";
+      setPhase("spinning");
+      let last = performance.now();
+      function loop(now) {
+        const dt = now - last;
+        last = now;
+        angleRef.current += dt * 0.55;
+        el.style.transform = `rotate(${angleRef.current}deg)`;
+        rafRef.current = requestAnimationFrame(loop);
+      }
+      rafRef.current = requestAnimationFrame(loop);
+    }, 620);
+  }
+
+  function stopSpin() {
+    if (phase === "idle" || phase === "stopping" || rouletteSpots.length === 0) return;
+    cancelAnimationFrame(rafRef.current);
+    clearTimeout(rampTimeoutRef.current);
+    setPhase("stopping");
+
+    const n = rouletteSpots.length;
+    const selectedIndex = Math.floor(Math.random() * n);
+    const sectionAngle = 360 / n;
+    const targetSectorAngle = 360 - selectedIndex * sectionAngle - sectionAngle / 2;
+    const current = angleRef.current % 360;
+    const finalAngle = angleRef.current + (1080 + targetSectorAngle - current);
+
+    const el = wheelRef.current;
+    el.style.transition = "transform 3s cubic-bezier(0.16,1,0.3,1)";
+    el.style.transform = `rotate(${finalAngle}deg)`;
+    angleRef.current = finalAngle;
+
+    setTimeout(() => {
+      setPhase("idle");
+      setResult(rouletteSpots[selectedIndex]);
+    }, 3050);
+  }
+
+  function handleWheelTap() {
+    if (phase === "idle") startSpin();
+    else if (phase !== "stopping") stopSpin();
+  }
+
+  useEffect(() => () => {
+    cancelAnimationFrame(rafRef.current);
+    clearTimeout(rampTimeoutRef.current);
+  }, []);
+
+  // 룰렛 결과(지역)가 정해지면 그 지역의 명소·맛집을 공공데이터(TourAPI, 서버 프록시)로 불러와 하루 일정표를 구성한다
+  const itineraryKey = result ? `${result.id}:itinerary` : null;
+  useEffect(() => {
+    if (!result || !itineraryKey) return;
+    if (detailCache[itineraryKey]) return;
+    let cancelled = false;
+    setDetailCache((prev) => ({ ...prev, [itineraryKey]: { status: "loading" } }));
+
+    (async () => {
+      try {
+        const [landmarks, restaurants] = await Promise.all([
+          fetchNearbyTourSpots({ lat: result.lat, lng: result.lng, contentTypeId: 12, num: 3 }),
+          fetchNearbyTourSpots({ lat: result.lat, lng: result.lng, contentTypeId: 39, num: 3 }),
+        ]);
+        if (cancelled) return;
+        setDetailCache((prev) => ({ ...prev, [itineraryKey]: { status: "success", data: { landmarks, restaurants } } }));
+      } catch (err) {
+        if (cancelled) return;
+        setDetailCache((prev) => ({ ...prev, [itineraryKey]: { status: "error", message: err.message, code: err.code } }));
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+  const itineraryEntry = itineraryKey ? detailCache[itineraryKey] : null;
+  // 결과가 바뀔 때만 새로 뽑히도록 useMemo로 고정 (탭 전환 등 다른 리렌더에는 곡이 안 바뀜)
+  const gayoSongs = useMemo(() => pickRandomN(GAYO_SONGS, 1), [result?.id]);
+  const popSongs = useMemo(() => pickRandomN(POP_SONGS, 1), [result?.id]);
+
+  const route = result ? distanceEta(currentLocation.lat, currentLocation.lng, result.lat, result.lng) : null;
+  const disabled = phase !== "idle";
+
+  return (
+    <div className="min-h-screen bg-[#F6F1E7] flex justify-center py-8 px-4">
+      <div className="w-full max-w-sm">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <p className="text-xs tracking-wide font-bold text-[#1B4B91]">여행 룰렛</p>
+            <h1 className="font-serif text-2xl font-bold text-[#DC2626]">BARAM</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="relative w-10 h-10 rounded-full border border-[#D9CBB0] flex items-center justify-center text-[#2B2620]"
+              aria-label="도장깨기 열기"
+            >
+              <Package size={18} />
+              {visitedCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-[#C4592F] text-[#F6F1E7] text-[10px] font-medium rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                  {visitedCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 내 위치 */}
+        <button
+          onClick={() => setLocationDialogOpen(true)}
+          className="w-full flex items-center gap-2 bg-white/50 border border-[#D9CBB0] rounded-xl px-4 py-3 text-left"
+        >
+          <MapPin size={16} style={{ color: accent }} />
+          <span className="flex-1 text-sm font-medium text-[#2B2620]">내 위치: {currentLocation.name}</span>
+          <Search size={14} className="text-[#A6987F]" />
+        </button>
+
+        {/* 오늘의 여행운 (재미 코너) */}
+        {travelFortune ? (
+          <TravelFortuneCard fortune={travelFortune} onEdit={() => setBirthModalOpen(true)} />
+        ) : (
+          <button
+            onClick={() => setBirthModalOpen(true)}
+            className="w-full mt-4 flex items-center justify-center gap-1.5 border border-dashed border-[#D9CBB0] rounded-xl px-4 py-2.5 text-xs text-[#6B5F4F]"
+          >
+            ✦ 생년월일을 입력하고 나만의 여행운 보기
+          </button>
+        )}
+
+        {/* 감성+활기 통합 배너 (더 이상 따로 고르지 않음) */}
+        <div
+          className="mt-4 rounded-xl px-4 py-3 text-center"
+          style={{ background: "linear-gradient(90deg, #DCE7F5 0%, #F3E9DC 50%, #F8DCDC 100%)", border: "1px solid #D9CBB0" }}
+        >
+          <p className="text-sm font-extrabold" style={{ background: "linear-gradient(90deg, #1B4B91, #B3261E)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
+            몰라!! 돌려서 나오는 데로 갈꺼야! ({spots.length}개 지역)
+          </p>
+          <p className="text-[11px] text-[#6B5F4F] mt-1 flex items-center justify-center gap-1">
+            <Moon size={11} /> 감성 여행 + <Zap size={11} /> 활기찬 여행이 룰렛 안에서 번갈아 섞여요
+          </p>
+        </div>
+
+        {/* 지역 필터 (1줄: 전체·서울·경기·인천 / 2줄: 강원·충청·영남·호남) - 지역마다 고유 색상 */}
+        <div className="mt-4 space-y-2">
+          <div className="flex gap-2 justify-center">
+            {REGION_LIST.slice(0, 4).map((r) => {
+              const c = REGION_COLORS[r];
+              const active = region === r;
+              return (
+                <button
+                  key={r}
+                  disabled={disabled}
+                  onClick={() => changeRegion(r)}
+                  className="flex-1 text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60"
+                  style={{
+                    borderColor: c,
+                    background: active ? c : `${c}1F`,
+                    color: active ? "#F6F1E7" : c,
+                  }}
+                >
+                  {r}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-2 justify-center">
+            {REGION_LIST.slice(4).map((r) => {
+              const c = REGION_COLORS[r];
+              const active = region === r;
+              return (
+                <button
+                  key={r}
+                  disabled={disabled}
+                  onClick={() => changeRegion(r)}
+                  className="flex-1 text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60"
+                  style={{
+                    borderColor: c,
+                    background: active ? c : `${c}1F`,
+                    color: active ? "#F6F1E7" : c,
+                  }}
+                >
+                  {r}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 룰렛 */}
+        <div className="relative mx-auto mt-8" style={{ width: 280, height: 280 }}>
+          {rouletteSpots.length > 0 ? (
+            <RouletteWheel spots={rouletteSpots} wheelRef={wheelRef} />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-center text-sm text-[#6B5F4F] whitespace-pre-line">
+              {"해당 조건의 미정복 도시를\n모두 탐험하셨습니다!"}
+            </div>
+          )}
+
+          {/* 포인터: 지도 핀(물방울) 모양 */}
+          <svg width="26" height="34" viewBox="0 0 26 34" className="absolute -top-3 left-1/2 -translate-x-1/2 drop-shadow-md">
+            <path d="M3 13 L13 32 L23 13 Z" fill="#B8860B" stroke="#2B2620" strokeWidth="1.2" strokeLinejoin="round" />
+            <circle cx="13" cy="12" r="10" fill="#B8860B" stroke="#2B2620" strokeWidth="1.2" />
+            <circle cx="13" cy="12" r="4" fill="#F6F1E7" />
+          </svg>
+
+          <button
+            onClick={handleWheelTap}
+            disabled={rouletteSpots.length === 0}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-4 border-[#F6F1E7] flex items-center justify-center text-sm font-bold text-white disabled:opacity-50"
+            style={{ background: phase === "spinning" || phase === "ramping" ? "#A8441F" : accent }}
+          >
+            {phase === "stopping" ? "추첨중" : phase === "idle" ? "START" : "STOP"}
+          </button>
+        </div>
+        <p className="text-center text-[11px] text-[#A6987F] mt-2">
+          내 위치({currentLocation.name}) 제외 · 후보 {rouletteSpots.length}곳
+        </p>
+
+        {/* 결과 카드 */}
+        {result && route && (
+          <div className="mt-6 bg-white/60 border border-dashed border-[#B8860B] rounded-xl p-5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-full" style={{ background: result.mood === "emotional" ? "#DCE7F5" : "#F8DCDC", color: accent }}>
+                {result.region}
+              </span>
+              <span className="text-[10px] text-[#A6987F] flex items-center gap-1">
+                {result.mood === "emotional" ? <Moon size={11} /> : <Zap size={11} />}
+                {result.mood === "emotional" ? "감성 코스" : "활기 코스"}
+              </span>
+            </div>
+            <h3 className="font-serif text-xl text-[#2B2620] mt-2">{result.name}</h3>
+            <p className="text-sm text-[#6B5F4F] mt-1">{result.description}</p>
+
+            <div className="border-t border-[#D9CBB0] my-3" />
+            <div className="flex items-center gap-1.5 text-sm font-medium text-[#2B2620]">
+              <Car size={14} /> 예상 소요: {route.duration} ({route.distance})
+            </div>
+
+            <DayItinerary spot={result} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} />
+
+            <div className="border-t border-[#D9CBB0] my-4" />
+            <p className="text-xs font-medium text-[#2B2620] mb-1">더 알아보기</p>
+            <ResultDetailTabs
+              spot={result}
+              cache={detailCache}
+              setCache={setDetailCache}
+            />
+
+            <button
+              onClick={() => {
+                conquerSpot(result.id);
+                setDrawerOpen(true);
+              }}
+              className="w-full mt-4 py-2.5 rounded-lg text-sm font-medium text-[#F6F1E7]"
+              style={{ background: accent }}
+            >
+              도시 정복 완료
+            </button>
+          </div>
+        )}
+      </div>
+
+      {locationDialogOpen && (
+        <LocationDialog
+          currentLocation={currentLocation}
+          onSelect={selectLocation}
+          onClose={() => setLocationDialogOpen(false)}
+        />
+      )}
+      {drawerOpen && (
+        <DrawerModal
+          spots={spots}
+          onUnvisit={unvisitSpot}
+          onOpenStamp={(id) => setStampSpotId(id)}
+          onClose={() => setDrawerOpen(false)}
+        />
+      )}
+      {stampSpotId && spots.find((s) => s.id === stampSpotId) && (
+        <StampDetailModal
+          spot={spots.find((s) => s.id === stampSpotId)}
+          onChangeMemo={(text) => updateSpotMemo(stampSpotId, text)}
+          onChangePhoto={(slotIndex, file) => updateSpotPhoto(stampSpotId, slotIndex, file)}
+          onRemovePhoto={(slotIndex) => removeSpotPhoto(stampSpotId, slotIndex)}
+          onClose={() => setStampSpotId(null)}
+        />
+      )}
+      {birthModalOpen && (
+        <BirthInfoModal
+          initial={birthInfo}
+          onSave={saveBirthInfo}
+          onClose={() => setBirthModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+
+const rootEl = document.getElementById("root");
+const root = ReactDOM.createRoot(rootEl);
+root.render(<BaramApp />);
+</script>
+</body>
+</html>

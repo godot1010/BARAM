@@ -1,0 +1,8 @@
+# BARAM 배포 설정
+# - publish: 정적 파일(index.html)이 있는 루트
+# - functions: TourAPI 프록시 함수가 있는 폴더
+# (이 앱은 index.html 하나뿐인 단일 페이지라 별도 리다이렉트 규칙은 필요 없음.
+#  /api/tourapi 경로는 netlify/functions/tourapi.js의 config.path로 자동 연결됨)
+[build]
+  publish = "."
+  functions = "netlify/functions"
