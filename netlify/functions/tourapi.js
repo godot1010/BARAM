@@ -60,10 +60,26 @@ export default async (req) => {
 
     const qs = new URLSearchParams(params).toString();
     const res = await fetch(`${TOUR_API_BASE}/${path}?${qs}`);
+    const bodyText = await res.text();
+
     if (!res.ok) {
-      return json({ error: "UPSTREAM_ERROR", status: res.status, message: `TourAPI 응답 오류 (HTTP ${res.status})` }, 502);
+      return json({ error: "UPSTREAM_ERROR", status: res.status, upstreamBody: bodyText.slice(0, 500), message: `TourAPI 응답 오류 (HTTP ${res.status})` }, 502);
     }
-    const data = await res.json();
+
+    let data;
+    try {
+      data = JSON.parse(bodyText);
+    } catch {
+      // TourAPI가 200인데도 XML(에러 메시지)을 줄 때가 있다 - 예: 키 미등록/승인대기 등
+      return json({ error: "UPSTREAM_NOT_JSON", upstreamBody: bodyText.slice(0, 500), message: "TourAPI가 JSON이 아닌 응답을 줬어요 (키 상태를 확인해주세요)." }, 502);
+    }
+
+    const resultCode = data?.response?.header?.resultCode;
+    if (resultCode && resultCode !== "0000" && resultCode !== "00") {
+      const resultMsg = data?.response?.header?.resultMsg || "알 수 없는 오류";
+      return json({ error: "UPSTREAM_RESULT_ERROR", resultCode, message: `TourAPI 오류: ${resultMsg} (코드 ${resultCode})` }, 502);
+    }
+
     const rawItems = data?.response?.body?.items?.item;
     const items = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
     return json({ items });

@@ -19,8 +19,6 @@
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
 const { useState, useRef, useEffect, useMemo } = React;
-
-// lucide-react 대신, 외부 ESM 의존성 없이 동작하도록 최소 아이콘을 직접 SVG로 정의
 function Icon({ size = 20, className = "", children, ...rest }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -626,11 +624,9 @@ async function tourApiProxyFetch(action, extraParams) {
   }
   if (!res.ok || (data && data.error)) {
     const isServerNoKey = data && data.error === "SERVER_NO_KEY";
-    const err = new Error(
-      isServerNoKey
-        ? "서버에 공공데이터포털 키가 설정돼 있지 않아요. 관리자에게 문의해주세요."
-        : `공공데이터 API 응답 오류 (HTTP ${res.status})`
-    );
+    // 서버(Netlify Function)가 진단용으로 넣어준 상세 메시지가 있으면 그대로 보여준다
+    const detail = data && data.message ? data.message : `공공데이터 API 응답 오류 (HTTP ${res.status})`;
+    const err = new Error(detail);
     err.code = isServerNoKey ? "SERVER_NO_KEY" : "HTTP_ERROR";
     throw err;
   }
