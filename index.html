@@ -4,12 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>BARAM app_ver1.0 - 여행 룰렛</title>
-<!-- BARAM app_ver1.0 -->
+<!-- BARAM app_ver1.0 (Cloudflare Pages 배포용) -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7/babel.min.js" crossorigin></script>
+<script src="https://unpkg.com/solarlunar@3.1.0/dist/solarlunar.min.js"></script>
 <style>
-*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.-right-1\.5{right:-.375rem}.-top-1\.5{top:-.375rem}.-top-3{top:-.75rem}.left-1\/2{left:50%}.right-1{right:.25rem}.top-1{top:.25rem}.top-1\/2{top:50%}.z-50{z-index:50}.z-\[60\]{z-index:60}.mx-auto{margin-left:auto;margin-right:auto}.my-3{margin-top:.75rem;margin-bottom:.75rem}.my-4{margin-top:1rem;margin-bottom:1rem}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-1\.5{margin-top:.375rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mt-8{margin-top:2rem}.line-clamp-1{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1}.block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.aspect-square{aspect-ratio:1/1}.h-10{height:2.5rem}.h-20{height:5rem}.h-9{height:2.25rem}.h-\[80vh\]{height:80vh}.h-full{height:100%}.max-h-\[80vh\]{max-height:80vh}.max-h-\[85vh\]{max-height:85vh}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-11{width:2.75rem}.w-20{width:5rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-0{min-width:0}.min-w-\[18px\]{min-width:18px}.min-w-\[44px\]{min-width:44px}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%}.-translate-x-1\/2,.-translate-y-1\/2{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-y-1\/2{--tw-translate-y:-50%}.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes spin{to{transform:rotate(1turn)}}.animate-spin{animation:spin 1s linear infinite}.resize-none{resize:none}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.flex-col{flex-direction:column}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.divide-y>:not([hidden])~:not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px*(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px*var(--tw-divide-y-reverse))}.divide-\[\#D9CBB0\]>:not([hidden])~:not([hidden]){--tw-divide-opacity:1;border-color:rgb(217 203 176/var(--tw-divide-opacity,1))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.whitespace-pre-line{white-space:pre-line}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-md{border-radius:.375rem}.rounded-xl{border-radius:.75rem}.rounded-t-2xl{border-top-left-radius:1rem;border-top-right-radius:1rem}.border{border-width:1px}.border-2{border-width:2px}.border-4{border-width:4px}.border-x{border-left-width:1px;border-right-width:1px}.border-t{border-top-width:1px}.border-dashed{border-style:dashed}.border-\[\#B8860B\]{--tw-border-opacity:1;border-color:rgb(184 134 11/var(--tw-border-opacity,1))}.border-\[\#D9CBB0\]{--tw-border-opacity:1;border-color:rgb(217 203 176/var(--tw-border-opacity,1))}.border-\[\#E3B79C\]{--tw-border-opacity:1;border-color:rgb(227 183 156/var(--tw-border-opacity,1))}.border-\[\#F6F1E7\]{--tw-border-opacity:1;border-color:rgb(246 241 231/var(--tw-border-opacity,1))}.bg-\[\#2B2620\]{--tw-bg-opacity:1;background-color:rgb(43 38 32/var(--tw-bg-opacity,1))}.bg-\[\#B8860B\]{--tw-bg-opacity:1;background-color:rgb(184 134 11/var(--tw-bg-opacity,1))}.bg-\[\#C4592F\]{--tw-bg-opacity:1;background-color:rgb(196 89 47/var(--tw-bg-opacity,1))}.bg-\[\#F5E4DA\]{--tw-bg-opacity:1;background-color:rgb(245 228 218/var(--tw-bg-opacity,1))}.bg-\[\#F6F1E7\]{--tw-bg-opacity:1;background-color:rgb(246 241 231/var(--tw-bg-opacity,1))}.bg-black\/20{background-color:rgba(0,0,0,.2)}.bg-black\/40{background-color:rgba(0,0,0,.4)}.bg-transparent{background-color:transparent}.bg-white\/40{background-color:hsla(0,0%,100%,.4)}.bg-white\/50{background-color:hsla(0,0%,100%,.5)}.bg-white\/60{background-color:hsla(0,0%,100%,.6)}.bg-white\/70{background-color:hsla(0,0%,100%,.7)}.bg-white\/80{background-color:hsla(0,0%,100%,.8)}.object-cover{-o-object-fit:cover;object-fit:cover}.p-1{padding:.25rem}.p-3{padding:.75rem}.p-5{padding:1.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-10{padding-top:2.5rem;padding-bottom:2.5rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pb-1{padding-bottom:.25rem}.pb-3{padding-bottom:.75rem}.pb-4{padding-bottom:1rem}.pt-2{padding-top:.5rem}.pt-3{padding-top:.75rem}.pt-5{padding-top:1.25rem}.text-left{text-align:left}.text-center{text-align:center}.font-serif{font-family:ui-serif,Georgia,Cambria,Times New Roman,Times,serif}.text-2xl{font-size:1.5rem;line-height:2rem}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.italic{font-style:italic}.leading-relaxed{line-height:1.625}.tracking-wide{letter-spacing:.025em}.text-\[\#1B4B91\]{--tw-text-opacity:1;color:rgb(27 75 145/var(--tw-text-opacity,1))}.text-\[\#2B2620\]{--tw-text-opacity:1;color:rgb(43 38 32/var(--tw-text-opacity,1))}.text-\[\#2F6E68\]{--tw-text-opacity:1;color:rgb(47 110 104/var(--tw-text-opacity,1))}.text-\[\#6B5F4F\]{--tw-text-opacity:1;color:rgb(107 95 79/var(--tw-text-opacity,1))}.text-\[\#A6987F\]{--tw-text-opacity:1;color:rgb(166 152 127/var(--tw-text-opacity,1))}.text-\[\#A8441F\]{--tw-text-opacity:1;color:rgb(168 68 31/var(--tw-text-opacity,1))}.text-\[\#B8860B\]{--tw-text-opacity:1;color:rgb(184 134 11/var(--tw-text-opacity,1))}.text-\[\#C4592F\]{--tw-text-opacity:1;color:rgb(196 89 47/var(--tw-text-opacity,1))}.text-\[\#DC2626\]{--tw-text-opacity:1;color:rgb(220 38 38/var(--tw-text-opacity,1))}.text-\[\#F6F1E7\]{--tw-text-opacity:1;color:rgb(246 241 231/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.outline-none{outline:2px solid transparent;outline-offset:2px}.drop-shadow-md{--tw-drop-shadow:drop-shadow(0 4px 3px rgba(0,0,0,.07)) drop-shadow(0 2px 2px rgba(0,0,0,.06))}.drop-shadow-md,.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.placeholder\:text-\[\#A6987F\]::-moz-placeholder{--tw-text-opacity:1;color:rgb(166 152 127/var(--tw-text-opacity,1))}.placeholder\:text-\[\#A6987F\]::placeholder{--tw-text-opacity:1;color:rgb(166 152 127/var(--tw-text-opacity,1))}.hover\:bg-white\/60:hover{background-color:hsla(0,0%,100%,.6)}.hover\:underline:hover{text-decoration-line:underline}.disabled\:opacity-50:disabled{opacity:.5}.disabled\:opacity-60:disabled{opacity:.6}</style>
+*,:after,:before{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgba(59,130,246,.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/*! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com*/*,:after,:before{box-sizing:border-box;border:0 solid #e5e7eb}:after,:before{--tw-content:""}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;-o-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,Liberation Mono,Courier New,monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0}fieldset,legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::-moz-placeholder,textarea::-moz-placeholder{opacity:1;color:#9ca3af}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.inset-0{inset:0}.-right-1\.5{right:-.375rem}.-top-1\.5{top:-.375rem}.-top-3{top:-.75rem}.left-1\/2{left:50%}.right-1{right:.25rem}.top-1{top:.25rem}.top-1\/2{top:50%}.z-50{z-index:50}.z-\[60\]{z-index:60}.mx-auto{margin-left:auto;margin-right:auto}.my-3{margin-top:.75rem;margin-bottom:.75rem}.my-4{margin-top:1rem;margin-bottom:1rem}.-mt-0\.5{margin-top:-.125rem}.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:.75rem}.mb-4{margin-bottom:1rem}.mb-6{margin-bottom:1.5rem}.mt-0\.5{margin-top:.125rem}.mt-1{margin-top:.25rem}.mt-1\.5{margin-top:.375rem}.mt-2{margin-top:.5rem}.mt-3{margin-top:.75rem}.mt-4{margin-top:1rem}.mt-6{margin-top:1.5rem}.mt-8{margin-top:2rem}.line-clamp-1{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.aspect-square{aspect-ratio:1/1}.h-10{height:2.5rem}.h-20{height:5rem}.h-9{height:2.25rem}.h-\[80vh\]{height:80vh}.h-full{height:100%}.max-h-\[80vh\]{max-height:80vh}.max-h-\[85vh\]{max-height:85vh}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-11{width:2.75rem}.w-20{width:5rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-0{min-width:0}.min-w-\[18px\]{min-width:18px}.min-w-\[44px\]{min-width:44px}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.-translate-x-1\/2{--tw-translate-x:-50%}.-translate-x-1\/2,.-translate-y-1\/2{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}.-translate-y-1\/2{--tw-translate-y:-50%}.transform{transform:translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes spin{to{transform:rotate(1turn)}}.animate-spin{animation:spin 1s linear infinite}.resize-none{resize:none}.grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}.flex-col{flex-direction:column}.items-end{align-items:flex-end}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:.125rem}.gap-1{gap:.25rem}.gap-1\.5{gap:.375rem}.gap-2{gap:.5rem}.gap-3{gap:.75rem}.space-y-2>:not([hidden])~:not([hidden]){--tw-space-y-reverse:0;margin-top:calc(.5rem*(1 - var(--tw-space-y-reverse)));margin-bottom:calc(.5rem*var(--tw-space-y-reverse))}.divide-y>:not([hidden])~:not([hidden]){--tw-divide-y-reverse:0;border-top-width:calc(1px*(1 - var(--tw-divide-y-reverse)));border-bottom-width:calc(1px*var(--tw-divide-y-reverse))}.divide-\[\#D9CBB0\]>:not([hidden])~:not([hidden]){--tw-divide-opacity:1;border-color:rgb(217 203 176/var(--tw-divide-opacity,1))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.overflow-y-auto{overflow-y:auto}.truncate{overflow:hidden;text-overflow:ellipsis}.truncate,.whitespace-nowrap{white-space:nowrap}.whitespace-pre-line{white-space:pre-line}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:.5rem}.rounded-md{border-radius:.375rem}.rounded-xl{border-radius:.75rem}.rounded-t-2xl{border-top-left-radius:1rem;border-top-right-radius:1rem}.border{border-width:1px}.border-2{border-width:2px}.border-4{border-width:4px}.border-x{border-left-width:1px;border-right-width:1px}.border-t{border-top-width:1px}.border-dashed{border-style:dashed}.border-\[\#B8860B\]{--tw-border-opacity:1;border-color:rgb(184 134 11/var(--tw-border-opacity,1))}.border-\[\#D9CBB0\]{--tw-border-opacity:1;border-color:rgb(217 203 176/var(--tw-border-opacity,1))}.border-\[\#E3B79C\]{--tw-border-opacity:1;border-color:rgb(227 183 156/var(--tw-border-opacity,1))}.border-\[\#F6F1E7\]{--tw-border-opacity:1;border-color:rgb(246 241 231/var(--tw-border-opacity,1))}.bg-\[\#2B2620\]{--tw-bg-opacity:1;background-color:rgb(43 38 32/var(--tw-bg-opacity,1))}.bg-\[\#B8860B\]{--tw-bg-opacity:1;background-color:rgb(184 134 11/var(--tw-bg-opacity,1))}.bg-\[\#C4592F\]{--tw-bg-opacity:1;background-color:rgb(196 89 47/var(--tw-bg-opacity,1))}.bg-\[\#F5E4DA\]{--tw-bg-opacity:1;background-color:rgb(245 228 218/var(--tw-bg-opacity,1))}.bg-\[\#F6F1E7\]{--tw-bg-opacity:1;background-color:rgb(246 241 231/var(--tw-bg-opacity,1))}.bg-black\/20{background-color:rgba(0,0,0,.2)}.bg-black\/40{background-color:rgba(0,0,0,.4)}.bg-transparent{background-color:transparent}.bg-white\/40{background-color:hsla(0,0%,100%,.4)}.bg-white\/50{background-color:hsla(0,0%,100%,.5)}.bg-white\/60{background-color:hsla(0,0%,100%,.6)}.bg-white\/70{background-color:hsla(0,0%,100%,.7)}.bg-white\/80{background-color:hsla(0,0%,100%,.8)}.object-cover{-o-object-fit:cover;object-fit:cover}.p-1{padding:.25rem}.p-3{padding:.75rem}.p-5{padding:1.25rem}.px-1\.5{padding-left:.375rem;padding-right:.375rem}.px-2{padding-left:.5rem;padding-right:.5rem}.px-3{padding-left:.75rem;padding-right:.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-0\.5{padding-top:.125rem;padding-bottom:.125rem}.py-1{padding-top:.25rem;padding-bottom:.25rem}.py-1\.5{padding-top:.375rem;padding-bottom:.375rem}.py-10{padding-top:2.5rem;padding-bottom:2.5rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}.py-2\.5{padding-top:.625rem;padding-bottom:.625rem}.py-3{padding-top:.75rem;padding-bottom:.75rem}.py-6{padding-top:1.5rem;padding-bottom:1.5rem}.py-8{padding-top:2rem;padding-bottom:2rem}.pb-1{padding-bottom:.25rem}.pb-3{padding-bottom:.75rem}.pb-4{padding-bottom:1rem}.pt-2{padding-top:.5rem}.pt-3{padding-top:.75rem}.pt-5{padding-top:1.25rem}.text-left{text-align:left}.text-center{text-align:center}.align-middle{vertical-align:middle}.font-serif{font-family:ui-serif,Georgia,Cambria,Times New Roman,Times,serif}.text-2xl{font-size:1.5rem;line-height:2rem}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.italic{font-style:italic}.leading-relaxed{line-height:1.625}.tracking-\[0\.3em\]{letter-spacing:.3em}.tracking-wide{letter-spacing:.025em}.text-\[\#1B4B91\]{--tw-text-opacity:1;color:rgb(27 75 145/var(--tw-text-opacity,1))}.text-\[\#2B2620\]{--tw-text-opacity:1;color:rgb(43 38 32/var(--tw-text-opacity,1))}.text-\[\#2F6E68\]{--tw-text-opacity:1;color:rgb(47 110 104/var(--tw-text-opacity,1))}.text-\[\#6B5F4F\]{--tw-text-opacity:1;color:rgb(107 95 79/var(--tw-text-opacity,1))}.text-\[\#A6987F\]{--tw-text-opacity:1;color:rgb(166 152 127/var(--tw-text-opacity,1))}.text-\[\#A8441F\]{--tw-text-opacity:1;color:rgb(168 68 31/var(--tw-text-opacity,1))}.text-\[\#B8860B\]{--tw-text-opacity:1;color:rgb(184 134 11/var(--tw-text-opacity,1))}.text-\[\#C4592F\]{--tw-text-opacity:1;color:rgb(196 89 47/var(--tw-text-opacity,1))}.text-\[\#DC2626\]{--tw-text-opacity:1;color:rgb(220 38 38/var(--tw-text-opacity,1))}.text-\[\#F6F1E7\]{--tw-text-opacity:1;color:rgb(246 241 231/var(--tw-text-opacity,1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255/var(--tw-text-opacity,1))}.underline{text-decoration-line:underline}.outline-none{outline:2px solid transparent;outline-offset:2px}.drop-shadow-md{--tw-drop-shadow:drop-shadow(0 4px 3px rgba(0,0,0,.07)) drop-shadow(0 2px 2px rgba(0,0,0,.06))}.drop-shadow-md,.filter{filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.transition{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,-webkit-backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter;transition-property:color,background-color,border-color,text-decoration-color,fill,stroke,opacity,box-shadow,transform,filter,backdrop-filter,-webkit-backdrop-filter;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}.placeholder\:text-\[\#A6987F\]::-moz-placeholder{--tw-text-opacity:1;color:rgb(166 152 127/var(--tw-text-opacity,1))}.placeholder\:text-\[\#A6987F\]::placeholder{--tw-text-opacity:1;color:rgb(166 152 127/var(--tw-text-opacity,1))}.hover\:bg-white\/60:hover{background-color:hsla(0,0%,100%,.6)}.hover\:underline:hover{text-decoration-line:underline}.disabled\:opacity-50:disabled{opacity:.5}.disabled\:opacity-60:disabled{opacity:.6}
+</style>
 <style>
   html, body, #root { height: 100%; margin: 0; }
   body { font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif; }
@@ -19,6 +21,8 @@
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
 const { useState, useRef, useEffect, useMemo } = React;
+
+// lucide-react 대신, 외부 ESM 의존성 없이 동작하도록 최소 아이콘을 직접 SVG로 정의
 function Icon({ size = 20, className = "", children, ...rest }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -54,89 +58,266 @@ const Stamp = (p) => (<Icon {...p}><circle cx="12" cy="9" r="4" /><path d="M8 15
 const Camera = (p) => (<Icon {...p}><path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z" /><circle cx="12" cy="14" r="3.5" /></Icon>);
 const Coffee = (p) => (<Icon {...p}><path d="M17 8h1a3 3 0 0 1 0 6h-1" /><path d="M3 8h14v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" /><path d="M6 2v2M10 2v2M14 2v2" /></Icon>);
 
+// STAMP TOUR 전용 도장 아이콘 - 손잡이(위) + 몸통 + 찍힌 자국(아래 넓은 타원)을 함께 그린
+// 실물 고무 도장 옆모습 느낌의 커스텀 아이콘 (lucide의 기본 Stamp 아이콘 대신 사용)
+function StampIcon({ size = 20, className = "" }) {
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}
+    >
+      <rect x="7" y="2" width="10" height="8" rx="2" />
+      <path d="M9 10v3" />
+      <path d="M15 10v3" />
+      <ellipse cx="12" cy="17" rx="7" ry="4" />
+    </svg>
+  );
+}
+
 // ==========================================
-// 1. 실제 전국 지역 데이터베이스 (134곳)
+// 1. 실제 전국 지역 데이터베이스 (229곳 - 대한민국 226개 기초지방자치단체 + 제주시/서귀포시 + 세종시)
 // [이름, 권역, 위도, 경도] - 좌표는 대표 근사치
 // ==========================================
 const RAW_LOCATIONS = [
-  ["서울 종로구", "서울", 37.5735, 126.9788], ["서울 중구", "서울", 37.5636, 126.9976],
-  ["서울 용산구", "서울", 37.5326, 126.9909], ["서울 성동구", "서울", 37.5633, 127.0371],
-  ["서울 마포구", "서울", 37.5663, 126.9019], ["서울 강남구", "서울", 37.5172, 127.0473],
-  ["서울 서초구", "서울", 37.4837, 127.0324], ["서울 송파구", "서울", 37.5145, 127.1059],
-  ["서울 영등포구", "서울", 37.5264, 126.8963], ["서울 강서구", "서울", 37.5509, 126.8495],
-  ["서울 관악구", "서울", 37.4784, 126.9516], ["서울 노원구", "서울", 37.6542, 127.0568],
-  ["수원시", "경기", 37.2636, 127.0286], ["성남시", "경기", 37.4201, 127.1265],
-  ["고양시", "경기", 37.6584, 126.8320], ["용인시", "경기", 37.2411, 127.1776],
-  ["부천시", "경기", 37.5035, 126.7660], ["안산시", "경기", 37.3219, 126.8309],
-  ["안양시", "경기", 37.3943, 126.9568], ["남양주시", "경기", 37.6360, 127.2165],
-  ["화성시", "경기", 37.1996, 126.8312], ["평택시", "경기", 36.9921, 127.1129],
-  ["의정부시", "경기", 37.7381, 127.0338], ["파주시", "경기", 37.7599, 126.7800],
-  ["김포시", "경기", 37.6152, 126.7159], ["광명시", "경기", 37.4786, 126.8646],
-  ["이천시", "경기", 37.2721, 127.4348], ["하남시", "경기", 37.5392, 127.2148],
-  ["여주시", "경기", 37.2984, 127.6373], ["가평군", "경기", 37.8314, 127.5095],
+  ["서울 종로구", "서울", 37.5735, 126.9788],
+  ["서울 중구", "서울", 37.5636, 126.9976],
+  ["서울 용산구", "서울", 37.5326, 126.9909],
+  ["서울 성동구", "서울", 37.5633, 127.0371],
+  ["서울 광진구", "서울", 37.5385, 127.0823],
+  ["서울 동대문구", "서울", 37.5744, 127.0396],
+  ["서울 중랑구", "서울", 37.6063, 127.0925],
+  ["서울 성북구", "서울", 37.5894, 127.0167],
+  ["서울 강북구", "서울", 37.6396, 127.0257],
+  ["서울 도봉구", "서울", 37.6688, 127.0471],
+  ["서울 노원구", "서울", 37.6542, 127.0568],
+  ["서울 은평구", "서울", 37.6027, 126.9291],
+  ["서울 서대문구", "서울", 37.5791, 126.9368],
+  ["서울 마포구", "서울", 37.5663, 126.9019],
+  ["서울 양천구", "서울", 37.5169, 126.8664],
+  ["서울 강서구", "서울", 37.5509, 126.8495],
+  ["서울 구로구", "서울", 37.4954, 126.8874],
+  ["서울 금천구", "서울", 37.4519, 126.902],
+  ["서울 영등포구", "서울", 37.5264, 126.8963],
+  ["서울 동작구", "서울", 37.5124, 126.9393],
+  ["서울 관악구", "서울", 37.4784, 126.9516],
+  ["서울 서초구", "서울", 37.4837, 127.0324],
+  ["서울 강남구", "서울", 37.5172, 127.0473],
+  ["서울 송파구", "서울", 37.5145, 127.1059],
+  ["서울 강동구", "서울", 37.5301, 127.1238],
+  ["수원시", "경기", 37.2636, 127.0286],
+  ["성남시", "경기", 37.4201, 127.1265],
+  ["의정부시", "경기", 37.7381, 127.0338],
+  ["안양시", "경기", 37.3943, 126.9568],
+  ["부천시", "경기", 37.5035, 126.766],
+  ["광명시", "경기", 37.4786, 126.8646],
+  ["평택시", "경기", 36.9921, 127.1129],
+  ["동두천시", "경기", 37.9036, 127.0606],
+  ["안산시", "경기", 37.3219, 126.8309],
+  ["고양시", "경기", 37.6584, 126.832],
+  ["과천시", "경기", 37.4292, 126.9877],
+  ["구리시", "경기", 37.5943, 127.1296],
+  ["남양주시", "경기", 37.636, 127.2165],
+  ["오산시", "경기", 37.1499, 127.0772],
+  ["시흥시", "경기", 37.38, 126.803],
+  ["군포시", "경기", 37.3617, 126.9352],
+  ["의왕시", "경기", 37.3446, 126.9683],
+  ["하남시", "경기", 37.5392, 127.2148],
+  ["용인시", "경기", 37.2411, 127.1776],
+  ["파주시", "경기", 37.7599, 126.78],
+  ["이천시", "경기", 37.2721, 127.4348],
+  ["안성시", "경기", 37.0079, 127.2797],
+  ["김포시", "경기", 37.6152, 126.7159],
+  ["화성시", "경기", 37.1996, 126.8312],
+  ["광주시", "경기", 37.4295, 127.2551],
+  ["양주시", "경기", 37.7853, 127.0458],
+  ["포천시", "경기", 37.8949, 127.2003],
+  ["여주시", "경기", 37.2984, 127.6373],
+  ["연천군", "경기", 38.0966, 127.0748],
+  ["가평군", "경기", 37.8314, 127.5095],
   ["양평군", "경기", 37.4917, 127.4874],
-  ["인천 중구", "인천", 37.4738, 126.6215], ["인천 연수구", "인천", 37.4102, 126.6784],
-  ["인천 남동구", "인천", 37.4468, 126.7314], ["인천 부평구", "인천", 37.5074, 126.7217],
-  ["강화군", "인천", 37.7466, 126.4880], ["옹진군", "인천", 37.4467, 126.6367],
-  ["춘천시", "강원", 37.8813, 127.7298], ["원주시", "강원", 37.3422, 127.9202],
-  ["강릉시", "강원", 37.7519, 128.8761], ["동해시", "강원", 37.5247, 129.1143],
-  ["속초시", "강원", 38.2070, 128.5918], ["삼척시", "강원", 37.4500, 129.1655],
-  ["태백시", "강원", 37.1641, 128.9856], ["홍천군", "강원", 37.6971, 127.8887],
-  ["횡성군", "강원", 37.4915, 127.9848], ["영월군", "강원", 37.1836, 128.4616],
-  ["평창군", "강원", 37.3706, 128.3899], ["정선군", "강원", 37.3806, 128.6608],
-  ["철원군", "강원", 38.1465, 127.3132], ["인제군", "강원", 38.0698, 128.1704],
-  ["양양군", "강원", 38.0754, 128.6191], ["고성군(강원)", "강원", 38.3806, 128.4680],
-  ["청주시", "충청", 36.6424, 127.4890], ["충주시", "충청", 36.9910, 127.9259],
-  ["제천시", "충청", 37.1326, 128.1908], ["천안시", "충청", 36.8151, 127.1139],
-  ["공주시", "충청", 36.4465, 127.1189], ["보령시", "충청", 36.3334, 126.6128],
-  ["아산시", "충청", 36.7898, 127.0018], ["서산시", "충청", 36.7846, 126.4503],
-  ["논산시", "충청", 36.1872, 127.0989], ["당진시", "충청", 36.8929, 126.6283],
-  ["단양군", "충청", 36.9846, 128.3655], ["보은군", "충청", 36.4894, 127.7295],
-  ["영동군", "충청", 36.1750, 127.7764], ["금산군", "충청", 36.1088, 127.4880],
-  ["부여군", "충청", 36.2757, 126.9099], ["서천군", "충청", 36.0803, 126.6919],
-  ["청양군", "충청", 36.4592, 126.8022], ["홍성군", "충청", 36.6013, 126.6608],
-  ["예산군", "충청", 36.6820, 126.8443], ["태안군", "충청", 36.7455, 126.2977],
-  ["포항시", "영남", 36.0190, 129.3435], ["경주시", "영남", 35.8562, 129.2247],
-  ["김천시", "영남", 36.1398, 128.1135], ["안동시", "영남", 36.5684, 128.7294],
-  ["구미시", "영남", 36.1195, 128.3446], ["영주시", "영남", 36.8055, 128.6239],
-  ["상주시", "영남", 36.4108, 128.1591], ["문경시", "영남", 36.5866, 128.1867],
-  ["경산시", "영남", 35.8251, 128.7411], ["창원시", "영남", 35.2280, 128.6812],
-  ["진주시", "영남", 35.1800, 128.1076], ["통영시", "영남", 34.8544, 128.4331],
-  ["사천시", "영남", 35.0034, 128.0642], ["김해시", "영남", 35.2285, 128.8894],
-  ["밀양시", "영남", 35.5039, 128.7469], ["거제시", "영남", 34.8804, 128.6210],
-  ["양산시", "영남", 35.3350, 129.0378], ["부산 해운대구", "영남", 35.1631, 129.1636],
-  ["부산 수영구", "영남", 35.1454, 129.1132], ["부산 사하구", "영남", 35.1041, 128.9744],
-  ["대구 수성구", "영남", 35.8582, 128.6304], ["대구 중구", "영남", 35.8693, 128.6064],
-  ["울산 남구", "영남", 35.5437, 129.3300], ["울산 동구", "영남", 35.5049, 129.4167],
-  ["전주시", "호남", 35.8242, 127.1480], ["군산시", "호남", 35.9676, 126.7369],
-  ["익산시", "호남", 35.9483, 126.9576], ["정읍시", "호남", 35.5699, 126.8560],
-  ["남원시", "호남", 35.4164, 127.3904], ["김제시", "호남", 35.8034, 126.8809],
-  ["완주군", "호남", 35.9048, 127.1621], ["진안군", "호남", 35.7917, 127.4247],
-  ["무주군", "호남", 36.0068, 127.6608], ["임실군", "호남", 35.6178, 127.2894],
-  ["순창군", "호남", 35.3745, 127.1379], ["고창군", "호남", 35.4353, 126.7017],
-  ["부안군", "호남", 35.7318, 126.7333], ["목포시", "호남", 34.8118, 126.3922],
-  ["여수시", "호남", 34.7604, 127.6622], ["순천시", "호남", 34.9506, 127.4872],
-  ["나주시", "호남", 35.0158, 126.7108], ["광양시", "호남", 34.9406, 127.6958],
-  ["담양군", "호남", 35.3211, 126.9882], ["곡성군", "호남", 35.2822, 127.2921],
-  ["구례군", "호남", 35.2024, 127.4629], ["고흥군", "호남", 34.6112, 127.2851],
-  ["보성군", "호남", 34.7715, 127.0801], ["화순군", "호남", 35.0645, 126.9864],
-  ["장흥군", "호남", 34.6816, 126.9070], ["강진군", "호남", 34.6421, 126.7674],
-  ["해남군", "호남", 34.5734, 126.5992], ["영암군", "호남", 34.8003, 126.6968],
-  ["무안군", "호남", 34.9903, 126.4816], ["함평군", "호남", 35.0658, 126.5165],
-  ["영광군", "호남", 35.2772, 126.5121], ["장성군", "호남", 35.3018, 126.7847],
-  ["완도군", "호남", 34.3111, 126.7551], ["진도군", "호남", 34.4869, 126.2633],
-  ["신안군", "호남", 34.8320, 126.1073], ["광주 동구", "호남", 35.1461, 126.9231],
+  ["인천 중구", "인천·제주", 37.4738, 126.6215],
+  ["인천 동구", "인천·제주", 37.4738, 126.6431],
+  ["인천 미추홀구", "인천·제주", 37.4634, 126.6503],
+  ["인천 연수구", "인천·제주", 37.4102, 126.6784],
+  ["인천 남동구", "인천·제주", 37.4468, 126.7314],
+  ["인천 부평구", "인천·제주", 37.5074, 126.7217],
+  ["인천 계양구", "인천·제주", 37.5378, 126.7378],
+  ["인천 서구", "인천·제주", 37.5453, 126.6759],
+  ["강화군", "인천·제주", 37.7466, 126.488],
+  ["옹진군", "인천·제주", 37.4467, 126.6367],
+  ["제주시", "인천·제주", 33.4996, 126.5312],
+  ["서귀포시", "인천·제주", 33.2541, 126.56],
+  ["춘천시", "강원", 37.8813, 127.7298],
+  ["원주시", "강원", 37.3422, 127.9202],
+  ["강릉시", "강원", 37.7519, 128.8761],
+  ["동해시", "강원", 37.5247, 129.1143],
+  ["태백시", "강원", 37.1641, 128.9856],
+  ["속초시", "강원", 38.207, 128.5918],
+  ["삼척시", "강원", 37.45, 129.1655],
+  ["홍천군", "강원", 37.6971, 127.8887],
+  ["횡성군", "강원", 37.4915, 127.9848],
+  ["영월군", "강원", 37.1836, 128.4616],
+  ["평창군", "강원", 37.3706, 128.3899],
+  ["정선군", "강원", 37.3806, 128.6608],
+  ["철원군", "강원", 38.1465, 127.3132],
+  ["화천군", "강원", 38.1064, 127.7083],
+  ["양구군", "강원", 38.1094, 127.9898],
+  ["인제군", "강원", 38.0698, 128.1704],
+  ["고성군-강원", "강원", 38.3806, 128.468],
+  ["양양군", "강원", 38.0754, 128.6191],
+  ["청주시", "충청", 36.6424, 127.489],
+  ["충주시", "충청", 36.991, 127.9259],
+  ["제천시", "충청", 37.1326, 128.1908],
+  ["보은군", "충청", 36.4894, 127.7295],
+  ["옥천군", "충청", 36.3061, 127.5713],
+  ["영동군", "충청", 36.175, 127.7764],
+  ["증평군", "충청", 36.7852, 127.5811],
+  ["진천군", "충청", 36.8557, 127.4355],
+  ["괴산군", "충청", 36.8153, 127.7876],
+  ["음성군", "충청", 36.9401, 127.69],
+  ["단양군", "충청", 36.9846, 128.3655],
+  ["천안시", "충청", 36.8151, 127.1139],
+  ["공주시", "충청", 36.4465, 127.1189],
+  ["보령시", "충청", 36.3334, 126.6128],
+  ["아산시", "충청", 36.7898, 127.0018],
+  ["서산시", "충청", 36.7846, 126.4503],
+  ["논산시", "충청", 36.1872, 127.0989],
+  ["계룡시", "충청", 36.2745, 127.2487],
+  ["당진시", "충청", 36.8929, 126.6283],
+  ["금산군", "충청", 36.1088, 127.488],
+  ["부여군", "충청", 36.2757, 126.9099],
+  ["서천군", "충청", 36.0803, 126.6919],
+  ["청양군", "충청", 36.4592, 126.8022],
+  ["홍성군", "충청", 36.6013, 126.6608],
+  ["예산군", "충청", 36.682, 126.8443],
+  ["태안군", "충청", 36.7455, 126.2977],
+  ["대전 동구", "충청", 36.3115, 127.4547],
+  ["대전 중구", "충청", 36.3253, 127.4214],
+  ["대전 서구", "충청", 36.3554, 127.3839],
+  ["대전 유성구", "충청", 36.3623, 127.3562],
+  ["대전 대덕구", "충청", 36.3465, 127.4149],
+  ["세종시", "충청", 36.4801, 127.289],
+  ["포항시", "영남", 36.019, 129.3435],
+  ["경주시", "영남", 35.8562, 129.2247],
+  ["김천시", "영남", 36.1398, 128.1135],
+  ["안동시", "영남", 36.5684, 128.7294],
+  ["구미시", "영남", 36.1195, 128.3446],
+  ["영주시", "영남", 36.8055, 128.6239],
+  ["영천시", "영남", 35.9733, 128.9386],
+  ["상주시", "영남", 36.4108, 128.1591],
+  ["문경시", "영남", 36.5866, 128.1867],
+  ["경산시", "영남", 35.8251, 128.7411],
+  ["의성군", "영남", 36.3526, 128.6973],
+  ["청송군", "영남", 36.436, 129.0572],
+  ["영양군", "영남", 36.6666, 129.1125],
+  ["영덕군", "영남", 36.4151, 129.3659],
+  ["청도군", "영남", 35.6473, 128.734],
+  ["고령군", "영남", 35.7266, 128.2629],
+  ["성주군", "영남", 35.9192, 128.2828],
+  ["칠곡군", "영남", 35.9955, 128.4016],
+  ["예천군", "영남", 36.6577, 128.4527],
+  ["봉화군", "영남", 36.8931, 128.7326],
+  ["울진군", "영남", 36.993, 129.4006],
+  ["울릉군", "영남", 37.4844, 130.9057],
+  ["대구 중구", "영남", 35.8693, 128.6064],
+  ["대구 동구", "영남", 35.8865, 128.6357],
+  ["대구 서구", "영남", 35.8716, 128.5593],
+  ["대구 남구", "영남", 35.8461, 128.5975],
+  ["대구 북구", "영남", 35.8858, 128.5828],
+  ["대구 수성구", "영남", 35.8582, 128.6304],
+  ["대구 달서구", "영남", 35.8298, 128.5326],
+  ["달성군", "영남", 35.7746, 128.4312],
+  ["군위군", "영남", 36.2426, 128.5729],
+  ["부산 중구", "영남", 35.1063, 129.0324],
+  ["부산 서구", "영남", 35.0979, 129.0243],
+  ["부산 동구", "영남", 35.1293, 129.0454],
+  ["부산 영도구", "영남", 35.0912, 129.0679],
+  ["부산 부산진구", "영남", 35.1627, 129.0533],
+  ["부산 동래구", "영남", 35.2049, 129.0839],
+  ["부산 남구", "영남", 35.1367, 129.0842],
+  ["부산 북구", "영남", 35.1973, 128.9903],
+  ["부산 해운대구", "영남", 35.1631, 129.1636],
+  ["부산 사하구", "영남", 35.1041, 128.9744],
+  ["부산 금정구", "영남", 35.2427, 129.0921],
+  ["부산 강서구", "영남", 35.2122, 128.9805],
+  ["부산 연제구", "영남", 35.1762, 129.0794],
+  ["부산 수영구", "영남", 35.1454, 129.1132],
+  ["부산 사상구", "영남", 35.1524, 128.991],
+  ["기장군", "영남", 35.2443, 129.2222],
+  ["울산 중구", "영남", 35.5691, 129.3324],
+  ["울산 남구", "영남", 35.5437, 129.33],
+  ["울산 동구", "영남", 35.5049, 129.4167],
+  ["울산 북구", "영남", 35.5822, 129.3611],
+  ["울주군", "영남", 35.522, 129.2422],
+  ["창원시", "영남", 35.228, 128.6812],
+  ["진주시", "영남", 35.18, 128.1076],
+  ["통영시", "영남", 34.8544, 128.4331],
+  ["사천시", "영남", 35.0034, 128.0642],
+  ["김해시", "영남", 35.2285, 128.8894],
+  ["밀양시", "영남", 35.5039, 128.7469],
+  ["거제시", "영남", 34.8804, 128.621],
+  ["양산시", "영남", 35.335, 129.0378],
+  ["의령군", "영남", 35.3222, 128.2622],
+  ["함안군", "영남", 35.2726, 128.4064],
+  ["창녕군", "영남", 35.5443, 128.4924],
+  ["고성군-경남", "영남", 34.9732, 128.3223],
+  ["남해군", "영남", 34.8377, 127.8924],
+  ["하동군", "영남", 35.067, 127.7514],
+  ["산청군", "영남", 35.4154, 127.8735],
+  ["함양군", "영남", 35.5203, 127.7252],
+  ["거창군", "영남", 35.6867, 127.9098],
+  ["합천군", "영남", 35.5667, 128.1657],
+  ["전주시", "호남", 35.8242, 127.148],
+  ["군산시", "호남", 35.9676, 126.7369],
+  ["익산시", "호남", 35.9483, 126.9576],
+  ["정읍시", "호남", 35.5699, 126.856],
+  ["남원시", "호남", 35.4164, 127.3904],
+  ["김제시", "호남", 35.8034, 126.8809],
+  ["완주군", "호남", 35.9048, 127.1621],
+  ["진안군", "호남", 35.7917, 127.4247],
+  ["무주군", "호남", 36.0068, 127.6608],
+  ["장수군", "호남", 35.6474, 127.5212],
+  ["임실군", "호남", 35.6178, 127.2894],
+  ["순창군", "호남", 35.3745, 127.1379],
+  ["고창군", "호남", 35.4353, 126.7017],
+  ["부안군", "호남", 35.7318, 126.7333],
+  ["목포시", "호남", 34.8118, 126.3922],
+  ["여수시", "호남", 34.7604, 127.6622],
+  ["순천시", "호남", 34.9506, 127.4872],
+  ["나주시", "호남", 35.0158, 126.7108],
+  ["광양시", "호남", 34.9406, 127.6958],
+  ["담양군", "호남", 35.3211, 126.9882],
+  ["곡성군", "호남", 35.2822, 127.2921],
+  ["구례군", "호남", 35.2024, 127.4629],
+  ["고흥군", "호남", 34.6112, 127.2851],
+  ["보성군", "호남", 34.7715, 127.0801],
+  ["화순군", "호남", 35.0645, 126.9864],
+  ["장흥군", "호남", 34.6816, 126.907],
+  ["강진군", "호남", 34.6421, 126.7674],
+  ["해남군", "호남", 34.5734, 126.5992],
+  ["영암군", "호남", 34.8003, 126.6968],
+  ["무안군", "호남", 34.9903, 126.4816],
+  ["함평군", "호남", 35.0658, 126.5165],
+  ["영광군", "호남", 35.2772, 126.5121],
+  ["장성군", "호남", 35.3018, 126.7847],
+  ["완도군", "호남", 34.3111, 126.7551],
+  ["진도군", "호남", 34.4869, 126.2633],
+  ["신안군", "호남", 34.832, 126.1073],
+  ["광주 동구", "호남", 35.1461, 126.9231],
   ["광주 서구", "호남", 35.1517, 126.8908],
+  ["광주 남구", "호남", 35.1328, 126.9022],
+  ["광주 북구", "호남", 35.1743, 126.912],
+  ["광주 광산구", "호남", 35.1397, 126.7936],
 ];
 
 const LOCATIONS = RAW_LOCATIONS.map(([name, region, lat, lng]) => ({ name, region, lat, lng }));
-const REGION_LIST = ["전체", "서울", "경기", "인천", "강원", "충청", "영남", "호남"];
+const REGION_LIST = ["전체", "서울", "경기", "인천·제주", "강원", "충청", "영남", "호남"];
 // 지역 배너(필터 칩)마다 구분되는 고유 색상
 const REGION_COLORS = {
   "전체": "#2B2620",
   "서울": "#2B4C7E", // 도심 - 네이비
   "경기": "#3D7A5C", // 평야/신도시 - 그린
-  "인천": "#1D8A99", // 항구 - 청록
+  "인천·제주": "#1D8A99", // 항구·섬 - 청록
   "강원": "#2F6E45", // 산악 - 짙은 그린
   "충청": "#C08A2E", // 고도/역사 - 골드브라운
   "영남": "#C15B2A", // 해안/산업 - 테라코타
@@ -428,7 +609,7 @@ function todayGanji() {
   const idx = dayGanjiIndex(now.getFullYear(), now.getMonth() + 1, now.getDate());
   const stemIdx = mod(idx, 10);
   const branchIdx = mod(idx, 12);
-  return { stemIdx, branchIdx, element: STEM_ELEMENT[stemIdx], label: ganjiLabel(stemIdx, branchIdx) };
+  return { idx, stemIdx, branchIdx, element: STEM_ELEMENT[stemIdx], label: ganjiLabel(stemIdx, branchIdx) };
 }
 
 // 오행별 방향/색상/아이템 - 전통 오행 배속을 그대로 따름(재미 코너용 표현만 가볍게)
@@ -440,10 +621,46 @@ const ELEMENT_THEME = {
   수: { direction: "북쪽", colors: "검정·파랑 계열", item: "물가 풍경, 잔잔한 음악" },
 };
 
+// 오행마다 성격 키워드를 붙여서, 같은 패턴이라도 오늘의 오행에 따라 문구가 달라지게 한다.
+const ELEMENT_KEYWORD = { 목: "성장과 시작", 화: "열정과 활력", 토: "안정과 신뢰", 금: "결단과 정리", 수: "지혜와 휴식" };
+
 // 오행 상생(서로 밀어주는 관계): 목생화, 화생토, 토생금, 금생수, 수생목
 const GENERATES = { 목: "화", 화: "토", 토: "금", 금: "수", 수: "목" };
 
-// 재미로 보는 오늘의 여행운 - 명식의 오행 분포와 오늘 일진의 오행을 비교해 4가지 패턴 중 하나를 고른다.
+// 패턴별 헤드라인 템플릿 - {키워드} 자리에 오늘 오행의 성격 키워드가 들어간다
+const HEADLINE_TEMPLATES = {
+  fill: (k) => `그동안 명식에서 다소 비어있던 ${k}의 기운이 오늘 채워지는 날입니다. 미뤄뒀던 결정을 내리기에 좋은 타이밍이에요.`,
+  overflow: (k) => `안 그래도 강했던 ${k}의 기운이 오늘 한층 더 세집니다. 무리한 일정보다 한 박자 늦추는 편이 여행을 더 오래 즐기는 비결이에요.`,
+  boost: (k) => `원래 가진 기운이 오늘의 ${k} 기운을 밀어주는 날입니다. 사람들과 어울리는 여행, 우연한 대화 속에서 뜻밖의 즐거움을 만날 수 있어요.`,
+  calm: (k) => `잠시 템포를 늦추고 ${k}을 되짚어봐야 하는 시기입니다. 흐르는 대로 몸을 맡기는 여정이 가장 큰 길운을 불러옵니다.`,
+};
+
+// 패턴별 한 줄 문구 - 여러 버전을 두고 그날의 일진 인덱스로 돌아가며 고른다 (같은 패턴이 반복돼도 문구는 달라짐)
+const ONE_LINER_POOL = {
+  fill: [
+    "오늘은 망설이지 말고, 정한 곳으로 곧장 떠나보세요.",
+    "미뤄둔 그곳, 오늘이 바로 적기예요.",
+    "채워진 기운을 따라 발걸음을 내딛어보세요.",
+  ],
+  overflow: [
+    "오늘은 속도를 늦추는 것이 곧 행운입니다.",
+    "한 곳만 제대로 즐겨도 충분한 하루예요.",
+    "서두르지 않아야 더 오래 남는 여행이 됩니다.",
+  ],
+  boost: [
+    "오늘의 즐거움은 혼자가 아니라 함께에서 옵니다.",
+    "낯선 인사 한마디가 특별한 하루를 만들어요.",
+    "동행이 있는 여행이 유독 잘 풀리는 날입니다.",
+  ],
+  calm: [
+    "목적지보다 중요한 건, 그 순간 나를 비워내는 것입니다.",
+    "계획 없는 하루가 가장 오래 기억에 남을 거예요.",
+    "천천히 걷는 것만으로 충분한 하루예요.",
+  ],
+};
+
+// 재미로 보는 오늘의 여행운 - 명식의 오행 분포와 오늘 일진의 오행을 비교해 4가지 패턴 중 하나를 고르고,
+// 오행 키워드와 한 줄 문구 로테이션으로 매번 조금씩 다르게 표현한다.
 // 전통 명리학 전문 풀이가 아니라, 방향/색상 같은 오행 배속을 가지고 가볍게 구성한 엔터테인먼트 콘텐츠.
 function getTravelFortune(saju) {
   const today = todayGanji();
@@ -454,28 +671,22 @@ function getTravelFortune(saju) {
   const lacking = ELEMENTS.filter((e) => counts[e] === minCount);
   const todayEl = today.element;
   const theme = ELEMENT_THEME[todayEl];
+  const keyword = ELEMENT_KEYWORD[todayEl];
 
-  let mood, headline;
+  let mood;
   if (lacking.includes(todayEl) && minCount < maxCount) {
     mood = "fill";
-    headline = "그동안 명식에서 다소 비어있던 기운이 오늘 채워지는 날입니다. 미뤄뒀던 결정을 내리기에 좋은 타이밍이에요.";
   } else if (dominant.includes(todayEl) && maxCount > minCount) {
     mood = "overflow";
-    headline = "안 그래도 강한 기운이 오늘 한층 더 세집니다. 무리한 일정보다 한 박자 늦추는 편이 여행을 더 오래 즐기는 비결이에요.";
   } else if (dominant.some((e) => GENERATES[e] === todayEl)) {
     mood = "boost";
-    headline = "원래 가진 기운이 오늘의 기운을 밀어주는 날입니다. 사람들과 어울리는 여행, 우연한 대화 속에서 뜻밖의 즐거움을 만날 수 있어요.";
   } else {
     mood = "calm";
-    headline = "잠시 템포를 늦추고 주변을 정돈해야 하는 시기입니다. 흐르는 대로 몸을 맡기는 여정이 가장 큰 길운을 불러옵니다.";
   }
 
-  const oneLiners = {
-    fill: "오늘은 망설이지 말고, 정한 곳으로 곧장 떠나보세요.",
-    overflow: "오늘은 속도를 늦추는 것이 곧 행운입니다.",
-    boost: "오늘의 즐거움은 혼자가 아니라 함께에서 옵니다.",
-    calm: "목적지보다 중요한 건, 그 순간 나를 비워내는 것입니다.",
-  };
+  const headline = HEADLINE_TEMPLATES[mood](keyword);
+  const pool = ONE_LINER_POOL[mood];
+  const oneLiner = pool[mod(today.idx, pool.length)];
 
   return {
     todayLabel: today.label,
@@ -485,7 +696,7 @@ function getTravelFortune(saju) {
     direction: theme.direction,
     colors: theme.colors,
     item: theme.item,
-    oneLiner: oneLiners[mood],
+    oneLiner,
   };
 }
 
@@ -493,31 +704,227 @@ function getTravelFortune(saju) {
 // 1-2. 하루 일정표 (10:00 도착 ~ 16:00 마무리) + 추천 음악
 // 음악은 지역과 실시간으로 연결된 공식 API가 없어, 잘 알려진 곡 목록에서 매번 무작위로 하나씩 추천합니다.
 // ==========================================
+// 가요 100곡 - 감성/활기 테마별로 나눠서, 뽑힌 지역의 분위기(mood)에 맞는 곡만 추천한다
 const GAYO_SONGS = [
-  { title: "밤편지", artist: "아이유" },
-  { title: "모든 날, 모든 순간", artist: "폴킴" },
-  { title: "여행", artist: "볼빨간사춘기" },
-  { title: "청춘", artist: "버스커 버스커" },
-  { title: "주저하는 연인들을 위해", artist: "잔나비" },
-  { title: "봄날", artist: "방탄소년단" },
-  { title: "좋은 날", artist: "아이유" },
-  { title: "그대라는 사치", artist: "옥상달빛" },
+  // 감성 (50)
+  { title: "밤편지", artist: "아이유", mood: "emotional" },
+  { title: "좋은 날", artist: "아이유", mood: "emotional" },
+  { title: "봄 안녕 봄", artist: "아이유", mood: "emotional" },
+  { title: "에잇", artist: "아이유 & SUGA", mood: "emotional" },
+  { title: "라일락", artist: "아이유", mood: "emotional" },
+  { title: "무릎", artist: "아이유", mood: "emotional" },
+  { title: "모든 날, 모든 순간", artist: "폴킴", mood: "emotional" },
+  { title: "커피 한잔 할래요", artist: "폴킴", mood: "emotional" },
+  { title: "그럴텐데", artist: "폴킴", mood: "emotional" },
+  { title: "여행", artist: "볼빨간사춘기", mood: "emotional" },
+  { title: "벚꽃엔딩", artist: "버스커 버스커", mood: "emotional" },
+  { title: "청춘", artist: "버스커 버스커", mood: "emotional" },
+  { title: "주저하는 연인들을 위해", artist: "잔나비", mood: "emotional" },
+  { title: "뜨거운 여름밤은 가고 남은 건 볼품없지만", artist: "잔나비", mood: "emotional" },
+  { title: "수고했어 오늘도", artist: "옥상달빛", mood: "emotional" },
+  { title: "그대라는 사치", artist: "옥상달빛", mood: "emotional" },
+  { title: "널 그리는 것만으로", artist: "헤이즈", mood: "emotional" },
+  { title: "비도 오고 그래서", artist: "헤이즈 (Feat. 신용재)", mood: "emotional" },
+  { title: "야생화", artist: "박효신", mood: "emotional" },
+  { title: "눈의 꽃", artist: "박효신", mood: "emotional" },
+  { title: "두 사람", artist: "성시경", mood: "emotional" },
+  { title: "거리에서", artist: "성시경", mood: "emotional" },
+  { title: "눈사람", artist: "정승환", mood: "emotional" },
+  { title: "서른 즈음에", artist: "김광석", mood: "emotional" },
+  { title: "그녀의 웃음소리뿐", artist: "이문세", mood: "emotional" },
+  { title: "바람이 분다", artist: "이소라", mood: "emotional" },
+  { title: "좋은 사람", artist: "조규찬", mood: "emotional" },
+  { title: "안녕이라고 말하지마", artist: "다비치", mood: "emotional" },
+  { title: "이 사랑", artist: "다비치", mood: "emotional" },
+  { title: "바람기억", artist: "나얼", mood: "emotional" },
+  { title: "안녕", artist: "정준일", mood: "emotional" },
+  { title: "널 사랑하지 않아", artist: "어반자카파", mood: "emotional" },
+  { title: "그거면 됐어", artist: "어반자카파", mood: "emotional" },
+  { title: "EVERYTHING", artist: "검정치마", mood: "emotional" },
+  { title: "기억을 걷는 시간", artist: "넬", mood: "emotional" },
+  { title: "그리고, 남은 것들", artist: "넬", mood: "emotional" },
+  { title: "편지 안 할래", artist: "정엽", mood: "emotional" },
+  { title: "봄봄봄", artist: "로이킴", mood: "emotional" },
+  { title: "이제 우린", artist: "로이킴", mood: "emotional" },
+  { title: "우주를 건너", artist: "백예린", mood: "emotional" },
+  { title: "Square", artist: "백예린", mood: "emotional" },
+  { title: "어떻게 지내", artist: "크러쉬 (Feat. 조이)", mood: "emotional" },
+  { title: "21", artist: "딘(DEAN)", mood: "emotional" },
+  { title: "비상", artist: "임재범", mood: "emotional" },
+  { title: "사계", artist: "태연", mood: "emotional" },
+  { title: "그대라는 시", artist: "태연", mood: "emotional" },
+  { title: "아마 난", artist: "조정석", mood: "emotional" },
+  { title: "취기를 빌려", artist: "이수현 (Feat. 유회승)", mood: "emotional" },
+  { title: "고백", artist: "윤종신", mood: "emotional" },
+  { title: "좋니", artist: "윤종신", mood: "emotional" },
+  // 활기 (50)
+  { title: "Dynamite", artist: "방탄소년단", mood: "energetic" },
+  { title: "불타오르네 (FIRE)", artist: "방탄소년단", mood: "energetic" },
+  { title: "Permission to Dance", artist: "방탄소년단", mood: "energetic" },
+  { title: "봄날", artist: "방탄소년단", mood: "energetic" },
+  { title: "뚜두뚜두 (DDU-DU DDU-DU)", artist: "블랙핑크", mood: "energetic" },
+  { title: "Pink Venom", artist: "블랙핑크", mood: "energetic" },
+  { title: "Cheer Up", artist: "트와이스", mood: "energetic" },
+  { title: "TT", artist: "트와이스", mood: "energetic" },
+  { title: "LOVE DIVE", artist: "아이브", mood: "energetic" },
+  { title: "Attention", artist: "뉴진스", mood: "energetic" },
+  { title: "Super Shy", artist: "뉴진스", mood: "energetic" },
+  { title: "Next Level", artist: "에스파", mood: "energetic" },
+  { title: "WANNABE", artist: "있지(ITZY)", mood: "energetic" },
+  { title: "TOMBOY", artist: "(여자)아이들", mood: "energetic" },
+  { title: "강남스타일", artist: "싸이", mood: "energetic" },
+  { title: "챔피언", artist: "싸이", mood: "energetic" },
+  { title: "DOC와 함께 춤을", artist: "DJ DOC", mood: "energetic" },
+  { title: "예감", artist: "젝스키스", mood: "energetic" },
+  { title: "캔디", artist: "H.O.T.", mood: "energetic" },
+  { title: "Gee", artist: "소녀시대", mood: "energetic" },
+  { title: "Into the New World", artist: "소녀시대", mood: "energetic" },
+  { title: "Mister", artist: "카라", mood: "energetic" },
+  { title: "Tell Me", artist: "원더걸스", mood: "energetic" },
+  { title: "Nobody", artist: "원더걸스", mood: "energetic" },
+  { title: "Bang!", artist: "애프터스쿨", mood: "energetic" },
+  { title: "Touch my body", artist: "씨스타", mood: "energetic" },
+  { title: "HIP", artist: "마마무", mood: "energetic" },
+  { title: "넌 is 뭐야", artist: "마마무", mood: "energetic" },
+  { title: "아브라카다브라", artist: "브라운아이드걸스", mood: "energetic" },
+  { title: "나쁜 기집애", artist: "씨엘(CL)", mood: "energetic" },
+  { title: "아무노래", artist: "지코", mood: "energetic" },
+  { title: "Roller Coaster", artist: "청하", mood: "energetic" },
+  { title: "Snapping", artist: "청하", mood: "energetic" },
+  { title: "가시나", artist: "선미", mood: "energetic" },
+  { title: "보라빛 밤", artist: "선미", mood: "energetic" },
+  { title: "마리아", artist: "화사", mood: "energetic" },
+  { title: "U-Go-Girl", artist: "이효리", mood: "energetic" },
+  { title: "미스코리아", artist: "이효리", mood: "energetic" },
+  { title: "깡", artist: "비(Rain)", mood: "energetic" },
+  { title: "뱅뱅뱅 (BANG BANG BANG)", artist: "빅뱅", mood: "energetic" },
+  { title: "판타스틱 베이비", artist: "빅뱅", mood: "energetic" },
+  { title: "으르렁 (Growl)", artist: "엑소", mood: "energetic" },
+  { title: "Love Shot", artist: "엑소", mood: "energetic" },
+  { title: "맛 (Hot Sauce)", artist: "NCT DREAM", mood: "energetic" },
+  { title: "소리꾼", artist: "스트레이 키즈", mood: "energetic" },
+  { title: "손오공", artist: "세븐틴", mood: "energetic" },
+  { title: "예쁘다", artist: "세븐틴", mood: "energetic" },
+  { title: "신용카드", artist: "몬스타엑스", mood: "energetic" },
+  { title: "다섯 번째 계절", artist: "오마이걸", mood: "energetic" },
+  { title: "롤린 (Rollin')", artist: "브레이브걸스", mood: "energetic" },
 ];
+
+// 팝송 100곡 - 마찬가지로 감성/활기 테마 태그를 붙였다
 const POP_SONGS = [
-  { title: "Perfect", artist: "Ed Sheeran" },
-  { title: "Yellow", artist: "Coldplay" },
-  { title: "Here Comes the Sun", artist: "The Beatles" },
-  { title: "Riptide", artist: "Vance Joy" },
-  { title: "Sunflower", artist: "Post Malone & Swae Lee" },
-  { title: "Budapest", artist: "George Ezra" },
-  { title: "Best Day of My Life", artist: "American Authors" },
-  { title: "Fly Me to the Moon", artist: "Frank Sinatra" },
+  // 감성 (50)
+  { title: "Perfect", artist: "Ed Sheeran", mood: "emotional" },
+  { title: "Photograph", artist: "Ed Sheeran", mood: "emotional" },
+  { title: "Thinking Out Loud", artist: "Ed Sheeran", mood: "emotional" },
+  { title: "Yellow", artist: "Coldplay", mood: "emotional" },
+  { title: "Fix You", artist: "Coldplay", mood: "emotional" },
+  { title: "Here Comes the Sun", artist: "The Beatles", mood: "emotional" },
+  { title: "Let It Be", artist: "The Beatles", mood: "emotional" },
+  { title: "Riptide", artist: "Vance Joy", mood: "emotional" },
+  { title: "Fly Me to the Moon", artist: "Frank Sinatra", mood: "emotional" },
+  { title: "All of Me", artist: "John Legend", mood: "emotional" },
+  { title: "Someone Like You", artist: "Adele", mood: "emotional" },
+  { title: "Hello", artist: "Adele", mood: "emotional" },
+  { title: "When We Were Young", artist: "Adele", mood: "emotional" },
+  { title: "Stay With Me", artist: "Sam Smith", mood: "emotional" },
+  { title: "Too Good At Goodbyes", artist: "Sam Smith", mood: "emotional" },
+  { title: "Don't Know Why", artist: "Norah Jones", mood: "emotional" },
+  { title: "Come Away With Me", artist: "Norah Jones", mood: "emotional" },
+  { title: "Talking to the Moon", artist: "Bruno Mars", mood: "emotional" },
+  { title: "Say You Won't Let Go", artist: "James Arthur", mood: "emotional" },
+  { title: "Someone You Loved", artist: "Lewis Capaldi", mood: "emotional" },
+  { title: "A Thousand Years", artist: "Christina Perri", mood: "emotional" },
+  { title: "Stand By Me", artist: "Ben E. King", mood: "emotional" },
+  { title: "Somewhere Over the Rainbow", artist: "Israel Kamakawiwo'ole", mood: "emotional" },
+  { title: "I'm Yours", artist: "Jason Mraz", mood: "emotional" },
+  { title: "Better Together", artist: "Jack Johnson", mood: "emotional" },
+  { title: "Somewhere Only We Know", artist: "Keane", mood: "emotional" },
+  { title: "Chasing Cars", artist: "Snow Patrol", mood: "emotional" },
+  { title: "Dreams", artist: "The Cranberries", mood: "emotional" },
+  { title: "Linger", artist: "The Cranberries", mood: "emotional" },
+  { title: "Landslide", artist: "Fleetwood Mac", mood: "emotional" },
+  { title: "The Sound of Silence", artist: "Simon & Garfunkel", mood: "emotional" },
+  { title: "Skinny Love", artist: "Bon Iver", mood: "emotional" },
+  { title: "The Blower's Daughter", artist: "Damien Rice", mood: "emotional" },
+  { title: "Your Song", artist: "Elton John", mood: "emotional" },
+  { title: "I Will Always Love You", artist: "Whitney Houston", mood: "emotional" },
+  { title: "My Heart Will Go On", artist: "Celine Dion", mood: "emotional" },
+  { title: "Wonderful Tonight", artist: "Eric Clapton", mood: "emotional" },
+  { title: "Piano Man", artist: "Billy Joel", mood: "emotional" },
+  { title: "You've Got a Friend", artist: "Carole King", mood: "emotional" },
+  { title: "Yesterday Once More", artist: "The Carpenters", mood: "emotional" },
+  { title: "Wild World", artist: "Cat Stevens", mood: "emotional" },
+  { title: "You're Beautiful", artist: "James Blunt", mood: "emotional" },
+  { title: "Let Her Go", artist: "Passenger", mood: "emotional" },
+  { title: "Slow Dancing in a Burning Room", artist: "John Mayer", mood: "emotional" },
+  { title: "The Night We Met", artist: "Lord Huron", mood: "emotional" },
+  { title: "Issues", artist: "Julia Michaels", mood: "emotional" },
+  { title: "ocean eyes", artist: "Billie Eilish", mood: "emotional" },
+  { title: "Somebody Else", artist: "The 1975", mood: "emotional" },
+  { title: "Best Friend", artist: "Rex Orange County", mood: "emotional" },
+  { title: "Falling", artist: "Harry Styles", mood: "emotional" },
+  // 활기 (50)
+  { title: "Happy", artist: "Pharrell Williams", mood: "energetic" },
+  { title: "Uptown Funk", artist: "Mark Ronson ft. Bruno Mars", mood: "energetic" },
+  { title: "24K Magic", artist: "Bruno Mars", mood: "energetic" },
+  { title: "Can't Stop the Feeling!", artist: "Justin Timberlake", mood: "energetic" },
+  { title: "Firework", artist: "Katy Perry", mood: "energetic" },
+  { title: "Roar", artist: "Katy Perry", mood: "energetic" },
+  { title: "Shake It Off", artist: "Taylor Swift", mood: "energetic" },
+  { title: "22", artist: "Taylor Swift", mood: "energetic" },
+  { title: "Levitating", artist: "Dua Lipa", mood: "energetic" },
+  { title: "Don't Start Now", artist: "Dua Lipa", mood: "energetic" },
+  { title: "7 rings", artist: "Ariana Grande", mood: "energetic" },
+  { title: "Break Free", artist: "Ariana Grande", mood: "energetic" },
+  { title: "Blinding Lights", artist: "The Weeknd", mood: "energetic" },
+  { title: "Get Lucky", artist: "Daft Punk", mood: "energetic" },
+  { title: "Wake Me Up", artist: "Avicii", mood: "energetic" },
+  { title: "Levels", artist: "Avicii", mood: "energetic" },
+  { title: "This Is What You Came For", artist: "Calvin Harris ft. Rihanna", mood: "energetic" },
+  { title: "Titanium", artist: "David Guetta ft. Sia", mood: "energetic" },
+  { title: "Counting Stars", artist: "OneRepublic", mood: "energetic" },
+  { title: "Good Life", artist: "OneRepublic", mood: "energetic" },
+  { title: "Believer", artist: "Imagine Dragons", mood: "energetic" },
+  { title: "Radioactive", artist: "Imagine Dragons", mood: "energetic" },
+  { title: "Adventure of a Lifetime", artist: "Coldplay", mood: "energetic" },
+  { title: "Sugar", artist: "Maroon 5", mood: "energetic" },
+  { title: "Moves Like Jagger", artist: "Maroon 5", mood: "energetic" },
+  { title: "Don't Stop Believin'", artist: "Journey", mood: "energetic" },
+  { title: "Don't Stop Me Now", artist: "Queen", mood: "energetic" },
+  { title: "Somebody to Love", artist: "Queen", mood: "energetic" },
+  { title: "Dancing Queen", artist: "ABBA", mood: "energetic" },
+  { title: "September", artist: "Earth, Wind & Fire", mood: "energetic" },
+  { title: "Celebration", artist: "Kool & The Gang", mood: "energetic" },
+  { title: "Wake Me Up Before You Go-Go", artist: "Wham!", mood: "energetic" },
+  { title: "Girls Just Want to Have Fun", artist: "Cyndi Lauper", mood: "energetic" },
+  { title: "I Wanna Dance with Somebody", artist: "Whitney Houston", mood: "energetic" },
+  { title: "Don't Stop 'Til You Get Enough", artist: "Michael Jackson", mood: "energetic" },
+  { title: "Billie Jean", artist: "Michael Jackson", mood: "energetic" },
+  { title: "Sorry", artist: "Justin Bieber", mood: "energetic" },
+  { title: "Stitches", artist: "Shawn Mendes", mood: "energetic" },
+  { title: "High Hopes", artist: "Panic! At The Disco", mood: "energetic" },
+  { title: "Centuries", artist: "Fall Out Boy", mood: "energetic" },
+  { title: "Best Day of My Life", artist: "American Authors", mood: "energetic" },
+  { title: "Shut Up and Dance", artist: "Walk The Moon", mood: "energetic" },
+  { title: "HandClap", artist: "Fitz and The Tantrums", mood: "energetic" },
+  { title: "Good as Hell", artist: "Lizzo", mood: "energetic" },
+  { title: "All About That Bass", artist: "Meghan Trainor", mood: "energetic" },
+  { title: "TiK ToK", artist: "Kesha", mood: "energetic" },
+  { title: "Party Rock Anthem", artist: "LMFAO", mood: "energetic" },
+  { title: "I Gotta Feeling", artist: "Black Eyed Peas", mood: "energetic" },
+  { title: "Budapest", artist: "George Ezra", mood: "energetic" },
+  { title: "Sunflower", artist: "Post Malone & Swae Lee", mood: "energetic" },
 ];
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 function pickRandomN(arr, n) {
   return shuffle(arr).slice(0, n);
+}
+// 뽑힌 지역의 분위기(감성/활기)에 맞는 곡만 걸러서 그중 n곡을 무작위로 고른다
+function pickRandomNByMood(arr, mood, n) {
+  const filtered = arr.filter((s) => s.mood === mood);
+  return shuffle(filtered.length > 0 ? filtered : arr).slice(0, n);
 }
 
 // 결과로 뽑힌 지역의 하루 일정표(10:00 도착 ~ 16:00 마무리)를 보여줌.
@@ -624,8 +1031,11 @@ async function tourApiProxyFetch(action, extraParams) {
   }
   if (!res.ok || (data && data.error)) {
     const isServerNoKey = data && data.error === "SERVER_NO_KEY";
-    // 서버(Netlify Function)가 진단용으로 넣어준 상세 메시지가 있으면 그대로 보여준다
-    const detail = data && data.message ? data.message : `공공데이터 API 응답 오류 (HTTP ${res.status})`;
+    // 서버(Netlify Function)가 진단용으로 넣어준 상세 메시지 + TourAPI 원본 응답을 그대로 보여준다
+    let detail = data && data.message ? data.message : `공공데이터 API 응답 오류 (HTTP ${res.status})`;
+    if (data && data.upstreamBody) {
+      detail += ` — 원본 응답: ${data.upstreamBody}`;
+    }
     const err = new Error(detail);
     err.code = isServerNoKey ? "SERVER_NO_KEY" : "HTTP_ERROR";
     throw err;
@@ -736,16 +1146,32 @@ function RouletteWheel({ spots, wheelRef }) {
             <g key={s.id}>
               <path d={sliceDPath(cx, cy, r, start, end)} fill={fillColor} stroke="#F6F1E7" strokeWidth="1.5" />
               {vertical ? (
-                // 세로로 쌓은 글자 블록을 섹터의 중심 각도(mid)만큼 회전시켜, 부채꼴 모양(방사형)에 맞춰 눕힌다
-                <text
-                  x={labelPos.x} fill={labelColor} fontSize="11" fontWeight="700"
-                  textAnchor="middle"
-                  transform={`rotate(${mid}, ${labelPos.x}, ${labelPos.y})`}
-                >
-                  {chars.map((c, ci) => (
-                    <tspan key={ci} x={labelPos.x} y={startY + ci * lineHeight}>{c}</tspan>
-                  ))}
-                </text>
+                // 세로로 쌓은 글자 블록을 섹터의 중심 각도(mid)만큼 회전시켜, 부채꼴 모양(방사형)에 맞춰 눕힌다.
+                // (참고: <tspan>은 SVG에서 transform 속성을 지원하지 않아 괄호만 따로 돌릴 수 없으므로,
+                //  글자 하나하나를 <text>로 각각 그려서 필요한 글자에만 개별 회전을 줄 수 있게 한다.)
+                <g transform={`rotate(${mid}, ${labelPos.x}, ${labelPos.y})`}>
+                  {chars.map((c, ci) => {
+                    const y = startY + ci * lineHeight;
+                    // 세로쓰기에서 괄호를 그대로 쌓으면 옆으로 누운 모양이 되어 어색하므로,
+                    // 90도 돌려서 여는 괄호는 위에서 감싸는 캡(⌢), 닫는 괄호는 아래에서 받치는
+                    // 캡(⌣) 모양이 되도록 한다 (세로쓰기 조판에서 흔히 쓰는 방식)
+                    const isParen = c === "(" || c === ")";
+                    return (
+                      <text
+                        key={ci}
+                        x={labelPos.x}
+                        y={y}
+                        fill={labelColor}
+                        fontSize="11"
+                        fontWeight="700"
+                        textAnchor="middle"
+                        {...(isParen ? { transform: `rotate(90, ${labelPos.x}, ${y})` } : {})}
+                      >
+                        {c}
+                      </text>
+                    );
+                  })}
+                </g>
               ) : (
                 <text
                   x={labelPos.x} y={labelPos.y}
@@ -824,15 +1250,62 @@ function LocationDialog({ currentLocation, onSelect, onClose }) {
 // ==========================================
 // 3-1. 생년월일/생시/성별 입력 모달 (여행사주용, 최초 1회)
 // ==========================================
+// 음력→양력 변환 라이브러리(solarlunar, ISC 라이선스)를 HTML에서 CDN 스크립트로 불러와
+// window.solarLunar 전역으로 접근한다 (UMD 빌드라 default export가 한 겹 더 감싸져 있을 수 있음).
+function getSolarLunarLib() {
+  if (typeof window === "undefined" || !window.solarLunar) return null;
+  return window.solarLunar.default || window.solarLunar;
+}
+
 function BirthInfoModal({ initial, onSave, onClose }) {
-  const [date, setDate] = useState(initial?.date || "");
+  const [calendarType, setCalendarType] = useState(initial?.calendarType || "solar"); // "solar" | "lunar"
+  const [date, setDate] = useState((calendarType === "lunar" ? initial?.lunarDate : initial?.date) || "");
+  const [isLeapMonth, setIsLeapMonth] = useState(!!initial?.isLeapMonth);
   const [time, setTime] = useState(initial?.time || "");
-  const [timeUnknown, setTimeUnknown] = useState(!initial?.time);
+  // 대부분 태어난 시간을 알고 있으므로, 기존에 저장된 값이 없을 때도 기본값은 "시간 모름 해제" 상태로 둔다
+  const [timeUnknown, setTimeUnknown] = useState(initial ? !initial.time : false);
   const [gender, setGender] = useState(initial?.gender || "F");
+  const [error, setError] = useState("");
+
+  function changeCalendarType(next) {
+    setCalendarType(next);
+    setError("");
+    // 양력<->음력 전환 시 이전에 입력한 날짜 값을 그대로 들고가면 헷갈리므로 비워준다
+    setDate("");
+    setIsLeapMonth(false);
+  }
 
   function handleSave() {
     if (!date) return;
-    onSave({ date, time: timeUnknown ? null : (time || null), gender });
+    const timeValue = timeUnknown ? null : (time || null);
+
+    if (calendarType === "solar") {
+      onSave({ date, time: timeValue, gender, calendarType: "solar" });
+      return;
+    }
+
+    // 음력 입력 - solarlunar 라이브러리로 양력으로 변환한 뒤, 변환된 양력 날짜를 저장한다
+    // (사주 계산 로직 자체는 계속 양력 기준으로 동작)
+    const lib = getSolarLunarLib();
+    if (!lib) {
+      setError("음력 변환 기능을 아직 불러오는 중이에요. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    const [ly, lm, ld] = date.split("-").map(Number);
+    const result = lib.lunar2solar(ly, lm, ld, isLeapMonth);
+    if (!result || result === -1 || !result.cYear) {
+      setError("입력하신 음력 날짜가 올바르지 않아요. 윤달 여부를 다시 확인해주세요.");
+      return;
+    }
+    const solarDate = `${result.cYear}-${String(result.cMonth).padStart(2, "0")}-${String(result.cDay).padStart(2, "0")}`;
+    onSave({
+      date: solarDate,
+      time: timeValue,
+      gender,
+      calendarType: "lunar",
+      lunarDate: date,
+      isLeapMonth,
+    });
   }
 
   return (
@@ -843,18 +1316,50 @@ function BirthInfoModal({ initial, onSave, onClose }) {
           <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
         </div>
         <p className="text-xs text-[#6B5F4F] mb-4 leading-relaxed">
-          입력하신 정보는 이 브라우저에만 저장되고 서버로 전송되지 않아요. 양력 생년월일만 지원합니다.
+          입력하신 정보는 이 브라우저에만 저장되고 서버로 전송되지 않아요. 양력·음력 생년월일 모두 지원합니다.
         </p>
 
-        <label className="block text-xs font-medium text-[#2B2620] mb-1">생년월일 (양력)</label>
+        <label className="block text-xs font-medium text-[#2B2620] mb-1">달력 종류</label>
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => changeCalendarType("solar")}
+            className="flex-1 py-2 rounded-lg text-sm border"
+            style={{ borderColor: calendarType === "solar" ? "#B8860B" : "#D9CBB0", background: calendarType === "solar" ? "#F3E6C4" : "transparent", color: "#2B2620" }}
+          >
+            양력
+          </button>
+          <button
+            onClick={() => changeCalendarType("lunar")}
+            className="flex-1 py-2 rounded-lg text-sm border"
+            style={{ borderColor: calendarType === "lunar" ? "#B8860B" : "#D9CBB0", background: calendarType === "lunar" ? "#F3E6C4" : "transparent", color: "#2B2620" }}
+          >
+            음력
+          </button>
+        </div>
+
+        <label className="block text-xs font-medium text-[#2B2620] mb-1">
+          생년월일 ({calendarType === "lunar" ? "음력" : "양력"})
+        </label>
         <input
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="w-full bg-white/70 border border-[#D9CBB0] rounded-lg px-3 py-2 text-sm outline-none mb-3"
+          onChange={(e) => { setDate(e.target.value); setError(""); }}
+          className="w-full bg-white/70 border border-[#D9CBB0] rounded-lg px-3 py-2 text-sm outline-none mb-1"
         />
+        {calendarType === "lunar" && (
+          <>
+            <p className="text-[11px] text-[#A6987F] mb-2">
+              달력 입력창에는 양력 날짜 형식 그대로, 음력 생년월일 숫자를 입력해주세요 (예: 음력 3월 15일이면 그대로 03-15 선택).
+            </p>
+            <label className="flex items-center gap-1.5 text-xs text-[#6B5F4F] mb-2">
+              <input type="checkbox" checked={isLeapMonth} onChange={(e) => { setIsLeapMonth(e.target.checked); setError(""); }} />
+              윤달(윤월)이에요
+            </label>
+          </>
+        )}
+        {error && <p className="text-[11px] text-[#A8441F] mb-2">{error}</p>}
 
-        <label className="block text-xs font-medium text-[#2B2620] mb-1">태어난 시간</label>
+        <label className="block text-xs font-medium text-[#2B2620] mb-1 mt-2">태어난 시간</label>
         <input
           type="time"
           value={time}
@@ -902,27 +1407,35 @@ function BirthInfoModal({ initial, onSave, onClose }) {
 // ==========================================
 function TravelFortuneCard({ fortune, onEdit }) {
   return (
-    <div className="mt-4 rounded-xl px-4 py-3 border border-[#D9CBB0] bg-white/50">
+    <div
+      className="mt-4 rounded-xl px-4 py-3"
+      style={{ background: "linear-gradient(90deg, #DCE7F5 0%, #F3E9DC 50%, #F8DCDC 100%)", border: "1px solid #D9CBB0" }}
+    >
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-[#B8860B]">✦ 오늘의 여행운 (재미로 보는 코너예요)</p>
+        <p className="text-sm font-medium" style={{ color: "#B8860B" }}>✦ 오늘의 여행운</p>
         <button onClick={onEdit} className="text-[10px] text-[#A6987F] underline">내 정보 수정</button>
       </div>
-      <p className="text-sm text-[#2B2620] mt-1.5 leading-relaxed">{fortune.headline}</p>
-      <div className="grid grid-cols-3 gap-2 mt-3 text-center">
-        <div className="bg-white/60 rounded-lg py-2">
-          <p className="text-[10px] text-[#A6987F]">방향</p>
-          <p className="text-xs font-medium text-[#2B2620] mt-0.5">{fortune.direction}</p>
+      <p className="text-xs text-[#2B2620] mt-1.5 leading-relaxed">{fortune.headline}</p>
+      <div className="grid grid-cols-3 gap-3 mt-3 text-center">
+        <div className="bg-white/60 rounded-lg py-2.5">
+          <p className="text-[10px] text-[#A6987F]">행운의 방향</p>
+          <p className="text-xs font-bold mt-1.5" style={{ color: "#B8860B" }}>{fortune.direction}</p>
         </div>
-        <div className="bg-white/60 rounded-lg py-2">
-          <p className="text-[10px] text-[#A6987F]">색상</p>
-          <p className="text-xs font-medium text-[#2B2620] mt-0.5">{fortune.colors}</p>
+        <div className="bg-white/60 rounded-lg py-2.5">
+          <p className="text-[10px] text-[#A6987F]">행운의 색깔</p>
+          <p className="text-xs font-bold mt-1.5" style={{ color: "#B8860B" }}>{fortune.colors}</p>
         </div>
-        <div className="bg-white/60 rounded-lg py-2">
-          <p className="text-[10px] text-[#A6987F]">아이템</p>
-          <p className="text-xs font-medium text-[#2B2620] mt-0.5">{fortune.item}</p>
+        <div className="bg-white/60 rounded-lg py-2.5">
+          <p className="text-[10px] text-[#A6987F]">행운의 아이템</p>
+          <p className="text-xs font-bold mt-1.5" style={{ color: "#B8860B" }}>{fortune.item}</p>
         </div>
       </div>
-      <p className="text-xs text-[#6B5F4F] italic mt-2 text-center">"{fortune.oneLiner}"</p>
+      <p
+        className="text-xs font-bold italic mt-2 text-center"
+        style={{ background: "linear-gradient(90deg, #1B4B91, #B3261E)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}
+      >
+        "{fortune.oneLiner}"
+      </p>
     </div>
   );
 }
@@ -946,7 +1459,7 @@ function DrawerModal({ spots, onUnvisit, onOpenStamp, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20">
       <div className="w-full max-w-sm bg-[#F6F1E7] rounded-t-2xl border-t border-x border-[#D9CBB0] flex flex-col h-[80vh]">
         <div className="flex items-center justify-between px-5 pt-5 pb-1">
-          <h2 className="font-serif text-lg text-[#2B2620] flex items-center gap-1.5"><Stamp size={16} className="text-[#B8860B]" /> 도장깨기</h2>
+          <h2 className="font-serif text-lg text-[#2B2620] flex items-center gap-1.5"><StampIcon size={16} className="text-[#B8860B]" /> STAMP TOUR</h2>
           <div className="flex items-center gap-3">
             <span className="text-xs text-[#6B5F4F]">{visited.length} / {spots.length}</span>
             <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
@@ -967,7 +1480,7 @@ function DrawerModal({ spots, onUnvisit, onOpenStamp, onClose }) {
               onClick={() => setTab("visited")}
               className={`text-xs px-3 py-1.5 rounded-full border font-medium ${tab === "visited" ? "bg-[#B8860B] text-[#2B2620] border-[#B8860B]" : "border-[#D9CBB0] text-[#6B5F4F]"}`}
             >
-              깬 도장
+              STAMP
             </button>
             <button
               onClick={() => setTab("all")}
@@ -994,12 +1507,12 @@ function DrawerModal({ spots, onUnvisit, onOpenStamp, onClose }) {
                           className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2"
                           style={{ borderColor: "#B8860B", background: hasMemory ? "#F3E6C4" : "transparent" }}
                         >
-                          <Stamp size={15} className="text-[#B8860B]" />
+                          <StampIcon size={15} className="text-[#B8860B]" />
                         </span>
                         <span className="min-w-0">
                           <p className="text-sm text-[#2B2620] truncate">{s.name}</p>
                           <p className="text-xs text-[#6B5F4F] mt-0.5">
-                            {formatDate(s.visitedDate)} 정복 · {s.region}{hasMemory ? " · 추억 저장됨" : ""}
+                            {formatDate(s.visitedDate)} 다녀옴 · {s.region}{hasMemory ? " · 추억 저장됨" : ""}
                           </p>
                         </span>
                       </button>
@@ -1019,7 +1532,7 @@ function DrawerModal({ spots, onUnvisit, onOpenStamp, onClose }) {
                         onClick={() => onUnvisit(s.id)}
                         className="flex items-center gap-1 text-xs text-[#C4592F] px-2 py-1 shrink-0"
                       >
-                        <RotateCcw size={12} /> 정복 취소
+                        <RotateCcw size={12} /> STAMP 취소
                       </button>
                     )}
                   </li>
@@ -1045,15 +1558,15 @@ function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, on
       <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-5 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-1.5 text-[#B8860B]">
-            <Stamp size={16} />
-            <span className="text-[11px] tracking-wide text-[#A6987F]">도장깨기</span>
+            <StampIcon size={16} />
+            <span className="text-[11px] tracking-wide text-[#A6987F]">STAMP TOUR</span>
           </div>
           <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
         </div>
         <h2 className="font-serif text-xl text-[#2B2620]">{spot.name}</h2>
-        <p className="text-xs text-[#6B5F4F] mt-0.5">{spot.region} · {formatDate(spot.visitedDate)} 정복</p>
+        <p className="text-xs text-[#6B5F4F] mt-0.5">{spot.region} · {formatDate(spot.visitedDate)} 다녀옴</p>
 
-        <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2">사진 2컷</p>
+        <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2">추억</p>
         <div className="grid grid-cols-2 gap-2">
           {[0, 1].map((i) => (
             <div
@@ -1192,12 +1705,13 @@ function MapLinkList({ links }) {
 
 // 탭별 데이터 출처 정의: 명소·맛집은 TourAPI 위치기반 조회, 서점·카페는 지도 검색 링크,
 // 축제는 TourAPI 거리 필터링, 음악은 무작위 추천 목록
+// 탭마다 고유 색상을 줘서 선택했을 때 다 같은 검정이 아니라 카테고리별로 구분되도록 함
 const TAB_CONFIG = {
-  landmark: { label: "명소", icon: Compass, kind: "tour", contentTypeId: 12 },
-  restaurant: { label: "맛집", icon: Utensils, kind: "tour", contentTypeId: 39 },
-  bookstore: { label: "서점", icon: BookOpen, kind: "map" },
-  cafe: { label: "카페", icon: Coffee, kind: "map" },
-  festival: { label: "축제/공연", icon: PartyPopper, kind: "festival" },
+  landmark: { label: "명소", icon: Compass, kind: "tour", contentTypeId: 12, color: "#B8860B" },
+  restaurant: { label: "맛집", icon: Utensils, kind: "tour", contentTypeId: 39, color: "#C4592F" },
+  bookstore: { label: "서점", icon: BookOpen, kind: "map", color: "#2B4C7E" },
+  cafe: { label: "카페", icon: Coffee, kind: "map", color: "#8B5E3C" },
+  festival: { label: "축제/공연", icon: PartyPopper, kind: "festival", color: "#2F6E68" },
 };
 
 function ResultDetailTabs({ spot, cache, setCache }) {
@@ -1245,7 +1759,7 @@ function ResultDetailTabs({ spot, cache, setCache }) {
               key={key}
               onClick={() => setTab(key)}
               className="flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-md text-[10px] font-medium min-w-[44px]"
-              style={{ background: active ? "#2B2620" : "transparent", color: active ? "#F6F1E7" : "#6B5F4F" }}
+              style={{ background: active ? t.color : "transparent", color: active ? "#F6F1E7" : "#6B5F4F" }}
             >
               <Icon size={13} />
               {t.label}
@@ -1573,8 +2087,8 @@ function BaramApp() {
   }, [result]);
   const itineraryEntry = itineraryKey ? detailCache[itineraryKey] : null;
   // 결과가 바뀔 때만 새로 뽑히도록 useMemo로 고정 (탭 전환 등 다른 리렌더에는 곡이 안 바뀜)
-  const gayoSongs = useMemo(() => pickRandomN(GAYO_SONGS, 1), [result?.id]);
-  const popSongs = useMemo(() => pickRandomN(POP_SONGS, 1), [result?.id]);
+  const gayoSongs = useMemo(() => (result ? pickRandomNByMood(GAYO_SONGS, result.mood, 1) : []), [result?.id]);
+  const popSongs = useMemo(() => (result ? pickRandomNByMood(POP_SONGS, result.mood, 1) : []), [result?.id]);
 
   const route = result ? distanceEta(currentLocation.lat, currentLocation.lng, result.lat, result.lng) : null;
   const disabled = phase !== "idle";
@@ -1634,12 +2148,12 @@ function BaramApp() {
           <p className="text-sm font-extrabold" style={{ background: "linear-gradient(90deg, #1B4B91, #B3261E)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
             몰라!! 돌려서 나오는 데로 갈꺼야! ({spots.length}개 지역)
           </p>
-          <p className="text-[11px] text-[#6B5F4F] mt-1 flex items-center justify-center gap-1">
-            <Moon size={11} /> 감성 여행 + <Zap size={11} /> 활기찬 여행이 룰렛 안에서 번갈아 섞여요
+          <p className="text-xs font-medium text-[#6B5F4F] mt-1 text-center">
+            <Moon size={14} className="inline-block align-middle -mt-0.5" /> 감성 여행 + <Zap size={14} className="inline-block align-middle -mt-0.5" /> 활기찬 여행이 빚어내는 마법 속으로...
           </p>
         </div>
 
-        {/* 지역 필터 (1줄: 전체·서울·경기·인천 / 2줄: 강원·충청·영남·호남) - 지역마다 고유 색상 */}
+        {/* 지역 필터 (1줄: 전체·서울·경기·인천·제주 / 2줄: 강원·충청·영남·호남) - 지역마다 고유 색상 */}
         <div className="mt-4 space-y-2">
           <div className="flex gap-2 justify-center">
             {REGION_LIST.slice(0, 4).map((r) => {
@@ -1650,7 +2164,7 @@ function BaramApp() {
                   key={r}
                   disabled={disabled}
                   onClick={() => changeRegion(r)}
-                  className="flex-1 text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60"
+                  className="flex-1 text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60 whitespace-nowrap"
                   style={{
                     borderColor: c,
                     background: active ? c : `${c}1F`,
@@ -1695,10 +2209,10 @@ function BaramApp() {
             </div>
           )}
 
-          {/* 포인터: 지도 핀(물방울) 모양 */}
-          <svg width="26" height="34" viewBox="0 0 26 34" className="absolute -top-3 left-1/2 -translate-x-1/2 drop-shadow-md">
-            <path d="M3 13 L13 32 L23 13 Z" fill="#B8860B" stroke="#2B2620" strokeWidth="1.2" strokeLinejoin="round" />
-            <circle cx="13" cy="12" r="10" fill="#B8860B" stroke="#2B2620" strokeWidth="1.2" />
+          {/* 포인터: 지도 핀(물방울) 모양 - 빨간색, 아래쪽 뾰족한 부분을 더 길게 */}
+          <svg width="26" height="40" viewBox="0 0 26 40" className="absolute -top-3 left-1/2 -translate-x-1/2 drop-shadow-md">
+            <path d="M3 13 L13 38 L23 13 Z" fill="#DC2626" stroke="#2B2620" strokeWidth="1.2" strokeLinejoin="round" />
+            <circle cx="13" cy="12" r="10" fill="#DC2626" stroke="#2B2620" strokeWidth="1.2" />
             <circle cx="13" cy="12" r="4" fill="#F6F1E7" />
           </svg>
 
@@ -1708,7 +2222,7 @@ function BaramApp() {
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-4 border-[#F6F1E7] flex items-center justify-center text-sm font-bold text-white disabled:opacity-50"
             style={{ background: phase === "spinning" || phase === "ramping" ? "#A8441F" : accent }}
           >
-            {phase === "stopping" ? "추첨중" : phase === "idle" ? "START" : "STOP"}
+            {phase === "stopping" ? "어디?" : phase === "idle" ? "START" : "STOP"}
           </button>
         </div>
         <p className="text-center text-[11px] text-[#A6987F] mt-2">
@@ -1719,15 +2233,25 @@ function BaramApp() {
         {result && route && (
           <div className="mt-6 bg-white/60 border border-dashed border-[#B8860B] rounded-xl p-5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-full" style={{ background: result.mood === "emotional" ? "#DCE7F5" : "#F8DCDC", color: accent }}>
-                {result.region}
-              </span>
-              <span className="text-[10px] text-[#A6987F] flex items-center gap-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[10px] tracking-wide px-2 py-0.5 rounded-full shrink-0" style={{ background: result.mood === "emotional" ? "#DCE7F5" : "#F8DCDC", color: accent }}>
+                  {result.region}
+                </span>
+                <h3
+                  className="font-serif text-base font-bold truncate"
+                  style={{ color: result.mood === "emotional" ? "#0F2D5C" : "#A61B1B" }}
+                >
+                  {result.name}
+                </h3>
+              </div>
+              <span
+                className="text-[10px] font-bold flex items-center gap-1 shrink-0"
+                style={{ color: result.mood === "emotional" ? "#0F2D5C" : "#A61B1B" }}
+              >
                 {result.mood === "emotional" ? <Moon size={11} /> : <Zap size={11} />}
                 {result.mood === "emotional" ? "감성 코스" : "활기 코스"}
               </span>
             </div>
-            <h3 className="font-serif text-xl text-[#2B2620] mt-2">{result.name}</h3>
             <p className="text-sm text-[#6B5F4F] mt-1">{result.description}</p>
 
             <div className="border-t border-[#D9CBB0] my-3" />
@@ -1750,10 +2274,10 @@ function BaramApp() {
                 conquerSpot(result.id);
                 setDrawerOpen(true);
               }}
-              className="w-full mt-4 py-2.5 rounded-lg text-sm font-medium text-[#F6F1E7]"
+              className="w-full mt-4 py-2.5 rounded-lg text-lg font-extrabold tracking-[0.3em] text-[#F6F1E7]"
               style={{ background: accent }}
             >
-              도시 정복 완료
+              STAMP
             </button>
           </div>
         )}
@@ -1794,10 +2318,10 @@ function BaramApp() {
   );
 }
 
-
 const rootEl = document.getElementById("root");
 const root = ReactDOM.createRoot(rootEl);
 root.render(<BaramApp />);
+
 </script>
 </body>
 </html>
