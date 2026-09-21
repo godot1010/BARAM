@@ -1,0 +1,39 @@
+{
+  "name": "BARAM - 여행 룰렛",
+  "short_name": "BARAM",
+  "description": "전국 229개 지역 중 랜덤으로 여행지를 추천해주는 여행 룰렛 앱. 감성/활기 테마별 코스와 인근 명소, 맛집, 축제 정보를 제공합니다.",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F1E7",
+  "theme_color": "#B8860B",
+  "lang": "ko-KR",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

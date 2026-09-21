@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>BARAM app_ver1.0 - 여행 룰렛</title>
 <!-- BARAM app_ver1.0 (Cloudflare Pages 배포용) -->
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#B8860B" />
+<link rel="icon" href="/icon-192.png" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7/babel.min.js" crossorigin></script>
@@ -2322,6 +2326,13 @@ const rootEl = document.getElementById("root");
 const root = ReactDOM.createRoot(rootEl);
 root.render(<BaramApp />);
 
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>
