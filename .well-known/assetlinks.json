@@ -1,1 +1,8 @@
-
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "dev.pages.baram_bh4.twa",
+    "sha256_cert_fingerprints": ["67:93:58:7B:26:76:00:C5:C5:9F:E0:3F:29:43:97:3C:28:51:42:36:40:5B:FA:48:78:B3:E3:B8:BE:61:B4:05"]
+  }
+}]
