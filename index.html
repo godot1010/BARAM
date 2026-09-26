@@ -369,6 +369,11 @@ const IDB_VERSION = 1;
 const IDB_STORE = "spots_progress";
 const LEGACY_LOCALSTORAGE_KEY = "baram_spots_progress"; // 이전 버전(localStorage)에서 쓰던 키
 
+// 앱을 껐다 켜도 "지금 이동 중인 여행지"가 사라지지 않도록 마지막 룰렛 결과/현재 위치를
+// localStorage에 저장해둔다 (새로 룰렛을 돌리기 전까지 유지).
+const CURRENT_RESULT_KEY = "baram_current_result_id";
+const CURRENT_LOCATION_KEY = "baram_current_location_name";
+
 function openSpotsDB() {
   return new Promise((resolve, reject) => {
     if (!window.indexedDB) {
@@ -1886,6 +1891,7 @@ function BaramApp() {
 
     setRouletteSpots(interleaved);
     setResult(null);
+    try { window.localStorage.removeItem(CURRENT_RESULT_KEY); } catch {}
     angleRef.current = 0;
     if (wheelRef.current) wheelRef.current.style.transform = "rotate(0deg)";
   }
@@ -1900,6 +1906,22 @@ function BaramApp() {
       const merged = mergeSpotsWithProgress(spots, progress);
       setSpots(merged);
       pick15(merged, region, currentLocation);
+
+      // 지난번에 앱을 닫기 전 마지막으로 나왔던 "현재 위치"와 "룰렛 결과"를 복원한다.
+      // (pick15가 위에서 결과를 초기화하므로, 복원은 그 다음에 해야 한다.)
+      try {
+        const savedLocName = window.localStorage.getItem(CURRENT_LOCATION_KEY);
+        const savedLoc = savedLocName ? LOCATIONS.find((l) => l.name === savedLocName) : null;
+        if (savedLoc) setCurrentLocation(savedLoc);
+
+        const savedResultId = window.localStorage.getItem(CURRENT_RESULT_KEY);
+        if (savedResultId) {
+          const savedSpot = merged.find((s) => s.id === savedResultId);
+          if (savedSpot) setResult(savedSpot);
+        }
+      } catch {
+        // localStorage를 쓸 수 없는 환경 - 그냥 처음 상태로 시작
+      }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1913,6 +1935,7 @@ function BaramApp() {
 
   function selectLocation(loc) {
     setCurrentLocation(loc);
+    try { window.localStorage.setItem(CURRENT_LOCATION_KEY, loc.name); } catch {}
     setLocationDialogOpen(false);
     pick15(spots, region, loc);
   }
@@ -2010,6 +2033,7 @@ function BaramApp() {
   function startSpin() {
     if (rouletteSpots.length === 0 || phase !== "idle") return;
     setResult(null);
+    try { window.localStorage.removeItem(CURRENT_RESULT_KEY); } catch {}
     setPhase("ramping");
     const el = wheelRef.current;
     const rampTarget = angleRef.current + 720;
@@ -2051,7 +2075,9 @@ function BaramApp() {
 
     setTimeout(() => {
       setPhase("idle");
-      setResult(rouletteSpots[selectedIndex]);
+      const chosen = rouletteSpots[selectedIndex];
+      setResult(chosen);
+      try { window.localStorage.setItem(CURRENT_RESULT_KEY, chosen.id); } catch {}
     }, 3050);
   }
 
