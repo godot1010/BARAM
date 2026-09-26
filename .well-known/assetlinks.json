@@ -3,6 +3,9 @@
   "target": {
     "namespace": "android_app",
     "package_name": "dev.pages.baram_bh4.twa",
-    "sha256_cert_fingerprints": ["67:93:58:7B:26:76:00:C5:C5:9F:E0:3F:29:43:97:3C:28:51:42:36:40:5B:FA:48:78:B3:E3:B8:BE:61:B4:05"]
+    "sha256_cert_fingerprints": [
+      "67:93:58:7B:26:76:00:C5:C5:9F:E0:3F:29:43:97:3C:28:51:42:36:40:5B:FA:48:78:B3:E3:B8:BE:61:B4:05",
+      "BE:E6:E9:65:43:18:E0:B9:D6:8D:4F:4E:1F:DA:78:1F:ED:0A:62:1A:1D:A5:4F:95:E5:76:59:86:9F:B0:8A:EC"
+    ]
   }
 }]
