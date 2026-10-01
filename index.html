@@ -520,6 +520,18 @@ function formatDate(d) {
   return `${dt.getFullYear()}.${String(dt.getMonth() + 1).padStart(2, "0")}.${String(dt.getDate()).padStart(2, "0")}`;
 }
 
+// 날짜 입력칸(<input type="date">)은 "YYYY-MM-DD" 문자열을 쓰므로 저장값(ISO)과 서로 바꿔준다
+function toDateInputValue(d) {
+  const dt = d ? new Date(d) : new Date();
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+// 시간대 때문에 날짜가 하루 밀리지 않도록 그날 정오(현지 시각)로 저장한다
+function fromDateInputValue(value) {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d, 12).toISOString();
+}
+
 // ==========================================
 // 1-1a. 사주(四柱) 계산 엔진
 // 명식(년/월/일/시주, 오행) 계산은 실제 만세력 공식을 따른다. 절기 경계일은 매해 ±1일
@@ -1477,7 +1489,7 @@ function TravelFortuneCard({ fortune, onEdit }) {
 // ==========================================
 // 4. 정복 도시함 (드로어)
 // ==========================================
-function DrawerModal({ spots, onUnvisit, onOpenStamp, onClose }) {
+function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onClose }) {
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("visited");
 
@@ -1527,7 +1539,7 @@ function DrawerModal({ spots, onUnvisit, onOpenStamp, onClose }) {
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {filtered.length === 0 ? (
             <p className="text-center text-sm text-[#6B5F4F] py-10 whitespace-pre-line">
-              {tab === "visited" ? "아직 깬 도장이 없어요.\n룰렛을 돌려보세요!" : "검색 결과가 없습니다."}
+              {tab === "visited" ? "아직 깬 도장이 없어요.\n룰렛을 돌리거나, '전체 도시'에서\n다녀온 곳에 직접 STAMP를 찍어 보세요!" : "검색 결과가 없습니다."}
             </p>
           ) : (
             <ul className="divide-y divide-[#D9CBB0]">
@@ -1561,12 +1573,20 @@ function DrawerModal({ spots, onUnvisit, onOpenStamp, onClose }) {
                         </span>
                       </div>
                     )}
-                    {s.isVisited && (
+                    {s.isVisited ? (
                       <button
                         onClick={() => onUnvisit(s.id)}
                         className="flex items-center gap-1 text-xs text-[#C4592F] px-2 py-1 shrink-0"
                       >
                         <RotateCcw size={12} /> STAMP 취소
+                      </button>
+                    ) : (
+                      // 룰렛으로 뽑지 않았어도 직접 다녀온 곳은 여기서 바로 도장을 찍을 수 있다
+                      <button
+                        onClick={() => onStamp(s.id)}
+                        className="flex items-center gap-1 text-xs font-bold text-[#B8860B] border border-[#B8860B] rounded-full px-2.5 py-1 shrink-0"
+                      >
+                        <StampIcon size={12} /> STAMP
                       </button>
                     )}
                   </li>
@@ -1581,7 +1601,7 @@ function DrawerModal({ spots, onUnvisit, onOpenStamp, onClose }) {
 }
 
 // 여행지에 대한 추억(사진 2컷 + 메모)을 남기는 "도장깨기" 상세 모달
-function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, onClose }) {
+function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, onEditDate, onClose }) {
   const fileInputRefA = useRef(null);
   const fileInputRefB = useRef(null);
   const fileInputRefs = [fileInputRefA, fileInputRefB];
@@ -1598,7 +1618,10 @@ function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, on
           <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
         </div>
         <h2 className="font-serif text-xl text-[#2B2620]">{spot.name}</h2>
-        <p className="text-xs text-[#6B5F4F] mt-0.5">{spot.region} · {formatDate(spot.visitedDate)} 다녀옴</p>
+        <p className="text-xs text-[#6B5F4F] mt-0.5 flex items-center gap-1.5">
+          {spot.region} · {formatDate(spot.visitedDate)} 다녀옴
+          <button onClick={onEditDate} className="text-[#B8860B] underline">날짜 수정</button>
+        </p>
 
         <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2">추억</p>
         <div className="grid grid-cols-2 gap-2">
@@ -1657,6 +1680,52 @@ function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, on
         >
           완료
         </button>
+      </div>
+    </div>
+  );
+}
+
+// 다녀온 날짜를 고르는 창 - 새로 STAMP를 찍을 때와 이미 찍은 날짜를 고칠 때 같이 쓴다
+function StampDateDialog({ spot, initialDate, title, confirmLabel, onConfirm, onCancel }) {
+  const today = toDateInputValue();
+  const [value, setValue] = useState(toDateInputValue(initialDate));
+  const valid = /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= today;
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-5">
+        <div className="flex items-center gap-1.5 text-[#B8860B]">
+          <StampIcon size={16} />
+          <span className="text-[11px] tracking-wide text-[#A6987F]">STAMP TOUR</span>
+        </div>
+        <h2 className="font-serif text-lg text-[#2B2620] mt-1">{title}</h2>
+        <p className="text-sm text-[#6B5F4F] mt-1">{spot.name} · {spot.region}</p>
+
+        <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2">다녀온 날짜</p>
+        <input
+          type="date"
+          value={value}
+          max={today}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full bg-white/80 border border-[#D9CBB0] rounded-lg px-3 py-2 text-sm text-[#2B2620] outline-none"
+        />
+        {!valid && <p className="text-xs text-[#DC2626] mt-1">오늘이나 그 이전 날짜를 골라 주세요.</p>}
+
+        <div className="flex gap-2 mt-5">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium text-[#6B5F4F] border border-[#D9CBB0]"
+          >
+            취소
+          </button>
+          <button
+            disabled={!valid}
+            onClick={() => onConfirm(fromDateInputValue(value))}
+            className="flex-1 py-2.5 rounded-lg text-sm font-bold text-[#2B2620] bg-[#B8860B] disabled:opacity-50"
+          >
+            {confirmLabel}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1886,6 +1955,7 @@ function BaramApp() {
   const [detailCache, setDetailCache] = useState({});
   const [stampSpotId, setStampSpotId] = useState(null);
   const [confirmState, setConfirmState] = useState(null); // { title, message, confirmLabel, onConfirm }
+  const [stampDateTarget, setStampDateTarget] = useState(null); // { spotId, mode: "stamp" | "edit" }
   const [birthInfoRaw, setBirthInfoRaw] = usePersistentState("baram_birthInfo", "");
   const [birthModalOpen, setBirthModalOpen] = useState(false);
 
@@ -2012,6 +2082,15 @@ function BaramApp() {
       const updated = next.find((s) => s.id === id);
       if (updated) saveSpotProgress(updated);
       pick15(next, region, currentLocation);
+      return next;
+    });
+  }
+
+  function updateSpotDate(id, visitedDate) {
+    setSpots((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, visitedDate } : s));
+      const updated = next.find((s) => s.id === id);
+      if (updated) saveSpotProgress(updated);
       return next;
     });
   }
@@ -2374,10 +2453,7 @@ function BaramApp() {
             />
 
             <button
-              onClick={() => {
-                conquerSpot(result.id);
-                setDrawerOpen(true);
-              }}
+              onClick={() => setStampDateTarget({ spotId: result.id, mode: "stamp" })}
               className="w-full mt-4 py-2.5 rounded-lg text-lg font-extrabold tracking-[0.3em] text-[#F6F1E7]"
               style={{ background: accent }}
             >
@@ -2398,6 +2474,7 @@ function BaramApp() {
         <DrawerModal
           spots={spots}
           onUnvisit={unvisitSpot}
+          onStamp={(id) => setStampDateTarget({ spotId: id, mode: "stamp" })}
           onOpenStamp={(id) => setStampSpotId(id)}
           onClose={() => setDrawerOpen(false)}
         />
@@ -2408,9 +2485,32 @@ function BaramApp() {
           onChangeMemo={(text) => updateSpotMemo(stampSpotId, text)}
           onChangePhoto={(slotIndex, file) => updateSpotPhoto(stampSpotId, slotIndex, file)}
           onRemovePhoto={(slotIndex) => removeSpotPhoto(stampSpotId, slotIndex)}
+          onEditDate={() => setStampDateTarget({ spotId: stampSpotId, mode: "edit" })}
           onClose={() => setStampSpotId(null)}
         />
       )}
+      {stampDateTarget && spots.find((s) => s.id === stampDateTarget.spotId) && (() => {
+        const target = spots.find((s) => s.id === stampDateTarget.spotId);
+        const isEdit = stampDateTarget.mode === "edit";
+        return (
+          <StampDateDialog
+            spot={target}
+            initialDate={isEdit ? target.visitedDate : null}
+            title={isEdit ? "다녀온 날짜 수정" : "STAMP를 찍을까요?"}
+            confirmLabel={isEdit ? "저장" : "STAMP"}
+            onConfirm={(visitedDate) => {
+              setStampDateTarget(null);
+              if (isEdit) {
+                updateSpotDate(target.id, visitedDate);
+              } else {
+                conquerSpot(target.id, visitedDate);
+                setDrawerOpen(true);
+              }
+            }}
+            onCancel={() => setStampDateTarget(null)}
+          />
+        );
+      })()}
       {confirmState && (
         <ConfirmDialog
           {...confirmState}
