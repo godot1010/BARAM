@@ -1662,6 +1662,32 @@ function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, on
   );
 }
 
+// 실수로 누르면 되돌리기 어려운 동작(룰렛 다시 돌리기, STAMP 취소 등) 전에 한 번 묻는 확인창
+function ConfirmDialog({ title, message, confirmLabel = "확인", onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-5">
+        <h2 className="font-serif text-lg text-[#2B2620]">{title}</h2>
+        {message && <p className="text-sm text-[#6B5F4F] mt-2 whitespace-pre-line">{message}</p>}
+        <div className="flex gap-2 mt-5">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium text-[#6B5F4F] border border-[#D9CBB0]"
+          >
+            아니요
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-lg text-sm font-bold text-[#F6F1E7] bg-[#C4592F]"
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ==========================================
 // 6. 맛집·서점·축제·플레이리스트 상세 탭
 // ==========================================
@@ -1859,6 +1885,7 @@ function BaramApp() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detailCache, setDetailCache] = useState({});
   const [stampSpotId, setStampSpotId] = useState(null);
+  const [confirmState, setConfirmState] = useState(null); // { title, message, confirmLabel, onConfirm }
   const [birthInfoRaw, setBirthInfoRaw] = usePersistentState("baram_birthInfo", "");
   const [birthModalOpen, setBirthModalOpen] = useState(false);
 
@@ -1914,9 +1941,9 @@ function BaramApp() {
       turnEmotional = !turnEmotional;
     }
 
+    // 룰렛판만 새로 만든다. 이미 정해진 여행지(result)는 여기서 지우지 않는다 -
+    // 권역/내 위치를 바꾸거나 앱을 다시 켜도 가던 여행지가 사라지면 안 되기 때문.
     setRouletteSpots(interleaved);
-    setResult(null);
-    try { window.localStorage.removeItem(CURRENT_RESULT_KEY); } catch {}
     angleRef.current = 0;
     if (wheelRef.current) wheelRef.current.style.transform = "rotate(0deg)";
   }
@@ -1930,23 +1957,25 @@ function BaramApp() {
       if (cancelled) return;
       const merged = mergeSpotsWithProgress(spots, progress);
       setSpots(merged);
-      pick15(merged, region, currentLocation);
-
-      // 지난번에 앱을 닫기 전 마지막으로 나왔던 "현재 위치"와 "룰렛 결과"를 복원한다.
-      // (pick15가 위에서 결과를 초기화하므로, 복원은 그 다음에 해야 한다.)
+      // 지난번에 앱을 닫기 전 마지막으로 나왔던 "현재 위치"와 "룰렛 결과"를 복원한 뒤 룰렛판을 만든다.
+      let loc = currentLocation;
       try {
         const savedLocName = window.localStorage.getItem(CURRENT_LOCATION_KEY);
         const savedLoc = savedLocName ? LOCATIONS.find((l) => l.name === savedLocName) : null;
-        if (savedLoc) setCurrentLocation(savedLoc);
+        if (savedLoc) {
+          loc = savedLoc;
+          setCurrentLocation(savedLoc);
+        }
 
         const savedResultId = window.localStorage.getItem(CURRENT_RESULT_KEY);
         if (savedResultId) {
           const savedSpot = merged.find((s) => s.id === savedResultId);
-          if (savedSpot) setResult(savedSpot);
+          if (savedSpot && !savedSpot.isVisited) setResult(savedSpot);
         }
       } catch {
         // localStorage를 쓸 수 없는 환경 - 그냥 처음 상태로 시작
       }
+      pick15(merged, region, loc);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1965,9 +1994,11 @@ function BaramApp() {
     pick15(spots, region, loc);
   }
 
-  function conquerSpot(id) {
+  function conquerSpot(id, visitedDate = new Date().toISOString()) {
+    // 지금 가기로 한 여행지에 도장을 찍었으면 여행이 끝난 것이므로 결과를 비운다
+    if (result && result.id === id) clearResult();
     setSpots((prev) => {
-      const next = prev.map((s) => (s.id === id ? { ...s, isVisited: true, visitedDate: new Date().toISOString() } : s));
+      const next = prev.map((s) => (s.id === id ? { ...s, isVisited: true, visitedDate } : s));
       const updated = next.find((s) => s.id === id);
       if (updated) saveSpotProgress(updated);
       pick15(next, region, currentLocation);
@@ -2055,10 +2086,28 @@ function BaramApp() {
     });
   }
 
-  function startSpin() {
-    if (rouletteSpots.length === 0 || phase !== "idle") return;
+  function clearResult() {
     setResult(null);
     try { window.localStorage.removeItem(CURRENT_RESULT_KEY); } catch {}
+  }
+
+  // 이미 가기로 한 여행지가 있으면 실수로 눌러 날아가지 않도록 한 번 물어본다
+  function startSpin() {
+    if (rouletteSpots.length === 0 || phase !== "idle") return;
+    if (result) {
+      setConfirmState({
+        title: "룰렛을 다시 돌릴까요?",
+        message: `지금 여행지(${result.name})는 사라지고 새 여행지를 뽑아요.`,
+        confirmLabel: "다시 돌리기",
+        onConfirm: spinNow,
+      });
+      return;
+    }
+    spinNow();
+  }
+
+  function spinNow() {
+    clearResult();
     setPhase("ramping");
     const el = wheelRef.current;
     const rampTarget = angleRef.current + 720;
@@ -2360,6 +2409,17 @@ function BaramApp() {
           onChangePhoto={(slotIndex, file) => updateSpotPhoto(stampSpotId, slotIndex, file)}
           onRemovePhoto={(slotIndex) => removeSpotPhoto(stampSpotId, slotIndex)}
           onClose={() => setStampSpotId(null)}
+        />
+      )}
+      {confirmState && (
+        <ConfirmDialog
+          {...confirmState}
+          onConfirm={() => {
+            const run = confirmState.onConfirm;
+            setConfirmState(null);
+            run();
+          }}
+          onCancel={() => setConfirmState(null)}
         />
       )}
       {birthModalOpen && (
