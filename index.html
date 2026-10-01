@@ -1254,6 +1254,10 @@ function sliceDPath(cx, cy, r, startDeg, endDeg) {
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y} Z`;
 }
 
+// 룰렛판 칸 수. 짝수여야 감성(파랑)/활기(빨강)가 한 바퀴 끝까지 번갈아 이어지고(홀수면 처음과 끝 칸이 같은 색으로 붙음),
+// 각 테마 칸 수(9)가 팔레트 색 수(3)로 나누어떨어져야 색 순서도 이음매 없이 이어진다.
+const ROULETTE_SIZE = 18;
+
 const BLUE_PALETTE = ["#AFC9EA", "#C7DAF2", "#98BBE2"];
 const RED_PALETTE = ["#F0B3AE", "#F5C9C5", "#EAA19B"];
 
@@ -2163,8 +2167,8 @@ function BaramApp() {
   // 감성/활기를 더 이상 따로 고르지 않으므로, 뽑힌 결과의 테마에 맞춰 강조색이 바뀐다
   const accent = result ? (result.mood === "emotional" ? "#1B4B91" : "#B3261E") : "#2B2620";
 
-  // 감성 여행 + 활기찬 여행을 하나로 합쳐, 두 테마가 최대한 번갈아 나오도록 15곳을 뽑는다
-  function pick15(currentSpots, currentRegion, currentLoc) {
+  // 감성 여행 + 활기찬 여행을 하나로 합쳐, 두 테마가 최대한 번갈아 나오도록 ROULETTE_SIZE곳을 뽑는다
+  function pickRouletteSpots(currentSpots, currentRegion, currentLoc) {
     const candidates = currentSpots.filter((s) => {
       if (s.isVisited) return false;
       if (s.name === currentLoc.name) return false;
@@ -2178,7 +2182,7 @@ function BaramApp() {
     const interleaved = [];
     let ei = 0, gi = 0;
     let turnEmotional = true;
-    while (interleaved.length < 15 && (ei < emotional.length || gi < energetic.length)) {
+    while (interleaved.length < ROULETTE_SIZE && (ei < emotional.length || gi < energetic.length)) {
       if (turnEmotional && ei < emotional.length) {
         interleaved.push(emotional[ei++]);
       } else if (!turnEmotional && gi < energetic.length) {
@@ -2239,7 +2243,7 @@ function BaramApp() {
       } catch {
         // localStorage를 쓸 수 없는 환경 - 그냥 처음 상태로 시작
       }
-      pick15(merged, region, loc);
+      pickRouletteSpots(merged, region, loc);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2248,14 +2252,14 @@ function BaramApp() {
   function changeRegion(next) {
     if (phase !== "idle") return;
     setRegion(next);
-    pick15(spots, next, currentLocation);
+    pickRouletteSpots(spots, next, currentLocation);
   }
 
   function selectLocation(loc) {
     setCurrentLocation(loc);
     try { window.localStorage.setItem(CURRENT_LOCATION_KEY, loc.name); } catch {}
     setLocationDialogOpen(false);
-    pick15(spots, region, loc);
+    pickRouletteSpots(spots, region, loc);
   }
 
   function conquerSpot(id, visitedDate = new Date().toISOString()) {
@@ -2265,7 +2269,7 @@ function BaramApp() {
       const next = prev.map((s) => (s.id === id ? { ...s, isVisited: true, visitedDate } : s));
       const updated = next.find((s) => s.id === id);
       if (updated) saveSpotProgress(updated);
-      pick15(next, region, currentLocation);
+      pickRouletteSpots(next, region, currentLocation);
       return next;
     });
   }
@@ -2275,7 +2279,7 @@ function BaramApp() {
       const next = prev.map((s) => (s.id === id ? { ...s, isVisited: false, visitedDate: null } : s));
       const updated = next.find((s) => s.id === id);
       if (updated) saveSpotProgress(updated);
-      pick15(next, region, currentLocation);
+      pickRouletteSpots(next, region, currentLocation);
       return next;
     });
   }
@@ -2318,7 +2322,7 @@ function BaramApp() {
           const merged = mergeSpotsWithProgress(base, progress);
           setSpots(merged);
           if (result && merged.find((s) => s.id === result.id && s.isVisited)) clearResult();
-          pick15(merged, region, currentLocation);
+          pickRouletteSpots(merged, region, currentLocation);
           setBackupNotice(`백업을 불러왔어요. STAMP ${stampCount}곳`);
         },
       });
