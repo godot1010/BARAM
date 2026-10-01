@@ -556,6 +556,16 @@ async function saveSpotProgress(spot) {
   }
 }
 
+// 육지와 다리로 이어지지 않은 섬 지역. 같은 섬 안(제주시↔서귀포시)은 차로 갈 수 있다.
+const ISLAND_GROUP = { "제주시": "제주", "서귀포시": "제주", "울릉군": "울릉", "옹진군": "옹진" };
+
+// 출발지와 목적지가 섬/육지로 갈리면 차로 갈 수 없으므로 자동차 소요시간 대신 배·비행기 안내를 한다
+function needsFerryOrFlight(fromName, toName) {
+  const a = ISLAND_GROUP[fromName] || null;
+  const b = ISLAND_GROUP[toName] || null;
+  return (a || b) && a !== b;
+}
+
 function distanceEta(lat1, lng1, lat2, lng2) {
   const p = 0.017453292519943295;
   const a = 0.5 - Math.cos((lat2 - lat1) * p) / 2 +
@@ -1320,8 +1330,46 @@ function RouletteWheel({ spots, wheelRef }) {
 // ==========================================
 // 3. 위치 검색 다이얼로그
 // ==========================================
+// 폰 위치(GPS)에서 가장 가까운 시·군·구를 찾는다 (각 지역의 대표 좌표 기준이라 경계 근처에선 옆 지역이 나올 수 있음)
+function findNearestLocation(lat, lng) {
+  let best = null;
+  let bestKm = Infinity;
+  LOCATIONS.forEach((l) => {
+    const km = haversineKm(lat, lng, l.lat, l.lng);
+    if (km < bestKm) {
+      best = l;
+      bestKm = km;
+    }
+  });
+  return best;
+}
+
 function LocationDialog({ currentLocation, onSelect, onClose }) {
   const [query, setQuery] = useState("");
+  const [gpsStatus, setGpsStatus] = useState(""); // "" | "loading" | 오류 문구
+
+  function locateMe() {
+    if (!navigator.geolocation) {
+      setGpsStatus("이 기기에서는 위치를 찾을 수 없어요. 직접 검색해 주세요.");
+      return;
+    }
+    setGpsStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const nearest = findNearestLocation(pos.coords.latitude, pos.coords.longitude);
+        setGpsStatus("");
+        if (nearest) onSelect(nearest);
+      },
+      (err) => {
+        setGpsStatus(
+          err.code === 1
+            ? "위치 권한이 꺼져 있어요. 폰 설정에서 위치 권한을 허용하거나 직접 검색해 주세요."
+            : "위치를 찾지 못했어요. 잠시 후 다시 시도하거나 직접 검색해 주세요."
+        );
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 5 * 60 * 1000 }
+    );
+  }
   const filtered = useMemo(() => {
     const q = query.replace(/\s/g, "");
     return LOCATIONS.filter((l) => l.name.replace(/\s/g, "").includes(q));
@@ -1347,6 +1395,18 @@ function LocationDialog({ currentLocation, onSelect, onClose }) {
               className="flex-1 bg-transparent outline-none text-sm text-[#2B2620] placeholder:text-[#A6987F]"
             />
           </div>
+          <button
+            onClick={locateMe}
+            disabled={gpsStatus === "loading"}
+            className="w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-bold text-[#2B2620] border border-[#B8860B] bg-white/50 disabled:opacity-60"
+          >
+            {gpsStatus === "loading" ? (
+              <><Loader2 size={14} className="animate-spin" /> 위치 찾는 중…</>
+            ) : (
+              <><MapPin size={14} className="text-[#B8860B]" /> 지금 있는 곳으로 설정</>
+            )}
+          </button>
+          {gpsStatus && gpsStatus !== "loading" && <p className="text-xs text-[#DC2626] mt-2">{gpsStatus}</p>}
           <p className="text-xs text-[#6B5F4F] mt-2">{filtered.length}개 지역</p>
         </div>
         <div className="overflow-y-auto px-2 pb-4">
@@ -2601,8 +2661,33 @@ function BaramApp() {
             <p className="text-sm text-[#6B5F4F] mt-1">{result.description}</p>
 
             <div className="border-t border-[#D9CBB0] my-3" />
-            <div className="flex items-center gap-1.5 text-sm font-medium text-[#2B2620]">
-              <Car size={14} /> 예상 소요: {route.duration} ({route.distance})
+            {needsFerryOrFlight(currentLocation.name, result.name) ? (
+              <div className="text-sm font-medium text-[#2B2620]">
+                ⛴️✈️ 배나 비행기로 가야 하는 곳이에요
+                <p className="text-xs font-normal text-[#6B5F4F] mt-0.5">
+                  {currentLocation.name}에서 직선거리 약 {Math.round(haversineKm(currentLocation.lat, currentLocation.lng, result.lat, result.lng))}km · 배편/항공편을 먼저 확인하세요.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-sm font-medium text-[#2B2620]">
+                <Car size={14} /> 예상 소요: {route.duration} ({route.distance})
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <a
+                href={`https://map.kakao.com/link/to/${encodeURIComponent(result.name)},${result.lat},${result.lng}`}
+                target="_blank" rel="noreferrer"
+                className="flex items-center justify-center gap-1 bg-white/50 border border-[#D9CBB0] rounded-lg px-2 py-2 text-xs font-bold text-[#2B2620]"
+              >
+                카카오맵 길찾기 <ExternalLink size={12} className="text-[#2F6E68]" />
+              </a>
+              <a
+                href={`https://map.naver.com/p/search/${encodeURIComponent(result.name)}`}
+                target="_blank" rel="noreferrer"
+                className="flex items-center justify-center gap-1 bg-white/50 border border-[#D9CBB0] rounded-lg px-2 py-2 text-xs font-bold text-[#2B2620]"
+              >
+                네이버 지도 <ExternalLink size={12} className="text-[#2F6E68]" />
+              </a>
             </div>
 
             <DayItinerary spot={result} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} />
@@ -2636,7 +2721,15 @@ function BaramApp() {
       {drawerOpen && (
         <DrawerModal
           spots={spots}
-          onUnvisit={unvisitSpot}
+          onUnvisit={(id) => {
+            const s = spots.find((x) => x.id === id);
+            setConfirmState({
+              title: "STAMP를 취소할까요?",
+              message: `${s ? s.name : "이 도시"}의 STAMP를 취소해요.\n사진과 메모는 지워지지 않고, 다시 STAMP를 찍으면 그대로 보여요.`,
+              confirmLabel: "STAMP 취소",
+              onConfirm: () => unvisitSpot(id),
+            });
+          }}
           onStamp={(id) => setStampDateTarget({ spotId: id, mode: "stamp" })}
           onOpenStamp={(id) => setStampSpotId(id)}
           onExportBackup={exportBackup}
