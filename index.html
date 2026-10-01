@@ -2196,6 +2196,20 @@ function BaramApp() {
     if (wheelRef.current) wheelRef.current.style.transform = "rotate(0deg)";
   }
 
+  // 폰 저장 공간이 부족할 때 브라우저가 도장깨기 기록(IndexedDB)을 자동으로 지우지 않도록 요청한다.
+  // (사용자가 직접 앱 데이터를 지우는 경우는 막을 수 없어서 백업 기능이 따로 있다)
+  useEffect(() => {
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persisted()
+          .then((already) => (already ? true : navigator.storage.persist()))
+          .catch(() => {});
+      }
+    } catch {
+      // 지원하지 않는 환경 - 무시
+    }
+  }, []);
+
   // 앱이 처음 열릴 때 IndexedDB에 저장된 도장깨기 진행 기록을 불러와 병합한 뒤 룰렛을 뽑는다.
   // (IndexedDB는 비동기라 useState 초기값으로는 못 쓰고, 마운트 후 이렇게 불러와야 한다)
   useEffect(() => {
