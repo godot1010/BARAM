@@ -722,6 +722,8 @@ function computeSaju(birthInfo) {
   }
 
   const pillars = [year, month, day, hourPillar].filter(Boolean);
+  // 여행운 항목을 사람마다 다르게 고르기 위한 숫자 (예: 1975-03-15 → 19750315)
+  const seed = y * 10000 + m * 100 + d;
   const elementCounts = { 목: 0, 화: 0, 토: 0, 금: 0, 수: 0 };
   pillars.forEach((p) => {
     elementCounts[STEM_ELEMENT[p.stemIdx]] += 1;
@@ -738,6 +740,7 @@ function computeSaju(birthInfo) {
       hour: hourPillar ? ganjiLabel(hourPillar.stemIdx, hourPillar.branchIdx) : null,
     },
     elementCounts,
+    seed,
   };
 }
 
@@ -750,14 +753,46 @@ function todayGanji() {
   return { idx, stemIdx, branchIdx, element: STEM_ELEMENT[stemIdx], label: ganjiLabel(stemIdx, branchIdx) };
 }
 
-// 오행별 방향/색상/아이템 - 전통 오행 배속을 그대로 따름(재미 코너용 표현만 가볍게)
+// 오행별 방향/색상/아이템 - 전통 오행 배속(목=동, 화=남, 토=중앙, 금=서, 수=북)을 따르고,
+// 표현을 여러 개 두어 사람마다/날마다 다르게 고른다 (pickPersonalDaily 참고)
 const ELEMENT_THEME = {
-  목: { direction: "동쪽", colors: "초록·청록 계열", item: "화분이나 책 한 권" },
-  화: { direction: "남쪽", colors: "빨강·주황 계열", item: "따뜻한 조명이 있는 카페" },
-  토: { direction: "중부·근교", colors: "노랑·갈색 계열", item: "도자기나 향이 좋은 소품" },
-  금: { direction: "서쪽", colors: "흰색·금색 계열", item: "반짝이는 액세서리" },
-  수: { direction: "북쪽", colors: "검정·파랑 계열", item: "물가 풍경, 잔잔한 음악" },
+  목: {
+    direction: ["동쪽", "해 뜨는 동쪽", "동쪽 숲길·공원"],
+    colors: ["초록 계열", "청록 계열", "연두·올리브 계열"],
+    item: ["화분이나 책 한 권", "나무 향 나는 소품", "공원 산책길", "허브차 한 잔"],
+  },
+  화: {
+    direction: ["남쪽", "따뜻한 남쪽", "남쪽 바닷가·시장"],
+    colors: ["빨강 계열", "주황 계열", "분홍·코랄 계열"],
+    item: ["따뜻한 조명이 있는 카페", "매콤한 지역 음식", "노을 보이는 자리", "향초"],
+  },
+  토: {
+    direction: ["중부·근교", "가까운 근교", "내 위치 주변"],
+    colors: ["노랑 계열", "갈색·베이지 계열", "황토·머스터드 계열"],
+    item: ["도자기나 향이 좋은 소품", "전통시장 간식", "흙길·돌담길", "따뜻한 곡물 음료"],
+  },
+  금: {
+    direction: ["서쪽", "해 지는 서쪽", "서쪽 바다·노을"],
+    colors: ["흰색 계열", "금색·베이지 계열", "은색·회색 계열"],
+    item: ["반짝이는 액세서리", "작은 기념 배지", "깔끔한 손수건", "흰 운동화"],
+  },
+  수: {
+    direction: ["북쪽", "물이 흐르는 북쪽", "북쪽 강가·호숫가"],
+    colors: ["검정 계열", "파랑·남색 계열", "하늘색 계열"],
+    item: ["잔잔한 음악", "시원한 음료 한 잔", "강변 산책", "좋아하는 플레이리스트"],
+  },
 };
+
+// 사람마다 다른 시작 위치(생년월일로 정함)에서 날마다 한 칸씩 넘어가며 고른다.
+// 같은 사람·같은 날은 하루 종일 같은 결과가 나오고, 다음 날은 반드시 다른 항목이 나온다.
+// salt를 항목마다 다르게 줘서 방향/색/아이템/문구가 같이 움직이지 않게 한다.
+function pickPersonalDaily(list, personSeed, dayIdx, salt) {
+  let h = Math.imul(personSeed ^ Math.imul(salt + 1, 0x9e3779b1), 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return list[mod((h >>> 0) + dayIdx, list.length)];
+}
 
 // 오행마다 성격 키워드를 붙여서, 같은 패턴이라도 오늘의 오행에 따라 문구가 달라지게 한다.
 const ELEMENT_KEYWORD = { 목: "성장과 시작", 화: "열정과 활력", 토: "안정과 신뢰", 금: "결단과 정리", 수: "지혜와 휴식" };
@@ -780,27 +815,55 @@ function withObjectParticle(word) {
   return word + (hasFinal ? "을" : "를");
 }
 
-// 패턴별 한 줄 문구 - 여러 버전을 두고 그날의 일진 인덱스로 돌아가며 고른다 (같은 패턴이 반복돼도 문구는 달라짐)
+// 패턴별 한 줄 문구 - 유형마다 10개씩 두고, 사람마다 다른 순서로 날마다 하나씩 돌아가며 고른다 (pickPersonalDaily)
 const ONE_LINER_POOL = {
   fill: [
     "오늘은 망설이지 말고, 정한 곳으로 곧장 떠나보세요.",
     "미뤄둔 그곳, 오늘이 바로 적기예요.",
     "채워진 기운을 따라 발걸음을 내딛어보세요.",
+    "지도에 찍어만 두었던 곳, 오늘 한 칸 지워보세요.",
+    "생각보다 가까운 곳에 답이 있는 날이에요.",
+    "오늘 고른 길이 오래 기억될 길이 됩니다.",
+    "처음 가보는 길이 유난히 잘 맞는 날이에요.",
+    "망설인 시간만큼 더 반가운 풍경이 기다려요.",
+    "작은 결심 하나가 하루를 바꿔놓을 거예요.",
+    "오늘은 '언젠가'를 '오늘'로 바꾸기 좋은 날.",
   ],
   overflow: [
     "오늘은 속도를 늦추는 것이 곧 행운입니다.",
     "한 곳만 제대로 즐겨도 충분한 하루예요.",
     "서두르지 않아야 더 오래 남는 여행이 됩니다.",
+    "일정표의 절반만 채워도 충분합니다.",
+    "오래 머문 자리에서 더 많은 걸 보게 돼요.",
+    "카페 창가에 앉아 쉬어가는 것도 여행이에요.",
+    "빨리 가려다 놓치는 풍경이 없도록, 천천히.",
+    "욕심을 덜어낼수록 마음이 가벼워지는 날이에요.",
+    "한 번 더 둘러보는 여유가 행운을 부릅니다.",
+    "숨을 고르는 순간, 여행이 비로소 시작돼요.",
   ],
   boost: [
     "오늘의 즐거움은 혼자가 아니라 함께에서 옵니다.",
     "낯선 인사 한마디가 특별한 하루를 만들어요.",
     "동행이 있는 여행이 유독 잘 풀리는 날입니다.",
+    "함께 걷는 사람에게 먼저 말을 건네보세요.",
+    "현지 사람이 추천하는 곳이 정답인 날이에요.",
+    "같이 찍은 사진 한 장이 오늘의 보물이 됩니다.",
+    "맛집 줄에서 나눈 대화가 즐거운 기억이 돼요.",
+    "오랜만에 연락 온 사람과 떠나도 좋은 날이에요.",
+    "나눠 먹는 음식이 유독 맛있는 하루예요.",
+    "길을 묻는 용기가 좋은 인연을 데려와요.",
   ],
   calm: [
     "목적지보다 중요한 건, 그 순간 나를 비워내는 것입니다.",
     "계획 없는 하루가 가장 오래 기억에 남을 거예요.",
     "천천히 걷는 것만으로 충분한 하루예요.",
+    "휴대폰을 잠시 내려두고 풍경에 집중해보세요.",
+    "발길 닿는 골목이 오늘의 목적지예요.",
+    "바람 소리, 물소리에 귀 기울여 보세요.",
+    "아무것도 하지 않는 시간도 여행의 일부예요.",
+    "오늘은 빈 벤치 하나가 최고의 명소예요.",
+    "서두르지 않는 걸음에 좋은 일이 따라와요.",
+    "멍하니 바라보는 하늘이 마음을 채워줘요.",
   ],
 };
 
@@ -830,18 +893,17 @@ function getTravelFortune(saju) {
   }
 
   const headline = HEADLINE_TEMPLATES[mood](keyword);
-  const pool = ONE_LINER_POOL[mood];
-  const oneLiner = pool[mod(today.idx, pool.length)];
+  const seed = saju.seed || 0;
 
   return {
     todayLabel: today.label,
     todayElement: todayEl,
     mood,
     headline,
-    direction: theme.direction,
-    colors: theme.colors,
-    item: theme.item,
-    oneLiner,
+    direction: pickPersonalDaily(theme.direction, seed, today.idx, 1),
+    colors: pickPersonalDaily(theme.colors, seed, today.idx, 2),
+    item: pickPersonalDaily(theme.item, seed, today.idx, 3),
+    oneLiner: pickPersonalDaily(ONE_LINER_POOL[mood], seed, today.idx, 4),
   };
 }
 
