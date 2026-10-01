@@ -703,7 +703,7 @@ function hourGanjiIndex(dayStemIdx, hour) {
   return { stemIdx: mod(startStemForJa + branchIdx, 10), branchIdx };
 }
 
-// birthInfo: { date: "YYYY-MM-DD", time: "HH:MM" | null, gender: "M"|"F" }
+// birthInfo: { date: "YYYY-MM-DD"(양력), time: "HH:MM" | null } (예전 버전에 있던 gender는 계산에 쓰지 않음)
 function computeSaju(birthInfo) {
   if (!birthInfo || !birthInfo.date) return null;
   const [y, m, d] = birthInfo.date.split("-").map(Number);
@@ -1449,30 +1449,70 @@ function getSolarLunarLib() {
   return window.solarLunar.default || window.solarLunar;
 }
 
+// 태어난 시간은 사주에서 2시간 단위(12지)로만 쓰이므로, 분 단위 대신 12개 중 하나를 고르게 한다.
+// 저장 형식은 예전과 같은 "HH:MM"을 유지한다 (각 시진의 대표 시각: 자시 00:00, 축시 01:00, 인시 03:00 …).
+const BIRTH_HOUR_OPTIONS = [
+  { label: "자", range: "23~01시" }, { label: "축", range: "01~03시" }, { label: "인", range: "03~05시" },
+  { label: "묘", range: "05~07시" }, { label: "진", range: "07~09시" }, { label: "사", range: "09~11시" },
+  { label: "오", range: "11~13시" }, { label: "미", range: "13~15시" }, { label: "신", range: "15~17시" },
+  { label: "유", range: "17~19시" }, { label: "술", range: "19~21시" }, { label: "해", range: "21~23시" },
+];
+
+function branchToTime(branchIdx) {
+  const hour = branchIdx === 0 ? 0 : branchIdx * 2 - 1;
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+// 예전 버전에서 분 단위로 저장한 시간("14:30" 등)도 hourGanjiIndex와 같은 규칙으로 시진 번호로 바꾼다
+function timeToBranch(time) {
+  if (!time) return null;
+  const hh = Number(time.split(":")[0]);
+  if (!Number.isFinite(hh)) return null;
+  return hh === 23 || hh === 0 ? 0 : Math.floor((hh + 1) / 2) % 12;
+}
+
+function daysInSolarMonth(year, month) {
+  return new Date(Number(year) || 2000, Number(month), 0).getDate();
+}
+
 function BirthInfoModal({ initial, onSave, onClose }) {
   const [calendarType, setCalendarType] = useState(initial?.calendarType || "solar"); // "solar" | "lunar"
-  const [date, setDate] = useState((calendarType === "lunar" ? initial?.lunarDate : initial?.date) || "");
+  const initialDate = (calendarType === "lunar" ? initial?.lunarDate : initial?.date) || "";
+  const [iy, im, id] = initialDate ? initialDate.split("-") : ["", "", ""];
+  const [year, setYear] = useState(iy || "");
+  const [month, setMonth] = useState(im ? String(Number(im)) : "");
+  const [day, setDay] = useState(id ? String(Number(id)) : "");
   const [isLeapMonth, setIsLeapMonth] = useState(!!initial?.isLeapMonth);
-  const [time, setTime] = useState(initial?.time || "");
-  // 대부분 태어난 시간을 알고 있으므로, 기존에 저장된 값이 없을 때도 기본값은 "시간 모름 해제" 상태로 둔다
-  const [timeUnknown, setTimeUnknown] = useState(initial ? !initial.time : false);
-  const [gender, setGender] = useState(initial?.gender || "F");
+  const [branch, setBranch] = useState(timeToBranch(initial?.time)); // null = 시간 모름
   const [error, setError] = useState("");
 
+  const thisYear = new Date().getFullYear();
+  // 1990년대 생이 목록 위쪽에 오도록 올해부터 거꾸로 나열
+  const years = useMemo(() => Array.from({ length: thisYear - 1919 }, (_, i) => String(thisYear - i)), [thisYear]);
+  // 음력은 한 달이 29일 또는 30일이라 30일까지 보여주고, 실제로 있는 날짜인지는 저장할 때 변환 라이브러리로 확인한다
+  const maxDay = calendarType === "lunar" ? 30 : month ? daysInSolarMonth(year, month) : 31;
+  const days = Array.from({ length: maxDay }, (_, i) => String(i + 1));
+  const complete = year && month && day;
+
+  // 년/월이 바뀌어 고른 날짜가 그 달에 없으면(예: 양력 2월 30일) 날짜 선택을 비운다
+  useEffect(() => {
+    if (day && Number(day) > maxDay) setDay("");
+  }, [maxDay]);
+
   function changeCalendarType(next) {
+    if (next === calendarType) return;
     setCalendarType(next);
     setError("");
-    // 양력<->음력 전환 시 이전에 입력한 날짜 값을 그대로 들고가면 헷갈리므로 비워준다
-    setDate("");
     setIsLeapMonth(false);
   }
 
   function handleSave() {
-    if (!date) return;
-    const timeValue = timeUnknown ? null : (time || null);
+    if (!complete) return;
+    const date = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    const timeValue = branch === null ? null : branchToTime(branch);
 
     if (calendarType === "solar") {
-      onSave({ date, time: timeValue, gender, calendarType: "solar" });
+      onSave({ date, time: timeValue, calendarType: "solar" });
       return;
     }
 
@@ -1483,22 +1523,27 @@ function BirthInfoModal({ initial, onSave, onClose }) {
       setError("음력 변환 기능을 아직 불러오는 중이에요. 잠시 후 다시 시도해주세요.");
       return;
     }
-    const [ly, lm, ld] = date.split("-").map(Number);
-    const result = lib.lunar2solar(ly, lm, ld, isLeapMonth);
+    const result = lib.lunar2solar(Number(year), Number(month), Number(day), isLeapMonth);
     if (!result || result === -1 || !result.cYear) {
-      setError("입력하신 음력 날짜가 올바르지 않아요. 윤달 여부를 다시 확인해주세요.");
+      setError("음력 달력에 없는 날짜예요. 날짜(29일/30일)나 윤달 여부를 다시 확인해주세요.");
       return;
     }
     const solarDate = `${result.cYear}-${String(result.cMonth).padStart(2, "0")}-${String(result.cDay).padStart(2, "0")}`;
     onSave({
       date: solarDate,
       time: timeValue,
-      gender,
       calendarType: "lunar",
       lunarDate: date,
       isLeapMonth,
     });
   }
+
+  const selectClass = "bg-white/70 border border-[#D9CBB0] rounded-lg px-2 py-2 text-sm text-[#2B2620] outline-none";
+  const toggleStyle = (active) => ({
+    borderColor: active ? "#B8860B" : "#D9CBB0",
+    background: active ? "#F3E6C4" : "transparent",
+    color: "#2B2620",
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
@@ -1508,84 +1553,72 @@ function BirthInfoModal({ initial, onSave, onClose }) {
           <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
         </div>
         <p className="text-xs text-[#6B5F4F] mb-4 leading-relaxed">
-          입력하신 정보는 이 브라우저에만 저장되고 서버로 전송되지 않아요. 양력·음력 생년월일 모두 지원합니다.
+          입력하신 정보는 이 폰에만 저장되고 서버로 전송되지 않아요.
         </p>
 
-        <label className="block text-xs font-medium text-[#2B2620] mb-1">달력 종류</label>
-        <div className="flex gap-2 mb-3">
-          <button
-            onClick={() => changeCalendarType("solar")}
-            className="flex-1 py-2 rounded-lg text-sm border"
-            style={{ borderColor: calendarType === "solar" ? "#B8860B" : "#D9CBB0", background: calendarType === "solar" ? "#F3E6C4" : "transparent", color: "#2B2620" }}
-          >
-            양력
-          </button>
-          <button
-            onClick={() => changeCalendarType("lunar")}
-            className="flex-1 py-2 rounded-lg text-sm border"
-            style={{ borderColor: calendarType === "lunar" ? "#B8860B" : "#D9CBB0", background: calendarType === "lunar" ? "#F3E6C4" : "transparent", color: "#2B2620" }}
-          >
-            음력
-          </button>
+        <div className="flex items-center justify-between mb-1">
+          <label className="text-xs font-medium text-[#2B2620]">생년월일</label>
+          <div className="flex gap-1">
+            {[["solar", "양력"], ["lunar", "음력"]].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => changeCalendarType(key)}
+                className="px-3 py-1 rounded-full text-xs border"
+                style={toggleStyle(calendarType === key)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-
-        <label className="block text-xs font-medium text-[#2B2620] mb-1">
-          생년월일 ({calendarType === "lunar" ? "음력" : "양력"})
-        </label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => { setDate(e.target.value); setError(""); }}
-          className="w-full bg-white/70 border border-[#D9CBB0] rounded-lg px-3 py-2 text-sm outline-none mb-1"
-        />
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: "1.4fr 1fr 1fr" }}>
+          <select aria-label="태어난 해" value={year} onChange={(e) => { setYear(e.target.value); setError(""); }} className={selectClass}>
+            <option value="">년</option>
+            {years.map((y) => <option key={y} value={y}>{y}년</option>)}
+          </select>
+          <select aria-label="태어난 달" value={month} onChange={(e) => { setMonth(e.target.value); setError(""); }} className={selectClass}>
+            <option value="">월</option>
+            {Array.from({ length: 12 }, (_, i) => String(i + 1)).map((m) => <option key={m} value={m}>{m}월</option>)}
+          </select>
+          <select aria-label="태어난 날" value={day} onChange={(e) => { setDay(e.target.value); setError(""); }} className={selectClass}>
+            <option value="">일</option>
+            {days.map((d) => <option key={d} value={d}>{d}일</option>)}
+          </select>
+        </div>
         {calendarType === "lunar" && (
-          <>
-            <p className="text-[11px] text-[#A6987F] mb-2">
-              달력 입력창에는 양력 날짜 형식 그대로, 음력 생년월일 숫자를 입력해주세요 (예: 음력 3월 15일이면 그대로 03-15 선택).
-            </p>
-            <label className="flex items-center gap-1.5 text-xs text-[#6B5F4F] mb-2">
-              <input type="checkbox" checked={isLeapMonth} onChange={(e) => { setIsLeapMonth(e.target.checked); setError(""); }} />
-              윤달(윤월)이에요
-            </label>
-          </>
+          <label className="flex items-center gap-1.5 text-xs text-[#6B5F4F] mt-2">
+            <input type="checkbox" checked={isLeapMonth} onChange={(e) => { setIsLeapMonth(e.target.checked); setError(""); }} />
+            윤달(윤월)이에요
+          </label>
         )}
-        {error && <p className="text-[11px] text-[#A8441F] mb-2">{error}</p>}
+        {error && <p className="text-[11px] text-[#A8441F] mt-2">{error}</p>}
 
-        <label className="block text-xs font-medium text-[#2B2620] mb-1 mt-2">태어난 시간</label>
-        <input
-          type="time"
-          value={time}
-          disabled={timeUnknown}
-          onChange={(e) => setTime(e.target.value)}
-          className="w-full bg-white/70 border border-[#D9CBB0] rounded-lg px-3 py-2 text-sm outline-none mb-2 disabled:opacity-50"
-        />
-        <label className="flex items-center gap-1.5 text-xs text-[#6B5F4F] mb-3">
-          <input type="checkbox" checked={timeUnknown} onChange={(e) => setTimeUnknown(e.target.checked)} />
-          태어난 시간을 몰라요 (시주 없이 3주로만 계산)
-        </label>
-
-        <label className="block text-xs font-medium text-[#2B2620] mb-1">성별</label>
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setGender("F")}
-            className="flex-1 py-2 rounded-lg text-sm border"
-            style={{ borderColor: gender === "F" ? "#B8860B" : "#D9CBB0", background: gender === "F" ? "#F3E6C4" : "transparent", color: "#2B2620" }}
-          >
-            여성
-          </button>
-          <button
-            onClick={() => setGender("M")}
-            className="flex-1 py-2 rounded-lg text-sm border"
-            style={{ borderColor: gender === "M" ? "#B8860B" : "#D9CBB0", background: gender === "M" ? "#F3E6C4" : "transparent", color: "#2B2620" }}
-          >
-            남성
-          </button>
+        <label className="block text-xs font-medium text-[#2B2620] mt-4 mb-1">태어난 시간</label>
+        <div className="grid grid-cols-4 gap-1.5">
+          {BIRTH_HOUR_OPTIONS.map((o, i) => (
+            <button
+              key={o.label}
+              onClick={() => setBranch(i)}
+              className="py-1.5 rounded-lg border text-center"
+              style={toggleStyle(branch === i)}
+            >
+              <span className="block text-sm font-bold">{o.label}시</span>
+              <span className="block text-[10px] text-[#6B5F4F]">{o.range}</span>
+            </button>
+          ))}
         </div>
+        <button
+          onClick={() => setBranch(null)}
+          className="w-full mt-1.5 py-1.5 rounded-lg border text-xs"
+          style={toggleStyle(branch === null)}
+        >
+          시간을 몰라요 (시주 없이 계산)
+        </button>
 
         <button
           onClick={handleSave}
-          disabled={!date}
-          className="w-full py-2.5 rounded-lg text-sm font-medium text-[#F6F1E7] bg-[#2B2620] disabled:opacity-50"
+          disabled={!complete}
+          className="w-full mt-5 py-2.5 rounded-lg text-sm font-medium text-[#F6F1E7] bg-[#2B2620] disabled:opacity-50"
         >
           저장하고 보기
         </button>
