@@ -1122,6 +1122,64 @@ const POP_SONGS = [
   { title: "Budapest", artist: "George Ezra", mood: "energetic" },
   { title: "Sunflower", artist: "Post Malone & Swae Lee", mood: "energetic" },
 ];
+// 지역 노래 / 지역 별미 - 키는 지역 이름 그대로, 또는 "부산 *"처럼 그 광역시의 모든 구에 해당하는 묶음
+// (정확한 이름이 먼저, 없으면 묶음으로 찾는다). 노래는 2026-10-02 애플뮤직 목록에서 제목·가수를 확인함.
+const BUSAN_SONGS = [
+  { title: "부산 갈매기", artist: "문성재" },
+  { title: "돌아와요 부산항에", artist: "조용필" },
+];
+const REGION_SONGS = {
+  "부산 *": BUSAN_SONGS,
+  기장군: BUSAN_SONGS,
+  여수시: [{ title: "여수 밤바다", artist: "버스커 버스커" }],
+  제주시: [{ title: "제주도의 푸른 밤", artist: "최성원" }],
+  서귀포시: [{ title: "서귀포를 아시나요", artist: "조미미" }, { title: "제주도의 푸른 밤", artist: "최성원" }],
+  춘천시: [{ title: "춘천가는 기차", artist: "김현철" }, { title: "소양강 처녀", artist: "김태희" }],
+  강릉시: [{ title: "강릉에서", artist: "스위트피" }],
+  목포시: [{ title: "목포의 눈물", artist: "이난영" }],
+  신안군: [{ title: "흑산도 아가씨", artist: "이미자" }],
+  안동시: [{ title: "안동역에서", artist: "진성" }],
+  포항시: [{ title: "영일만 친구", artist: "최백호" }],
+  울릉군: [{ title: "울릉도 트위스트", artist: "이시스터즈" }, { title: "독도는 우리땅", artist: "정광태" }],
+  "대전 *": [{ title: "대전 블루스", artist: "조용필" }],
+  "인천 중구": [{ title: "연안부두", artist: "김트리오" }],
+  "서울 종로구": [{ title: "광화문 연가", artist: "이문세" }, { title: "혜화동", artist: "동물원" }],
+  "서울 중구": [{ title: "명동 콜링", artist: "크라잉넛" }],
+  "서울 용산구": [{ title: "이태원 프리덤", artist: "UV" }],
+  "서울 강남구": [{ title: "강남스타일", artist: "싸이" }],
+  "서울 서대문구": [{ title: "신촌을 못가", artist: "포스트맨" }],
+  "서울 *": [{ title: "서울 서울 서울", artist: "조용필" }],
+};
+
+const REGION_FOODS = {
+  // 강원
+  춘천시: ["닭갈비", "막국수"], 강릉시: ["초당순두부"], 속초시: ["오징어순대", "닭강정"],
+  평창군: ["메밀전병", "메밀국수"], 정선군: ["곤드레밥"], 횡성군: ["한우"],
+  // 경기·인천
+  수원시: ["왕갈비"], 의정부시: ["부대찌개"], 이천시: ["쌀밥 정식"], 포천시: ["이동갈비"],
+  양평군: ["해장국"], 가평군: ["잣 요리"], "인천 중구": ["짜장면", "닭강정"], 강화군: ["순무김치", "젓국갈비"],
+  // 충청
+  천안시: ["호두과자"], 공주시: ["밤 요리"], 서산시: ["어리굴젓"], 태안군: ["꽃게"], 단양군: ["마늘 요리"],
+  "대전 *": ["칼국수"],
+  // 영남
+  "부산 *": ["돼지국밥", "밀면"], 기장군: ["곰장어", "멸치"], "대구 *": ["막창", "납작만두"],
+  안동시: ["찜닭", "간고등어"], 영덕군: ["대게"], 울진군: ["대게"], 포항시: ["과메기", "물회"],
+  경주시: ["황남빵", "쌈밥"], 통영시: ["충무김밥", "굴"], 진주시: ["진주냉면", "진주비빔밥"],
+  창원시: ["아귀찜"], 하동군: ["재첩국"], 남해군: ["멸치쌈밥"], 울주군: ["언양불고기"],
+  // 호남·제주
+  전주시: ["비빔밥", "콩나물국밥"], 남원시: ["추어탕"], 담양군: ["떡갈비", "대통밥"], 나주시: ["곰탕"],
+  "광주 광산구": ["송정떡갈비"], 목포시: ["세발낙지"], 여수시: ["갓김치", "게장"], 보성군: ["꼬막", "녹차"],
+  영광군: ["굴비"], 완도군: ["전복"], 제주시: ["흑돼지", "고기국수"], 서귀포시: ["갈치", "옥돔"],
+  // 서울
+  "서울 종로구": ["빈대떡", "육회"], "서울 중구": ["떡볶이", "족발"],
+};
+
+function lookupRegion(table, name) {
+  if (table[name]) return table[name];
+  const city = name.split(" ")[0];
+  return name.includes(" ") ? table[`${city} *`] || null : null;
+}
+
 function hashString(str) {
   let h = 2166136261;
   for (const ch of str) {
@@ -1244,6 +1302,11 @@ function buildDayPlan({ spot, arrival, data, offsets }) {
   const R = pickDistinct(meals, [{ key: "restaurant-0", base: 0 }, { key: "restaurant-1", base: 1 }, { key: "restaurant-2", base: 2 }], offsets, used);
   const C = pickDistinct(cafes, [{ key: "cafe-0", base: 0 }], offsets, used);
   const searchLinks = (keyword) => buildMapSearchLinks(spot, keyword);
+  // 지역 별미가 있으면 점심 일정에 '○○ 맛집 찾기'를 붙인다
+  const foods = lookupRegion(REGION_FOODS, spot.name);
+  const foodLinks = foods
+    ? [{ id: "food", label: `🍜 ${foods[0]} 맛집 찾기`, url: `https://map.kakao.com/?q=${encodeURIComponent(`${spot.name} ${foods[0]}`)}` }]
+    : null;
   const festivalStep = festival && {
     icon: "🎉", title: "축제 즐기기", place: { ...festival, name: festival.title }, highlight: true,
     fallback: "", note: `지금 열리는 중 (${festival.shortPeriod})`,
@@ -1254,7 +1317,7 @@ function buildDayPlan({ spot, arrival, data, offsets }) {
         { icon: "🚩", title: "도착", fallback: `${spot.name} 도착! 바로 움직여 볼까요?`, stay: 10 },
         { icon: "🏛️", title: "명소 둘러보기", slot: "landmark-0", place: L["landmark-0"], fallback: `${spot.name}의 대표 명소를 둘러보세요.`, stay: 70 },
         { icon: "🏛️", title: "한 곳 더!", slot: "landmark-1", place: L["landmark-1"], fallback: "근처 볼거리를 하나 더 들러보세요.", stay: 70 },
-        { icon: "🍽️", title: "점심 맛집", slot: "restaurant-0", place: R["restaurant-0"], fallback: "근처 맛집에서 든든하게 점심을 먹어요.", stay: 60, notBefore: 12 * 60 },
+        { icon: "🍽️", title: "점심 맛집", slot: "restaurant-0", place: R["restaurant-0"], fallback: "근처 맛집에서 든든하게 점심을 먹어요.", stay: 60, notBefore: 12 * 60, links: foodLinks },
         festivalStep
           ? { ...festivalStep, stay: 120 }
           : { icon: "🛍️", title: "시장·거리 구경", fallback: "전통시장이나 번화가를 걸으며 구경해요.", links: searchLinks("전통시장"), stay: 90 },
@@ -1267,7 +1330,7 @@ function buildDayPlan({ spot, arrival, data, offsets }) {
     : [
         { icon: "🚩", title: "도착", fallback: `${spot.name}에 도착! 천천히 시작해요.`, stay: 20 },
         { icon: "🏛️", title: "명소 산책", slot: "landmark-0", place: L["landmark-0"], fallback: `${spot.name}의 대표 명소를 천천히 걸어보세요.`, stay: 100 },
-        { icon: "🍽️", title: "점심 식사", slot: "restaurant-0", place: R["restaurant-0"], fallback: "근처 맛집에서 여유롭게 점심을 즐겨요.", stay: 80, notBefore: 12 * 60 + 30 },
+        { icon: "🍽️", title: "점심 식사", slot: "restaurant-0", place: R["restaurant-0"], fallback: "근처 맛집에서 여유롭게 점심을 즐겨요.", stay: 80, notBefore: 12 * 60 + 30, links: foodLinks },
         festivalStep
           ? { ...festivalStep, stay: 90 }
           : { icon: "📚", title: "동네 서점 나들이", fallback: "동네 서점에 들러 책 한 권 골라보세요.", links: searchLinks("서점"), stay: 60 },
@@ -1287,7 +1350,7 @@ function buildDayPlan({ spot, arrival, data, offsets }) {
   return { steps, end: roundUp10(t), upcomingFestival: !festival ? (data?.festivals || []).find((f) => f.status === "upcoming") : null };
 }
 
-function DayItinerary({ spot, from, entry, gayoSongs, popSongs }) {
+function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong }) {
   // 장소마다 '다른 곳 보기'를 누른 횟수 (부모에서 key={spot.id}로 여행지가 바뀌면 초기화)
   const [offsets, setOffsets] = useState({});
   const isLoading = !entry || entry.status === "loading";
@@ -1414,6 +1477,23 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs }) {
       <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2 flex items-center gap-1">
         <Music size={12} /> 오늘의 추천 음악
       </p>
+      {/* 그 지역을 노래한 곡이 있으면 맨 앞에 크게 보여준다 */}
+      {regionSong && (
+        <a
+          href={youtubeSearchUrl(regionSong)}
+          target="_blank"
+          rel="noreferrer"
+          className="block mb-2 rounded-lg px-3 py-2 border border-[#B8860B]"
+          style={{ background: "#FFF4D6" }}
+        >
+          <p className="text-[10px] text-[#B8860B] font-bold flex items-center justify-between">
+            🎵 {spot.name} 노래
+            <span className="text-[#C4592F]">▶ 듣기</span>
+          </p>
+          <p className="text-sm text-[#2B2620] font-bold truncate">{regionSong.title}</p>
+          <p className="text-xs text-[#6B5F4F] truncate">{regionSong.artist}</p>
+        </a>
+      )}
       {/* 곡 카드를 누르면 유튜브에서 그 곡을 검색한다 (폰에서는 유튜브 앱으로 열림) */}
       <div className="grid grid-cols-2 gap-2">
         {[...gayoSongs.map((s) => ["가요", s]), ...popSongs.map((s) => ["팝송", s])].map(([kind, s], i) => (
@@ -2889,6 +2969,11 @@ function BaramApp() {
   const songKey = result ? `${result.id}:${toDateInputValue()}` : "";
   const gayoSongs = useMemo(() => (result ? pickSongsForTrip(GAYO_SONGS, result.mood, 1, `${songKey}:gayo`) : []), [songKey]);
   const popSongs = useMemo(() => (result ? pickSongsForTrip(POP_SONGS, result.mood, 1, `${songKey}:pop`) : []), [songKey]);
+  const regionSong = useMemo(() => {
+    const list = result ? lookupRegion(REGION_SONGS, result.name) : null;
+    return list ? list[hashString(`${songKey}:region`) % list.length] : null;
+  }, [songKey]);
+  const regionFoods = result ? lookupRegion(REGION_FOODS, result.name) : null;
 
   const route = result ? distanceEta(currentLocation.lat, currentLocation.lng, result.lat, result.lng) : null;
   const disabled = phase !== "idle";
@@ -3053,6 +3138,11 @@ function BaramApp() {
               </span>
             </div>
             <p className="text-sm text-[#6B5F4F] mt-1">{result.description}</p>
+            {regionFoods && (
+              <p className="inline-block mt-2 text-xs font-bold text-[#2B2620] border border-[#B8860B] rounded-full px-2.5 py-1" style={{ background: "#FFF4D6" }}>
+                🍜 {result.name} 별미: {regionFoods.join(" · ")}
+              </p>
+            )}
 
             <div className="border-t border-[#D9CBB0] my-3" />
             {needsFerryOrFlight(currentLocation.name, result.name) ? (
@@ -3084,7 +3174,7 @@ function BaramApp() {
               </a>
             </div>
 
-            <DayItinerary key={result.id} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} />
+            <DayItinerary key={result.id} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} />
 
             <div className="border-t border-[#D9CBB0] my-4" />
             <p className="text-xs font-medium text-[#2B2620] mb-1">더 알아보기</p>
