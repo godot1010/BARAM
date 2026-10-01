@@ -1735,6 +1735,54 @@ const ROULETTE_SIZE = 18;
 const BLUE_PALETTE = ["#AFC9EA", "#C7DAF2", "#98BBE2"];
 const RED_PALETTE = ["#F0B3AE", "#F5C9C5", "#EAA19B"];
 
+// 머리 부분 로고 옆에서 계속 천천히 도는 작은 룰렛. 아래 큰 룰렛이 돌 때(fast)는 같이 빨라진다.
+// 속도를 부드럽게 바꾸려고 CSS 애니메이션 대신 requestAnimationFrame으로 돌린다.
+// 폰에서 '움직임 줄이기'를 켠 사용자에게는 돌리지 않는다.
+const MINI_SLICE_COLORS = ["#AFC9EA", "#F0B3AE", "#C7DAF2", "#F5C9C5", "#98BBE2", "#EAA19B", "#AFC9EA", "#F0B3AE"];
+function MiniRoulette({ size = 44, fast = false }) {
+  const wheelRef = useRef(null);
+  const fastRef = useRef(fast);
+  fastRef.current = fast;
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+    let angle = 0;
+    let speed = 60; // 초당 회전 각도
+    let last = performance.now();
+    let raf;
+    const loop = (now) => {
+      const dt = Math.min(now - last, 100) / 1000;
+      last = now;
+      const target = fastRef.current ? 900 : 60;
+      speed += (target - speed) * Math.min(1, dt * 3);
+      angle = (angle + speed * dt) % 360;
+      if (wheelRef.current) wheelRef.current.style.transform = `rotate(${angle}deg)`;
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const n = MINI_SLICE_COLORS.length;
+  return (
+    <div style={{ position: "relative", width: size, height: size + 6, flexShrink: 0, transition: "width .2s, height .2s" }} aria-hidden="true">
+      <svg viewBox="0 0 26 40" width={size * 0.28} height={size * 0.38} style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", zIndex: 1 }}>
+        <path d="M3 13 L13 38 L23 13 Z" fill="#DC2626" />
+        <circle cx="13" cy="12" r="10" fill="#DC2626" />
+        <circle cx="13" cy="12" r="4" fill="#F6F1E7" />
+      </svg>
+      <svg ref={wheelRef} viewBox="0 0 100 100" width={size} height={size} style={{ position: "absolute", left: 0, top: 6 }}>
+        {MINI_SLICE_COLORS.map((c, i) => (
+          <path key={i} d={sliceDPath(50, 50, 47, (i * 360) / n, ((i + 1) * 360) / n)} fill={c} stroke="#F6F1E7" strokeWidth="1.5" />
+        ))}
+        <circle cx="50" cy="50" r="47" fill="none" stroke="#B8860B" strokeWidth="3" />
+        <circle cx="50" cy="50" r="12" fill="#2B2620" stroke="#F6F1E7" strokeWidth="3" />
+      </svg>
+    </div>
+  );
+}
+
 function RouletteWheel({ spots, wheelRef }) {
   const cx = 150, cy = 150, r = 140;
   const n = spots.length;
@@ -2794,6 +2842,15 @@ function BaramApp() {
   const wheelRef = useRef(null);
   const angleRef = useRef(0);
   const rafRef = useRef(null);
+
+  // 스크롤을 조금이라도 내리면 머리 부분을 얇게
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const rampTimeoutRef = useRef(null);
 
   const visitedCount = spots.filter((s) => s.isVisited).length;
@@ -3161,29 +3218,55 @@ function BaramApp() {
   const disabled = phase !== "idle";
 
   return (
-    <div className="min-h-screen bg-[#F6F1E7] flex justify-center py-8 px-4">
-      <div className="w-full max-w-sm">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="text-xs tracking-wide font-bold text-[#1B4B91]">여행 룰렛</p>
-            <h1 className="font-serif text-2xl font-bold text-[#DC2626]">BARAM</h1>
+    <div className="min-h-screen bg-[#F6F1E7] flex flex-col items-center">
+      {/* 머리 부분: 화면 맨 위에 고정. 스크롤을 내리면 얇아지고 아래에 구분선이 생긴다 */}
+      <header
+        className="w-full"
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+          background: "#F6F1E7",
+          paddingTop: "env(safe-area-inset-top)",
+          borderBottom: `1px solid ${scrolled ? "#D9CBB0" : "transparent"}`,
+          boxShadow: scrolled ? "0 2px 8px rgba(43,38,32,.08)" : "none",
+          transition: "box-shadow .2s, border-color .2s",
+        }}
+      >
+        <div
+          className="max-w-sm mx-auto flex items-center justify-between"
+          style={{ padding: scrolled ? "8px 16px" : "16px 16px 12px", transition: "padding .2s" }}
+        >
+          <div className="flex items-center gap-3">
+            <MiniRoulette size={scrolled ? 34 : 44} fast={phase !== "idle"} />
+            <div>
+              <p className="text-xs tracking-wide font-bold text-[#1B4B91]">여행 룰렛</p>
+              <h1
+                className="font-serif font-bold text-[#DC2626]"
+                style={{ fontSize: scrolled ? 20 : 24, lineHeight: 1.15, transition: "font-size .2s" }}
+              >
+                BARAM
+              </h1>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="relative w-10 h-10 rounded-full border border-[#D9CBB0] flex items-center justify-center text-[#2B2620]"
-              aria-label="도장깨기 열기"
-            >
-              <Package size={18} />
-              {visitedCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-[#C4592F] text-[#F6F1E7] text-[10px] font-medium rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-                  {visitedCount}
-                </span>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="relative flex flex-col items-center rounded-xl border border-[#B8860B] text-[#B8860B]"
+            style={{ background: "#FFF4D6", padding: "5px 10px", gap: 1 }}
+            aria-label="STAMP TOUR 열기"
+          >
+            <StampIcon size={18} />
+            <span className="text-[10px] font-bold text-[#2B2620]" style={{ letterSpacing: ".06em" }}>STAMP</span>
+            {visitedCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-[#C4592F] text-[#F6F1E7] text-[10px] font-medium rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                {visitedCount}
+              </span>
+            )}
+          </button>
         </div>
+      </header>
+
+      <div className="w-full max-w-sm" style={{ padding: "12px 16px 32px" }}>
 
         {/* 내 위치 */}
         <button
