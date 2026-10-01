@@ -443,6 +443,86 @@ async function loadSpotsProgress() {
   }
 }
 
+// 백업 불러오기: 저장된 진행 기록을 전부 지우고 백업 내용으로 바꾼다
+async function replaceAllSpotsProgress(records) {
+  const db = await openSpotsDB();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, "readwrite");
+    const store = tx.objectStore(IDB_STORE);
+    store.clear();
+    records.forEach((rec) => store.put(rec));
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error || new Error("백업을 저장하지 못했어요."));
+  });
+}
+
+// ==========================================
+// 1-1b. 도장깨기 백업 파일 (내보내기/불러오기)
+// 기록은 폰 안에만 있어서 앱을 지우거나 폰을 바꾸면 사라진다. 그래서 파일로 빼 둘 수 있게 한다.
+// spot id는 지역 목록 순서로 만들어지므로, 나중에 목록이 바뀌어도 맞게 찾아가도록 지역 이름도 같이 저장한다.
+// ==========================================
+const BACKUP_APP_NAME = "BARAM";
+const BACKUP_VERSION = 1;
+const LAST_BACKUP_KEY = "baram_last_backup_at";
+
+function hasProgress(s) {
+  return s.isVisited || (s.memo && s.memo.trim().length > 0) || (s.photos && s.photos.some(Boolean));
+}
+
+function buildBackup(spots) {
+  return {
+    app: BACKUP_APP_NAME,
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    spots: spots.filter(hasProgress).map((s) => ({
+      id: s.id,
+      name: s.name,
+      isVisited: s.isVisited,
+      visitedDate: s.visitedDate,
+      photos: s.photos,
+      memo: s.memo,
+    })),
+  };
+}
+
+// 백업 파일 내용을 지금 지역 목록에 맞는 진행 기록 목록으로 바꾼다 (형식이 틀리면 오류)
+function parseBackup(text, baseSpots) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("BARAM 백업 파일이 아니에요.");
+  }
+  if (!data || data.app !== BACKUP_APP_NAME || !Array.isArray(data.spots)) {
+    throw new Error("BARAM 백업 파일이 아니에요.");
+  }
+  const records = [];
+  data.spots.forEach((b) => {
+    const spot = baseSpots.find((s) => s.name === b.name) || baseSpots.find((s) => s.id === b.id);
+    if (!spot) return;
+    records.push({
+      id: spot.id,
+      isVisited: !!b.isVisited,
+      visitedDate: b.visitedDate || null,
+      photos: Array.isArray(b.photos) && b.photos.length === 2 ? b.photos : [null, null],
+      memo: typeof b.memo === "string" ? b.memo : "",
+    });
+  });
+  return { records, exportedAt: data.exportedAt };
+}
+
+function downloadJson(filename, obj) {
+  const blob = new Blob([JSON.stringify(obj)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function mergeSpotsWithProgress(baseSpots, progress) {
   if (!progress || Object.keys(progress).length === 0) return baseSpots;
   return baseSpots.map((s) => {
@@ -1489,8 +1569,9 @@ function TravelFortuneCard({ fortune, onEdit }) {
 // ==========================================
 // 4. 정복 도시함 (드로어)
 // ==========================================
-function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onClose }) {
+function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, onImportBackup, lastBackupAt, backupNotice, onClose }) {
   const [query, setQuery] = useState("");
+  const importInputRef = useRef(null);
   const [tab, setTab] = useState("visited");
 
   const visited = useMemo(
@@ -1594,6 +1675,41 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onClose }) {
               })}
             </ul>
           )}
+        </div>
+
+        {/* 백업: 기록은 이 폰에만 있으므로 파일로 빼 두거나 다시 불러올 수 있게 한다 */}
+        <div className="border-t border-[#D9CBB0] px-5 pt-3 pb-4">
+          <div className="flex gap-2">
+            <button
+              onClick={onExportBackup}
+              className="flex-1 py-2 rounded-lg text-xs font-bold text-[#2B2620] border border-[#B8860B] bg-white/50"
+            >
+              백업 파일 저장
+            </button>
+            <button
+              onClick={() => importInputRef.current && importInputRef.current.click()}
+              className="flex-1 py-2 rounded-lg text-xs font-bold text-[#6B5F4F] border border-[#D9CBB0]"
+            >
+              백업 불러오기
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files && e.target.files[0];
+                if (file) onImportBackup(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
+          <p className="text-[11px] text-[#6B5F4F] mt-2 text-center">
+            {backupNotice ||
+              (lastBackupAt
+                ? `마지막 백업: ${formatDate(lastBackupAt)}`
+                : "기록은 이 폰에만 저장돼요. 앱을 지우거나 폰을 바꾸기 전에 백업해 두세요.")}
+          </p>
         </div>
       </div>
     </div>
@@ -1956,6 +2072,8 @@ function BaramApp() {
   const [stampSpotId, setStampSpotId] = useState(null);
   const [confirmState, setConfirmState] = useState(null); // { title, message, confirmLabel, onConfirm }
   const [stampDateTarget, setStampDateTarget] = useState(null); // { spotId, mode: "stamp" | "edit" }
+  const [lastBackupAt, setLastBackupAt] = usePersistentState(LAST_BACKUP_KEY, "");
+  const [backupNotice, setBackupNotice] = useState("");
   const [birthInfoRaw, setBirthInfoRaw] = usePersistentState("baram_birthInfo", "");
   const [birthModalOpen, setBirthModalOpen] = useState(false);
 
@@ -2083,6 +2201,51 @@ function BaramApp() {
       if (updated) saveSpotProgress(updated);
       pick15(next, region, currentLocation);
       return next;
+    });
+  }
+
+  function exportBackup() {
+    const backup = buildBackup(spots);
+    if (backup.spots.length === 0) {
+      setBackupNotice("아직 백업할 기록이 없어요.");
+      return;
+    }
+    downloadJson(`BARAM-백업-${toDateInputValue()}.json`, backup);
+    setLastBackupAt(backup.exportedAt);
+    setBackupNotice(`STAMP ${backup.spots.filter((s) => s.isVisited).length}곳을 백업 파일로 저장했어요. (다운로드 폴더)`);
+  }
+
+  function importBackup(file) {
+    file.text().then((text) => {
+      let parsed;
+      try {
+        parsed = parseBackup(text, spots);
+      } catch (err) {
+        setBackupNotice(err.message);
+        return;
+      }
+      const stampCount = parsed.records.filter((r) => r.isVisited).length;
+      setConfirmState({
+        title: "백업을 불러올까요?",
+        message: `${formatDate(parsed.exportedAt)}에 만든 백업이에요 (STAMP ${stampCount}곳).\n지금 이 폰의 기록은 백업 내용으로 바뀌어요.`,
+        confirmLabel: "불러오기",
+        onConfirm: async () => {
+          try {
+            await replaceAllSpotsProgress(parsed.records);
+          } catch {
+            setBackupNotice("백업을 불러오지 못했어요. 다시 시도해 주세요.");
+            return;
+          }
+          const progress = {};
+          parsed.records.forEach((r) => { progress[r.id] = r; });
+          const base = spots.map((s) => ({ ...s, isVisited: false, visitedDate: null, photos: [null, null], memo: "" }));
+          const merged = mergeSpotsWithProgress(base, progress);
+          setSpots(merged);
+          if (result && merged.find((s) => s.id === result.id && s.isVisited)) clearResult();
+          pick15(merged, region, currentLocation);
+          setBackupNotice(`백업을 불러왔어요. STAMP ${stampCount}곳`);
+        },
+      });
     });
   }
 
@@ -2476,7 +2639,14 @@ function BaramApp() {
           onUnvisit={unvisitSpot}
           onStamp={(id) => setStampDateTarget({ spotId: id, mode: "stamp" })}
           onOpenStamp={(id) => setStampSpotId(id)}
-          onClose={() => setDrawerOpen(false)}
+          onExportBackup={exportBackup}
+          onImportBackup={importBackup}
+          lastBackupAt={lastBackupAt}
+          backupNotice={backupNotice}
+          onClose={() => {
+            setDrawerOpen(false);
+            setBackupNotice("");
+          }}
         />
       )}
       {stampSpotId && spots.find((s) => s.id === stampSpotId) && (
