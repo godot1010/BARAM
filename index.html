@@ -1540,7 +1540,20 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 
 // 서비스키는 이제 클라이언트에 전혀 없다 - Netlify Function(/api/tourapi)이
 // 서버 환경변수(TOUR_API_SERVICE_KEY)로 대신 TourAPI를 호출하고 결과만 돌려준다.
-async function tourApiProxyFetch(action, extraParams) {
+// 같은 요청(일정표와 '더 알아보기'가 같은 명소 목록을 원할 때 등)은 한 번만 보내고 결과를 나눠 쓴다.
+// 실패한 요청은 기억하지 않아 다음에 다시 시도한다.
+const tourApiRequestCache = new Map();
+function tourApiProxyFetch(action, extraParams) {
+  const key = new URLSearchParams({ action, ...extraParams }).toString();
+  if (!tourApiRequestCache.has(key)) {
+    const promise = tourApiProxyFetchOnce(action, extraParams);
+    tourApiRequestCache.set(key, promise);
+    promise.catch(() => tourApiRequestCache.delete(key));
+  }
+  return tourApiRequestCache.get(key);
+}
+
+async function tourApiProxyFetchOnce(action, extraParams) {
   const params = new URLSearchParams({ action, ...extraParams });
   const url = `/api/tourapi?${params.toString()}`;
   // 공공데이터 서버가 가끔 응답하지 않거나(522 등) 아예 멈춰 있어서, 12초 안에 답이 없으면 끊고
