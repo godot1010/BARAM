@@ -328,13 +328,21 @@ const REGION_COLORS = {
   "호남": "#3D8361", // 곡창지대 - 청록빛 그린
 };
 
-// 134곳을 감성 67 / 활기 67로 균등 분리 (지역 순서를 섞은 뒤 절반씩 배정해
-// 특정 권역이 한쪽 테마에 몰리지 않도록 함)
+// 229곳을 감성/활기로 반씩 나눈다. 권역마다 지역 순서를 섞은 뒤 번갈아 배정해서
+// 특정 권역이 한쪽 테마에 몰리지 않게 한다.
+// 고정된 시드로 섞기 때문에 앱을 다시 켜도, 다른 사람 폰에서도 지역마다 테마가 항상 같다.
+// (MOOD_SEED를 바꾸면 모든 지역의 테마가 새로 정해지니 바꾸지 말 것)
+const MOOD_SEED = 20260926;
 function buildSpots() {
-  const shuffledIdx = shuffle(LOCATIONS.map((_, i) => i));
   const moodByLocIndex = new Array(LOCATIONS.length);
-  shuffledIdx.forEach((locIdx, order) => {
-    moodByLocIndex[locIdx] = order < LOCATIONS.length / 2 ? "emotional" : "energetic";
+  let startEmotional = true;
+  REGION_LIST.filter((r) => r !== "전체").forEach((region) => {
+    const idxs = LOCATIONS.map((l, i) => (l.region === region ? i : -1)).filter((i) => i >= 0);
+    seededShuffle(idxs, MOOD_SEED).forEach((locIdx, order) => {
+      moodByLocIndex[locIdx] = (order % 2 === 0) === startEmotional ? "emotional" : "energetic";
+    });
+    // 지역 수가 홀수인 권역이 있어도 전체 감성/활기 수가 한쪽으로 쏠리지 않도록 시작 테마를 번갈아 바꾼다
+    if (idxs.length % 2 === 1) startEmotional = !startEmotional;
   });
 
   return LOCATIONS.map((loc, i) => {
@@ -362,7 +370,7 @@ function buildSpots() {
 // 1-1. 도장깨기 진행 상황(정복 여부/사진/메모) IndexedDB 저장
 // localStorage(보통 5~10MB 한도)보다 훨씬 넉넉한 저장공간(브라우저별로 다르지만
 // 보통 수백 MB~수 GB)을 쓰기 위해 IndexedDB로 저장한다. 도시 한 곳당 레코드 하나씩
-// 저장해서, 사진 한 장이 바뀔 때마다 134곳 전체를 다시 쓰지 않고 그 도시 레코드만 갱신한다.
+// 저장해서, 사진 한 장이 바뀔 때마다 229곳 전체를 다시 쓰지 않고 그 도시 레코드만 갱신한다.
 // ==========================================
 const IDB_NAME = "baram-db";
 const IDB_VERSION = 1;
@@ -484,6 +492,23 @@ function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// 같은 시드면 항상 같은 순서로 섞는다 (mulberry32 난수 생성기 사용)
+function seededShuffle(arr, seed) {
+  let t = seed >>> 0;
+  const random = () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
