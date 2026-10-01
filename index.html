@@ -1122,16 +1122,26 @@ const POP_SONGS = [
   { title: "Budapest", artist: "George Ezra", mood: "energetic" },
   { title: "Sunflower", artist: "Post Malone & Swae Lee", mood: "energetic" },
 ];
-function pickRandom(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+function hashString(str) {
+  let h = 2166136261;
+  for (const ch of str) {
+    h ^= ch.codePointAt(0);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
 }
-function pickRandomN(arr, n) {
-  return shuffle(arr).slice(0, n);
-}
-// 뽑힌 지역의 분위기(감성/활기)에 맞는 곡만 걸러서 그중 n곡을 무작위로 고른다
-function pickRandomNByMood(arr, mood, n) {
+
+// 뽑힌 지역의 분위기(감성/활기)에 맞는 곡 중에서 n곡을 고른다.
+// key(여행지 + 날짜)로 고르기 때문에 앱을 다시 열어도 그날 그 여행지의 추천곡은 그대로다.
+function pickSongsForTrip(arr, mood, n, key) {
   const filtered = arr.filter((s) => s.mood === mood);
-  return shuffle(filtered.length > 0 ? filtered : arr).slice(0, n);
+  const list = filtered.length > 0 ? filtered : arr;
+  const start = hashString(key) % list.length;
+  return Array.from({ length: Math.min(n, list.length) }, (_, i) => list[(start + i) % list.length]);
+}
+
+function youtubeSearchUrl(song) {
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.title} ${song.artist}`)}`;
 }
 
 // 결과로 뽑힌 지역의 하루 일정표(10:00 도착 ~ 16:00 마무리)를 보여줌.
@@ -1186,20 +1196,23 @@ function DayItinerary({ spot, entry, gayoSongs, popSongs }) {
       <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2 flex items-center gap-1">
         <Music size={12} /> 오늘의 추천 음악
       </p>
+      {/* 곡 카드를 누르면 유튜브에서 그 곡을 검색한다 (폰에서는 유튜브 앱으로 열림) */}
       <div className="grid grid-cols-2 gap-2">
-        {gayoSongs.map((s, i) => (
-          <div key={`g${i}`} className="bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2">
-            <p className="text-[10px] text-[#A6987F]">가요</p>
+        {[...gayoSongs.map((s) => ["가요", s]), ...popSongs.map((s) => ["팝송", s])].map(([kind, s], i) => (
+          <a
+            key={`${kind}${i}`}
+            href={youtubeSearchUrl(s)}
+            target="_blank"
+            rel="noreferrer"
+            className="block bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2 min-w-0"
+          >
+            <p className="text-[10px] text-[#A6987F] flex items-center justify-between">
+              {kind}
+              <span className="flex items-center gap-0.5 text-[#C4592F]">▶ 듣기</span>
+            </p>
             <p className="text-sm text-[#2B2620] truncate">{s.title}</p>
             <p className="text-xs text-[#6B5F4F] truncate">{s.artist}</p>
-          </div>
-        ))}
-        {popSongs.map((s, i) => (
-          <div key={`p${i}`} className="bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2">
-            <p className="text-[10px] text-[#A6987F]">팝송</p>
-            <p className="text-sm text-[#2B2620] truncate">{s.title}</p>
-            <p className="text-xs text-[#6B5F4F] truncate">{s.artist}</p>
-          </div>
+          </a>
         ))}
       </div>
     </div>
@@ -2615,8 +2628,9 @@ function BaramApp() {
   }, [result]);
   const itineraryEntry = itineraryKey ? detailCache[itineraryKey] : null;
   // 결과가 바뀔 때만 새로 뽑히도록 useMemo로 고정 (탭 전환 등 다른 리렌더에는 곡이 안 바뀜)
-  const gayoSongs = useMemo(() => (result ? pickRandomNByMood(GAYO_SONGS, result.mood, 1) : []), [result?.id]);
-  const popSongs = useMemo(() => (result ? pickRandomNByMood(POP_SONGS, result.mood, 1) : []), [result?.id]);
+  const songKey = result ? `${result.id}:${toDateInputValue()}` : "";
+  const gayoSongs = useMemo(() => (result ? pickSongsForTrip(GAYO_SONGS, result.mood, 1, `${songKey}:gayo`) : []), [songKey]);
+  const popSongs = useMemo(() => (result ? pickSongsForTrip(POP_SONGS, result.mood, 1, `${songKey}:pop`) : []), [songKey]);
 
   const route = result ? distanceEta(currentLocation.lat, currentLocation.lng, result.lat, result.lng) : null;
   const disabled = phase !== "idle";
