@@ -1352,7 +1352,7 @@ function buildDayPlan({ spot, arrival, data, offsets }) {
   return { steps, end: roundUp10(t), upcomingFestival: !festival ? (data?.festivals || []).find((f) => f.status === "upcoming") : null };
 }
 
-function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong }) {
+function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPlanPlaces, onRetry }) {
   // 장소마다 '다른 곳 보기'를 누른 횟수 (부모에서 key={spot.id}로 여행지가 바뀌면 초기화)
   const [offsets, setOffsets] = useState({});
   const isLoading = !entry || entry.status === "loading";
@@ -1360,6 +1360,12 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong }) {
   const rule = COURSE_RULES[spot.mood] || COURSE_RULES.emotional;
   const travel = planTravel(from, spot);
   const plan = buildDayPlan({ spot, arrival: travel.arrival, data, offsets });
+  // 일정에 들어간 장소를 부모에게 알려 '더 알아보기'에서 같은 곳이 또 나오지 않게 한다
+  const planPlaceIds = plan.steps.filter((s) => s.place && s.place.id).map((s) => s.place.id).join(",");
+  useEffect(() => {
+    if (onPlanPlaces) onPlanPlaces(planPlaceIds ? planPlaceIds.split(",") : []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planPlaceIds]);
   const homeArrival = travel.mode === "car" ? roundUp10(plan.end + travel.travel) : null;
   const overnight = travel.mode === "island" || travel.travel >= OVERNIGHT_TRAVEL || (homeArrival !== null && homeArrival > LATE_HOME_ARRIVAL);
   // 후보가 같은 종류 칸 수보다 많아야 '다른 곳'으로 바꿀 여지가 있다
@@ -1409,7 +1415,24 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong }) {
       </div>
 
       {isLoading && <p className="text-[11px] text-[#A6987F] mb-2">장소 정보를 불러오는 중…</p>}
-      {entry?.status === "error" && <p className="text-[11px] text-[#A8441F] mb-2">{entry.message}</p>}
+      {(entry?.status === "error" || entry?.partial) && (
+        <div className="text-[11px] text-[#A8441F] mb-2 flex items-center justify-between gap-2">
+          <span>
+            {entry.status === "error"
+              ? `${entry.message} 아래는 기본 일정이에요.`
+              : "일부 장소 정보를 불러오지 못했어요."}
+          </span>
+          {onRetry && (
+            entry.retrying ? (
+              <span className="shrink-0 text-[#6B5F4F]">다시 불러오는 중…</span>
+            ) : (
+              <button onClick={onRetry} className="shrink-0 font-bold text-[#2F6E68] border border-[#D9CBB0] rounded-full px-2 py-0.5">
+                ↻ 다시 불러오기
+              </button>
+            )
+          )}
+        </div>
+      )}
 
       <ul className="space-y-2">
         {plan.steps.map((s, i) => (
@@ -1613,7 +1636,7 @@ async function fetchNearbyTourSpots({ lat, lng, contentTypeId, radius = 20000, n
   // 관광지(12)로 등록됐지만 볼거리가 아닌 곳(화장실, 사우나, 노인회 사무실 등)은 뺀다
   const cleaned = contentTypeId === 12 ? arr.filter((it) => !NOT_ATTRACTION.test(it.title || "")) : arr;
   const ordered = preferImages ? [...cleaned.filter((it) => it.firstimage), ...cleaned.filter((it) => !it.firstimage)] : cleaned;
-  return ordered.slice(0, num).map((it) => ({
+  return dedupeByName(ordered).slice(0, num).map((it) => ({
     id: it.contentid,
     name: it.title,
     kind: PLACE_KIND_LABELS[it.cat3] || LANDMARK_KIND_LABELS[it.cat2] || "",
@@ -1627,6 +1650,26 @@ async function fetchNearbyTourSpots({ lat, lng, contentTypeId, radius = 20000, n
 }
 
 const NOT_ATTRACTION = /화장실|사우나|노인회|경로당|주차장|복지관|주민센터|행정복지/;
+
+// 관광정보에는 같은 곳이 이름만 조금 다르게 여러 번 등록된 경우가 많다
+// (예: '진미반점'이 두 번, '인사동'/'안녕인사동', '흥국사(여수)'/'여수 흥국사 홍교', '용연'/'용연구름다리').
+// 괄호·띄어쓰기를 뺀 이름이 같거나 한쪽이 다른 쪽에 들어 있으면 같은 곳으로 보고 앞의 것만 남긴다
+// (앞쪽이 사진 있는 곳·가까운 곳이라 그쪽을 남긴다).
+function placeKey(title) {
+  return (title || "").replace(/\(.*?\)|\[.*?\]/g, "").replace(/[\s·.,'"-]/g, "");
+}
+function dedupeByName(items) {
+  const kept = [];
+  const keys = [];
+  items.forEach((it) => {
+    const k = placeKey(it.title);
+    if (!k) return;
+    if (keys.some((m) => m === k || m.includes(k) || k.includes(m))) return;
+    keys.push(k);
+    kept.push(it);
+  });
+  return kept;
+}
 
 // 관광정보 분류 코드 → 화면에 보여줄 종류 배지 (2026-10-02 실제 응답으로 확인)
 const PLACE_KIND_LABELS = {
@@ -2666,7 +2709,7 @@ const SOURCE_FETCHERS = {
 
 const PAGE_SIZE = 5;
 
-function ResultDetailTabs({ spot, from, cache, setCache }) {
+function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache }) {
   const [tab, setTab] = useState("landmark");
   const [shown, setShown] = useState(PAGE_SIZE);
   const [retry, setRetry] = useState(0); // 실패한 탭을 다시 눌렀을 때 다시 불러오기
@@ -2696,7 +2739,11 @@ function ResultDetailTabs({ spot, from, cache, setCache }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, spot.id, retry]);
 
-  const items = entry && entry.status === "success" ? (cfg.pick ? cfg.pick(entry.data) : entry.data) : [];
+  // 명소·맛집·카페 탭에서는 이미 오늘 일정에 넣은 곳은 빼고 보여준다 (일정과 같은 곳이 반복되지 않게)
+  const picked = entry && entry.status === "success" ? (cfg.pick ? cfg.pick(entry.data) : entry.data) : [];
+  const hidesPlanPlaces = tab === "landmark" || tab === "restaurant" || tab === "cafe";
+  const items = hidesPlanPlaces ? picked.filter((p) => !excludeIds.includes(p.id)) : picked;
+  const hiddenCount = picked.length - items.length;
 
   return (
     <div className="mt-4">
@@ -2742,6 +2789,9 @@ function ResultDetailTabs({ spot, from, cache, setCache }) {
           </p>
         )}
 
+        {hidesPlanPlaces && hiddenCount > 0 && (
+          <p className="text-[11px] text-[#6B5F4F]">📅 오늘 일정에 넣은 {hiddenCount}곳은 위 일정표에 있어서 빼고 보여줘요.</p>
+        )}
         {!entry || entry.status === "loading" ? (
           <StatusBlock status="loading" />
         ) : entry.status === "error" ? (
@@ -2816,6 +2866,7 @@ function BaramApp() {
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detailCache, setDetailCache] = useState({});
+  const [planPlaceIds, setPlanPlaceIds] = useState([]); // 오늘 일정에 들어간 장소 id
   const [stampSpotId, setStampSpotId] = useState(null);
   const [confirmState, setConfirmState] = useState(null); // { title, message, confirmLabel, onConfirm }
   const [stampDateTarget, setStampDateTarget] = useState(null); // { spotId, mode: "stamp" | "edit" }
@@ -3179,30 +3230,49 @@ function BaramApp() {
 
   // 룰렛 결과(지역)가 정해지면 그 지역의 명소·맛집을 공공데이터(TourAPI, 서버 프록시)로 불러와 하루 일정표를 구성한다
   const itineraryKey = result ? `${result.id}:itinerary` : null;
+  // 일정표 장소 불러오기. 결과는 itineraryKey 칸에 저장하므로 도중에 취소하지 않는다(취소하면 '불러오는 중'에서 멈춤).
+  // 명소·맛집 중 하나만 성공해도 그만큼은 보여주고, 둘 다 실패하면 '다시 불러오기'로 재시도할 수 있다.
+  const [itineraryRetry, setItineraryRetry] = useState(0);
   useEffect(() => {
     if (!result || !itineraryKey) return;
-    if (detailCache[itineraryKey]) return;
-    let cancelled = false;
-    setDetailCache((prev) => ({ ...prev, [itineraryKey]: { status: "loading" } }));
+    const prevEntry = detailCache[itineraryKey];
+    // 이미 다 받아 온 일정은 다시 받지 않는다. 실패했거나 일부만 받은 경우는 '다시 불러오기'로 재시도
+    if (prevEntry && prevEntry.status !== "error" && !prevEntry.partial) return;
+    // 일부만 받은 상태에서 다시 불러올 때는 보이던 장소를 지우지 않고 그대로 둔 채 받는다
+    if (!prevEntry || prevEntry.status === "error") {
+      setDetailCache((prev) => ({ ...prev, [itineraryKey]: { status: "loading" } }));
+    } else {
+      setDetailCache((prev) => ({ ...prev, [itineraryKey]: { ...prevEntry, retrying: true } }));
+    }
+    const prevData = prevEntry && prevEntry.data ? prevEntry.data : {};
 
     (async () => {
-      try {
-        // 명소·맛집은 '다른 곳 보기'로 바꿔 볼 수 있게 후보를 넉넉히 받는다. 축제는 실패해도 일정은 보여준다.
-        const [landmarks, restaurants, festivals] = await Promise.all([
-          fetchNearbyTourSpots({ lat: result.lat, lng: result.lng, contentTypeId: 12, num: 8, preferImages: true }),
-          fetchNearbyTourSpots({ lat: result.lat, lng: result.lng, contentTypeId: 39, num: 30 }),
-          fetchLocalFestivals({ regionKeyword: result.name, lat: result.lat, lng: result.lng }).catch(() => []),
-        ]);
-        if (cancelled) return;
-        setDetailCache((prev) => ({ ...prev, [itineraryKey]: { status: "success", data: { landmarks, restaurants, festivals } } }));
-      } catch (err) {
-        if (cancelled) return;
-        setDetailCache((prev) => ({ ...prev, [itineraryKey]: { status: "error", message: err.message, code: err.code } }));
+      // 명소·맛집은 '다른 곳 보기'로 바꿔 볼 수 있게 후보를 넉넉히 받는다. 축제는 실패해도 일정은 보여준다.
+      const [landmarks, restaurants, festivals] = await Promise.allSettled([
+        fetchNearbyTourSpots({ lat: result.lat, lng: result.lng, contentTypeId: 12, num: 8, preferImages: true }),
+        fetchNearbyTourSpots({ lat: result.lat, lng: result.lng, contentTypeId: 39, num: 30 }),
+        fetchLocalFestivals({ regionKeyword: result.name, lat: result.lat, lng: result.lng }),
+      ]);
+      // 이번에 실패한 것은 지난번에 받아 둔 것(있으면)을 그대로 쓴다
+      const value = (r, name) => (r.status === "fulfilled" ? r.value : prevData[name] || []);
+      const hasLandmarks = landmarks.status === "fulfilled" || (prevData.landmarks || []).length > 0;
+      const hasRestaurants = restaurants.status === "fulfilled" || (prevData.restaurants || []).length > 0;
+      if (!hasLandmarks && !hasRestaurants) {
+        setDetailCache((prev) => ({ ...prev, [itineraryKey]: { status: "error", message: landmarks.reason?.message || "장소 정보를 불러오지 못했어요." } }));
+        return;
       }
+      setDetailCache((prev) => ({
+        ...prev,
+        [itineraryKey]: {
+          status: "success",
+          partial: !hasLandmarks || !hasRestaurants,
+          data: { landmarks: value(landmarks, "landmarks"), restaurants: value(restaurants, "restaurants"), festivals: value(festivals, "festivals") },
+        },
+      }));
     })();
-    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result]);
+  }, [result?.id, itineraryRetry]);
+  const retryItinerary = () => setItineraryRetry((n) => n + 1);
   const itineraryEntry = itineraryKey ? detailCache[itineraryKey] : null;
   // 결과가 바뀔 때만 새로 뽑히도록 useMemo로 고정 (탭 전환 등 다른 리렌더에는 곡이 안 바뀜)
   const songKey = result ? `${result.id}:${toDateInputValue()}` : "";
@@ -3439,7 +3509,7 @@ function BaramApp() {
               </a>
             </div>
 
-            <DayItinerary key={result.id} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} />
+            <DayItinerary key={result.id} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} onPlanPlaces={setPlanPlaceIds} onRetry={retryItinerary} />
 
             <div className="border-t border-[#D9CBB0] my-4" />
             <p className="text-xs font-medium text-[#2B2620] mb-1">더 알아보기</p>
@@ -3447,6 +3517,7 @@ function BaramApp() {
               key={result.id}
               spot={result}
               from={currentLocation}
+              excludeIds={planPlaceIds}
               cache={detailCache}
               setCache={setDetailCache}
             />
