@@ -1363,7 +1363,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
   // 일정에 들어간 장소를 부모에게 알려 '더 알아보기'에서 같은 곳이 또 나오지 않게 한다
   const planPlaceIds = plan.steps.filter((s) => s.place && s.place.id).map((s) => s.place.id).join(",");
   useEffect(() => {
-    if (onPlanPlaces) onPlanPlaces(planPlaceIds ? planPlaceIds.split(",") : []);
+    if (onPlanPlaces) onPlanPlaces(planPlaceIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planPlaceIds]);
   const homeArrival = travel.mode === "car" ? roundUp10(plan.end + travel.travel) : null;
@@ -2844,7 +2844,10 @@ function BaramApp() {
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [detailCache, setDetailCache] = useState({});
-  const [planPlaceIds, setPlanPlaceIds] = useState([]); // 오늘 일정에 들어간 장소 id
+  // 오늘 일정에 들어간 장소 id. 쉼표로 이은 문자열로 들고 있어서 내용이 같으면 상태가 바뀌지 않는다
+  // (배열로 들면 같은 내용이어도 매번 새 값이 돼 화면을 계속 다시 그리게 된다)
+  const [planPlaceIdsKey, setPlanPlaceIdsKey] = useState("");
+  const planPlaceIds = useMemo(() => (planPlaceIdsKey ? planPlaceIdsKey.split(",") : []), [planPlaceIdsKey]);
   const [stampSpotId, setStampSpotId] = useState(null);
   const [confirmState, setConfirmState] = useState(null); // { title, message, confirmLabel, onConfirm }
   const [stampDateTarget, setStampDateTarget] = useState(null); // { spotId, mode: "stamp" | "edit" }
@@ -3484,12 +3487,12 @@ function BaramApp() {
               </a>
             </div>
 
-            <DayItinerary key={result.id} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} onPlanPlaces={setPlanPlaceIds} onRetry={retryItinerary} />
+            <DayItinerary key={`${result.id}:plan`} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} onPlanPlaces={setPlanPlaceIdsKey} onRetry={retryItinerary} />
 
             <div className="border-t border-[#D9CBB0] my-4" />
             <p className="text-xs font-medium text-[#2B2620] mb-1">더 알아보기</p>
             <ResultDetailTabs
-              key={result.id}
+              key={`${result.id}:tabs`}
               spot={result}
               from={currentLocation}
               excludeIds={planPlaceIds}
