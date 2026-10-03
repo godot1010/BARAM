@@ -6,6 +6,12 @@
 //    넣었어도 아래 normalizeServiceKey()가 자동으로 복원해서 처리한다.)
 // - 파일 경로 functions/api/tourapi.js 는 Cloudflare Pages의 파일 기반 라우팅 규칙에 따라
 //   자동으로 /api/tourapi 경로에 매핑된다 (별도 리다이렉트 설정 불필요).
+//
+// action 목록
+// - nearby    : 위치 주변 관광정보 (locationBasedList2)
+// - festival  : 축제 목록 (searchFestival2)
+// - pet       : 반려동물 동반 여행 정보 원본 (detailPetTour2, 확인용)
+// - petNearby : 위치 주변의 '반려동물 동반 가능' 장소만 모아서, 동반 조건과 함께 돌려준다
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 
@@ -34,10 +40,11 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 공공데이터 서버는 하루 호출 한도가 있고 자주 느리거나 522/502를 내서, 같은 지역을 여러 사람이
 //   조회해도 공공데이터 서버에는 한 번만 묻도록 한다. 성공한 응답만 저장한다.
 // - 1단계: 이 서버 프로그램이 떠 있는 동안 메모리에 보관(같은 서버에서 바로 재사용)
-// - 2단계: Cloudflare 캐시(caches.default)에 보관(다른 서버에서도 재사용, 지원되는 환경에서만)
+// - 2단계: Cloudflare 캐시(caches.default)에 보관(다른 서버에서도 재사용)
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS 를 알 수 있다.
 // ------------------------------------------------------------------
-const CACHE_SECONDS = { nearby: 24 * 60 * 60, festival: 6 * 60 * 60, pet: 24 * 60 * 60 };
+const DAY = 24 * 60 * 60;
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY };
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { expires, body }
 
@@ -56,6 +63,35 @@ function memorySet(key, body, seconds) {
   memoryCache.set(key, { expires: Date.now() + seconds * 1000, body });
 }
 
+// 저장해 둔 문자열을 찾는다. 결과: { body, source } 또는 null
+async function cacheGet(key, seconds) {
+  const fromMemory = memoryGet(key);
+  if (fromMemory) return { body: fromMemory, source: "HIT-MEMORY" };
+  try {
+    const fromEdge = await caches.default.match(key);
+    if (fromEdge) {
+      const body = await fromEdge.text();
+      memorySet(key, body, seconds);
+      return { body, source: "HIT-EDGE" };
+    }
+  } catch {
+    // Cloudflare 캐시를 쓸 수 없는 환경이면 메모리 캐시만 쓴다
+  }
+  return null;
+}
+
+async function cachePut(key, body, seconds) {
+  memorySet(key, body, seconds);
+  try {
+    await caches.default.put(
+      key,
+      new Response(body, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": `public, max-age=${seconds}` } })
+    );
+  } catch {
+    // Cloudflare 캐시를 쓸 수 없는 환경이면 메모리 캐시만 쓴다
+  }
+}
+
 // 캐시 키는 서비스키 없이, action과 조회 조건만으로 만든다 (좌표는 소수 넷째 자리로 맞춰 같은 지역끼리 묶음)
 function cacheKeyFor(url) {
   const p = new URLSearchParams();
@@ -66,6 +102,131 @@ function cacheKeyFor(url) {
     p.set(k, v);
   });
   return `https://baram-cache.internal/tourapi?${p.toString()}`;
+}
+
+// ------------------------------------------------------------------
+// 공공데이터 서버 호출. 실패하면 화면에 보여줄 오류 정보(payload, status)를 담은 예외를 던진다.
+// ------------------------------------------------------------------
+class TourApiError extends Error {
+  constructor(payload, status) {
+    super(payload.message);
+    this.payload = payload;
+    this.status = status;
+  }
+}
+
+async function callTourApi(path, params) {
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${TOUR_API_BASE}/${path}?${qs}`);
+  const bodyText = await res.text();
+
+  if (!res.ok) {
+    throw new TourApiError({ error: "UPSTREAM_ERROR", status: res.status, upstreamBody: bodyText.slice(0, 500), message: `TourAPI 응답 오류 (HTTP ${res.status})` }, 502);
+  }
+
+  let data;
+  try {
+    data = JSON.parse(bodyText);
+  } catch {
+    // TourAPI가 200인데도 XML(에러 메시지)을 줄 때가 있다 - 예: 키 미등록/승인대기 등
+    throw new TourApiError({ error: "UPSTREAM_NOT_JSON", upstreamBody: bodyText.slice(0, 500), message: "TourAPI가 JSON이 아닌 응답을 줬어요 (키 상태를 확인해주세요)." }, 502);
+  }
+
+  const resultCode = data?.response?.header?.resultCode;
+  if (resultCode && resultCode !== "0000" && resultCode !== "00") {
+    const resultMsg = data?.response?.header?.resultMsg || "알 수 없는 오류";
+    throw new TourApiError({ error: "UPSTREAM_RESULT_ERROR", resultCode, message: `TourAPI 오류: ${resultMsg} (코드 ${resultCode})` }, 502);
+  }
+
+  const rawItems = data?.response?.body?.items?.item;
+  const items = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
+  return { items, totalCount: Number(data?.response?.body?.totalCount) || items.length };
+}
+
+// ------------------------------------------------------------------
+// 반려동물 동반 정보 색인
+// 전국 목록(약 1만 곳)에는 장소 번호와 동반 조건만 있고 위치는 없다. 그래서 하루에 한 번 전체를 받아
+// '장소 번호 → 동반 조건' 색인을 만들어 두고, 지역 주변 장소 목록과 맞춰 본다.
+// 동반 조건 문구는 대부분 같아서 조건 묶음(conds)과 번호별 묶음 순번(byId)으로 작게 저장한다.
+// ------------------------------------------------------------------
+const PET_INDEX_KEY = "https://baram-cache.internal/pet-index-v1";
+const PET_PAGE_SIZE = 1000;
+// 주변에서 찾아볼 종류: 관광지, 문화시설, 레포츠, 숙박, 쇼핑, 음식점
+const PET_CONTENT_TYPES = ["12", "14", "28", "32", "38", "39"];
+
+function petCondition(it) {
+  return {
+    area: it.acmpyTypeCd || "", // 동반 구역 (예: 전구역 동반가능)
+    animals: it.acmpyPsblCpam || "", // 동반 가능 동물 (예: 전 견종 동반 가능)
+    need: it.acmpyNeedMtr || "", // 필요 사항 (예: 목줄 착용)
+    etc: it.etcAcmpyInfo || "", // 기타 안내
+  };
+}
+
+async function getPetIndex(base) {
+  const cached = await cacheGet(PET_INDEX_KEY, DAY);
+  if (cached) return JSON.parse(cached.body);
+
+  const first = await callTourApi("detailPetTour2", { ...base, numOfRows: String(PET_PAGE_SIZE), pageNo: "1" });
+  const pages = Math.ceil(first.totalCount / PET_PAGE_SIZE);
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(0, pages - 1) }, (_, i) =>
+      callTourApi("detailPetTour2", { ...base, numOfRows: String(PET_PAGE_SIZE), pageNo: String(i + 2) })
+    )
+  );
+
+  const conds = [];
+  const condIndex = new Map();
+  const byId = {};
+  [first, ...rest].forEach(({ items }) => {
+    items.forEach((it) => {
+      const c = petCondition(it);
+      const key = `${c.area}|${c.animals}|${c.need}|${c.etc}`;
+      if (!condIndex.has(key)) {
+        condIndex.set(key, conds.length);
+        conds.push(c);
+      }
+      byId[String(it.contentid)] = condIndex.get(key);
+    });
+  });
+  const index = { conds, byId, total: first.totalCount };
+  await cachePut(PET_INDEX_KEY, JSON.stringify(index), DAY);
+  return index;
+}
+
+async function petNearby(base, lat, lng) {
+  const index = await getPetIndex(base);
+  // 종류별로 주변 20km 안의 장소를 넉넉히 받아서, 반려동물 색인에 있는 곳만 남긴다
+  const lists = await Promise.all(
+    PET_CONTENT_TYPES.map((contentTypeId) =>
+      callTourApi("locationBasedList2", {
+        ...base, arrange: "E", mapX: lng, mapY: lat, radius: "20000", contentTypeId, numOfRows: "300", pageNo: "1",
+      }).catch(() => ({ items: [] })) // 한 종류가 실패해도 나머지는 보여준다
+    )
+  );
+  const items = [];
+  lists.forEach(({ items: list }) => {
+    list.forEach((it) => {
+      const condIdx = index.byId[String(it.contentid)];
+      if (condIdx === undefined) return;
+      items.push({
+        contentid: it.contentid,
+        contenttypeid: it.contenttypeid,
+        title: it.title,
+        addr1: it.addr1,
+        dist: it.dist,
+        mapx: it.mapx,
+        mapy: it.mapy,
+        firstimage: it.firstimage,
+        firstimage2: it.firstimage2,
+        cat2: it.cat2,
+        cat3: it.cat3,
+        pet: index.conds[condIdx],
+      });
+    });
+  });
+  items.sort((a, b) => parseFloat(a.dist) - parseFloat(b.dist));
+  return { items: items.slice(0, 80), petTotal: index.total };
 }
 
 // Cloudflare Pages Functions는 (context) => Response 형태의 onRequest 핸들러를 쓴다.
@@ -80,30 +241,18 @@ export async function onRequest(context) {
     // 저장해 둔 결과가 있으면 공공데이터 서버에 묻지 않고 바로 돌려준다
     const cacheKey = ttl ? cacheKeyFor(url) : null;
     if (cacheKey) {
-      const fromMemory = memoryGet(cacheKey);
-      if (fromMemory) return json(JSON.parse(fromMemory), 200, { "x-baram-cache": "HIT-MEMORY" });
-      try {
-        const fromEdge = await caches.default.match(cacheKey);
-        if (fromEdge) {
-          const body = await fromEdge.text();
-          memorySet(cacheKey, body, ttl);
-          return json(JSON.parse(body), 200, { "x-baram-cache": "HIT-EDGE" });
-        }
-      } catch {
-        // Cloudflare 캐시를 쓸 수 없는 환경이면 메모리 캐시만 쓴다
-      }
+      const hit = await cacheGet(cacheKey, ttl);
+      if (hit) return json(JSON.parse(hit.body), 200, { "x-baram-cache": hit.source });
     }
 
     const rawServiceKey = env.TOUR_API_SERVICE_KEY;
-
     if (!rawServiceKey) {
       return json({ error: "SERVER_NO_KEY", message: "서버에 TOUR_API_SERVICE_KEY 환경변수가 설정되지 않았어요." }, 500);
     }
     const serviceKey = normalizeServiceKey(rawServiceKey);
     const base = { serviceKey, MobileOS: "ETC", MobileApp: "BARAM", _type: "json" };
 
-    let path, params;
-
+    let payload;
     if (action === "nearby") {
       const lat = url.searchParams.get("lat");
       const lng = url.searchParams.get("lng");
@@ -111,67 +260,34 @@ export async function onRequest(context) {
       const radius = url.searchParams.get("radius") || "20000";
       const num = url.searchParams.get("num") || "5";
       if (!lat || !lng || !contentTypeId) return json({ error: "BAD_REQUEST", message: "lat/lng/contentTypeId가 필요해요." }, 400);
-      path = "locationBasedList2";
-      params = { ...base, arrange: "E", mapX: lng, mapY: lat, radius, contentTypeId, numOfRows: num, pageNo: "1" };
+      const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, contentTypeId, numOfRows: num, pageNo: "1" });
+      payload = { items };
     } else if (action === "festival") {
       const eventStartDate = url.searchParams.get("eventStartDate");
       const numOfRows = url.searchParams.get("numOfRows") || "30";
       if (!eventStartDate) return json({ error: "BAD_REQUEST", message: "eventStartDate가 필요해요." }, 400);
-      path = "searchFestival2";
-      params = { ...base, arrange: "A", numOfRows, pageNo: "1", eventStartDate };
+      const { items } = await callTourApi("searchFestival2", { ...base, arrange: "A", numOfRows, pageNo: "1", eventStartDate });
+      payload = { items };
     } else if (action === "pet") {
-      // 반려동물 동반 여행 정보. contentId가 있으면 그 장소만, 없으면 목록(지원되는 경우)을 받는다
+      // 반려동물 동반 여행 정보 원본. contentId가 있으면 그 장소만, 없으면 목록을 받는다
       const contentId = url.searchParams.get("contentId");
       const numOfRows = url.searchParams.get("numOfRows") || "100";
       const pageNo = url.searchParams.get("pageNo") || "1";
-      path = "detailPetTour2";
-      params = { ...base, numOfRows, pageNo, ...(contentId ? { contentId } : {}) };
+      payload = await callTourApi("detailPetTour2", { ...base, numOfRows, pageNo, ...(contentId ? { contentId } : {}) });
+    } else if (action === "petNearby") {
+      const lat = url.searchParams.get("lat");
+      const lng = url.searchParams.get("lng");
+      if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
+      payload = await petNearby(base, lat, lng);
     } else {
-      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet 중 하나여야 해요." }, 400);
+      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby 중 하나여야 해요." }, 400);
     }
-
-    const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`${TOUR_API_BASE}/${path}?${qs}`);
-    const bodyText = await res.text();
-
-    if (!res.ok) {
-      return json({ error: "UPSTREAM_ERROR", status: res.status, upstreamBody: bodyText.slice(0, 500), message: `TourAPI 응답 오류 (HTTP ${res.status})` }, 502);
-    }
-
-    let data;
-    try {
-      data = JSON.parse(bodyText);
-    } catch {
-      // TourAPI가 200인데도 XML(에러 메시지)을 줄 때가 있다 - 예: 키 미등록/승인대기 등
-      return json({ error: "UPSTREAM_NOT_JSON", upstreamBody: bodyText.slice(0, 500), message: "TourAPI가 JSON이 아닌 응답을 줬어요 (키 상태를 확인해주세요)." }, 502);
-    }
-
-    const resultCode = data?.response?.header?.resultCode;
-    if (resultCode && resultCode !== "0000" && resultCode !== "00") {
-      const resultMsg = data?.response?.header?.resultMsg || "알 수 없는 오류";
-      return json({ error: "UPSTREAM_RESULT_ERROR", resultCode, message: `TourAPI 오류: ${resultMsg} (코드 ${resultCode})` }, 502);
-    }
-
-    const rawItems = data?.response?.body?.items?.item;
-    const items = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
-    const totalCount = data?.response?.body?.totalCount;
-    const payload = action === "pet" ? { items, totalCount } : { items };
 
     // 성공한 결과만 저장한다
-    if (cacheKey) {
-      const body = JSON.stringify(payload);
-      memorySet(cacheKey, body, ttl);
-      try {
-        await caches.default.put(
-          cacheKey,
-          new Response(body, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": `public, max-age=${ttl}` } })
-        );
-      } catch {
-        // Cloudflare 캐시를 쓸 수 없는 환경이면 메모리 캐시만 쓴다
-      }
-    }
+    if (cacheKey) await cachePut(cacheKey, JSON.stringify(payload), ttl);
     return json(payload, 200, { "x-baram-cache": "MISS" });
   } catch (err) {
+    if (err instanceof TourApiError) return json(err.payload, err.status);
     return json({ error: "SERVER_ERROR", message: String((err && err.message) || err) }, 500);
   }
 }
