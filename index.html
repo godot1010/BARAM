@@ -2402,7 +2402,8 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
                         </span>
                         <span className="min-w-0">
                           <p className="text-sm text-[#2B2620] truncate">{s.name}</p>
-                          <p className="text-xs text-[#6B5F4F] mt-0.5">
+                          {/* keep-all: "내가 선택"처럼 낱말 중간에서 줄이 바뀌지 않게 */}
+                          <p className="text-xs text-[#6B5F4F] mt-0.5" style={{ wordBreak: "keep-all" }}>
                             {formatDate(s.visitedDate)} 다녀옴 · {s.region}{s.stampType === PICKED_STAMP ? " · 내가 선택" : ""}{hasMemory ? " · 추억 저장됨" : ""}
                           </p>
                         </span>
