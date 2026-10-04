@@ -2843,7 +2843,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache }) {
         )}
 
         {hidesPlanPlaces && hiddenCount > 0 && (
-          <p className="text-[11px] text-[#6B5F4F]">📅 오늘 일정에 넣은 {hiddenCount}곳은 위 일정표에 있어서 빼고 보여줘요.</p>
+          <p className="text-[11px] text-[#6B5F4F]">📅 오늘 일정에 넣은 {hiddenCount === 1 ? "한 곳" : `${hiddenCount}곳`}은 위 일정표에 있어서 빼고 보여줘요.</p>
         )}
         {!entry || entry.status === "loading" ? (
           <StatusBlock status="loading" />
