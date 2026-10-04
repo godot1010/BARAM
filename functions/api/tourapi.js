@@ -41,38 +41,45 @@ function json(obj, status = 200, extraHeaders = {}) {
 //   조회해도 공공데이터 서버에는 한 번만 묻도록 한다. 성공한 응답만 저장한다.
 // - 1단계: 이 서버 프로그램이 떠 있는 동안 메모리에 보관(같은 서버에서 바로 재사용)
 // - 2단계: Cloudflare 캐시(caches.default)에 보관(다른 서버에서도 재사용)
-// - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS 를 알 수 있다.
+// - 저장본은 STALE_SECONDS(7일) 동안 남겨 둔다. CACHE_SECONDS(24시간 등)가 지나면 새로 받아 오고,
+//   그때 공공데이터 서버가 고장이면(522 등) 지난 저장본을 대신 돌려준다 (2026-10-04 추가).
+// - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
 const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY };
+const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
-const memoryCache = new Map(); // key -> { expires, body }
+const memoryCache = new Map(); // key -> { savedAt, body }
 
 function memoryGet(key) {
   const hit = memoryCache.get(key);
   if (!hit) return null;
-  if (hit.expires < Date.now()) {
+  if (Date.now() - hit.savedAt > STALE_SECONDS * 1000) {
     memoryCache.delete(key);
     return null;
   }
-  return hit.body;
+  return hit;
 }
 
-function memorySet(key, body, seconds) {
+function memorySet(key, body, savedAt) {
   if (memoryCache.size >= MEMORY_CACHE_MAX) memoryCache.delete(memoryCache.keys().next().value); // 가장 오래된 것부터 정리
-  memoryCache.set(key, { expires: Date.now() + seconds * 1000, body });
+  memoryCache.set(key, { savedAt, body });
 }
 
-// 저장해 둔 문자열을 찾는다. 결과: { body, source } 또는 null
-async function cacheGet(key, seconds) {
+// 저장해 둔 문자열을 찾는다. 결과: { body, savedAt, source } 또는 null
+// (7일 안의 것이면 오래됐어도 돌려준다. 새것인지는 isFresh로 따로 본다)
+async function cacheGet(key) {
   const fromMemory = memoryGet(key);
-  if (fromMemory) return { body: fromMemory, source: "HIT-MEMORY" };
+  if (fromMemory) return { ...fromMemory, source: "HIT-MEMORY" };
   try {
     const fromEdge = await caches.default.match(key);
     if (fromEdge) {
       const body = await fromEdge.text();
-      memorySet(key, body, seconds);
-      return { body, source: "HIT-EDGE" };
+      // 저장 시각이 없는 옛 저장본은 오래된 것으로 본다 (새로 받아 보고, 실패하면 이걸 쓴다)
+      const savedAt = Number(fromEdge.headers.get("x-baram-saved-at")) || 0;
+      if (savedAt && Date.now() - savedAt > STALE_SECONDS * 1000) return null; // 7일이 지난 것은 쓰지 않는다
+      memorySet(key, body, savedAt);
+      return { body, savedAt, source: "HIT-EDGE" };
     }
   } catch {
     // Cloudflare 캐시를 쓸 수 없는 환경이면 메모리 캐시만 쓴다
@@ -80,12 +87,23 @@ async function cacheGet(key, seconds) {
   return null;
 }
 
-async function cachePut(key, body, seconds) {
-  memorySet(key, body, seconds);
+function isFresh(hit, seconds) {
+  return Date.now() - hit.savedAt < seconds * 1000;
+}
+
+async function cachePut(key, body) {
+  const savedAt = Date.now();
+  memorySet(key, body, savedAt);
   try {
     await caches.default.put(
       key,
-      new Response(body, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": `public, max-age=${seconds}` } })
+      new Response(body, {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": `public, max-age=${STALE_SECONDS}`,
+          "x-baram-saved-at": String(savedAt),
+        },
+      })
     );
   } catch {
     // Cloudflare 캐시를 쓸 수 없는 환경이면 메모리 캐시만 쓴다
@@ -164,9 +182,18 @@ function petCondition(it) {
 }
 
 async function getPetIndex(base) {
-  const cached = await cacheGet(PET_INDEX_KEY, DAY);
-  if (cached) return JSON.parse(cached.body);
+  const cached = await cacheGet(PET_INDEX_KEY);
+  if (cached && isFresh(cached, DAY)) return JSON.parse(cached.body);
+  try {
+    return await buildPetIndex(base);
+  } catch (err) {
+    // 공공데이터 서버가 고장이면 지난 색인(7일 안)을 그대로 쓴다
+    if (cached) return JSON.parse(cached.body);
+    throw err;
+  }
+}
 
+async function buildPetIndex(base) {
   const first = await callTourApi("detailPetTour2", { ...base, numOfRows: String(PET_PAGE_SIZE), pageNo: "1" });
   const pages = Math.ceil(first.totalCount / PET_PAGE_SIZE);
   const rest = await Promise.all(
@@ -190,20 +217,28 @@ async function getPetIndex(base) {
     });
   });
   const index = { conds, byId, total: first.totalCount };
-  await cachePut(PET_INDEX_KEY, JSON.stringify(index), DAY);
+  await cachePut(PET_INDEX_KEY, JSON.stringify(index));
   return index;
 }
 
 async function petNearby(base, lat, lng) {
   const index = await getPetIndex(base);
   // 종류별로 주변 20km 안의 장소를 넉넉히 받아서, 반려동물 색인에 있는 곳만 남긴다
+  let failed = 0;
+  let lastError = null;
   const lists = await Promise.all(
     PET_CONTENT_TYPES.map((contentTypeId) =>
       callTourApi("locationBasedList2", {
         ...base, arrange: "E", mapX: lng, mapY: lat, radius: "20000", contentTypeId, numOfRows: "300", pageNo: "1",
-      }).catch(() => ({ items: [] })) // 한 종류가 실패해도 나머지는 보여준다
+      }).catch((err) => { // 한 종류가 실패해도 나머지는 보여준다
+        failed += 1;
+        lastError = err;
+        return { items: [] };
+      })
     )
   );
+  // 전부 실패했으면 빈 목록이 아니라 오류로 (빈 목록을 저장해 버리면 하루 동안 '정보 없음'이 된다)
+  if (failed === PET_CONTENT_TYPES.length) throw lastError;
   const items = [];
   lists.forEach(({ items: list }) => {
     list.forEach((it) => {
@@ -226,23 +261,29 @@ async function petNearby(base, lat, lng) {
     });
   });
   items.sort((a, b) => parseFloat(a.dist) - parseFloat(b.dist));
-  return { items: items.slice(0, 80), petTotal: index.total };
+  // incomplete: 일부 종류를 못 받음 → 저장하지 않고, 지난 저장본이 있으면 그걸 쓴다
+  return { items: items.slice(0, 80), petTotal: index.total, incomplete: failed > 0 };
 }
 
 // Cloudflare Pages Functions는 (context) => Response 형태의 onRequest 핸들러를 쓴다.
 // context.env 로 환경변수에 접근한다 (Node의 process.env 대신).
 export async function onRequest(context) {
+  // 지난 저장본(새로 받을 때가 됐지만 7일 안의 것). 공공데이터 서버가 실패하면 이걸 돌려준다
+  let stale = null;
+  const staleResponse = () =>
+    json(JSON.parse(stale.body), 200, { "x-baram-cache": "STALE", "x-baram-saved-at": new Date(stale.savedAt).toISOString() });
   try {
     const { request, env } = context;
     const url = new URL(request.url);
     const action = url.searchParams.get("action");
     const ttl = CACHE_SECONDS[action];
 
-    // 저장해 둔 결과가 있으면 공공데이터 서버에 묻지 않고 바로 돌려준다
+    // 저장해 둔 결과가 새것이면 공공데이터 서버에 묻지 않고 바로 돌려준다
     const cacheKey = ttl ? cacheKeyFor(url) : null;
     if (cacheKey) {
-      const hit = await cacheGet(cacheKey, ttl);
-      if (hit) return json(JSON.parse(hit.body), 200, { "x-baram-cache": hit.source });
+      const hit = await cacheGet(cacheKey);
+      if (hit && isFresh(hit, ttl)) return json(JSON.parse(hit.body), 200, { "x-baram-cache": hit.source });
+      stale = hit;
     }
 
     const rawServiceKey = env.TOUR_API_SERVICE_KEY;
@@ -283,10 +324,20 @@ export async function onRequest(context) {
       return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby 중 하나여야 해요." }, 400);
     }
 
+    // 일부만 받은 결과는 저장하지 않는다. 지난 저장본이 있으면 그쪽이 더 완전하다
+    if (payload.incomplete) {
+      if (stale) return staleResponse();
+      delete payload.incomplete;
+      return json(payload, 200, { "x-baram-cache": "MISS-PARTIAL" });
+    }
+    delete payload.incomplete;
+
     // 성공한 결과만 저장한다
-    if (cacheKey) await cachePut(cacheKey, JSON.stringify(payload), ttl);
+    if (cacheKey) await cachePut(cacheKey, JSON.stringify(payload));
     return json(payload, 200, { "x-baram-cache": "MISS" });
   } catch (err) {
+    // 공공데이터 서버가 고장이면(522 등) 지난 저장본이라도 돌려준다
+    if (stale) return staleResponse();
     if (err instanceof TourApiError) return json(err.payload, err.status);
     return json({ error: "SERVER_ERROR", message: String((err && err.message) || err) }, 500);
   }
