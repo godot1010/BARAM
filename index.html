@@ -1449,7 +1449,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                   alt=""
                   loading="lazy"
                   className="w-12 h-12 rounded-md object-cover shrink-0"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  onError={(e) => retryLargeImage(e, s.place.imageLarge, (img) => { img.style.display = "none"; })}
                 />
               )}
               <div className="min-w-0 flex-1">
@@ -1649,6 +1649,7 @@ async function fetchNearbyTourSpots({ lat, lng, contentTypeId, radius = 20000, n
     lat: parseFloat(it.mapy) || null,
     lng: parseFloat(it.mapx) || null,
     image: toHttps(it.firstimage2 || it.firstimage),
+    imageLarge: toHttps(it.firstimage), // 작은 사진(firstimage2)이 깨진 경우가 있어 대신 쓸 큰 사진
     cafe: it.cat3 === "A05020900", // 음식점(39) 안의 '카페/전통찻집' 분류
   }));
 }
@@ -1694,6 +1695,18 @@ function toHttps(url) {
   return url ? url.replace(/^http:\/\//, "https://") : null;
 }
 
+// 사진이 안 열리면 큰 사진(imageLarge)으로 한 번 더 시도하고, 그래도 안 되면 onFail
+// (관광정보의 작은 사진 주소가 404인 곳이 있다. 예: 서울 중구 카페 '호랑이')
+function retryLargeImage(e, large, onFail) {
+  const img = e.currentTarget;
+  if (large && img.dataset.triedLarge !== "1") {
+    img.dataset.triedLarge = "1";
+    img.src = large;
+  } else {
+    onFail(img);
+  }
+}
+
 function yyyymmdd(d) {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -1733,6 +1746,7 @@ async function fetchPetNearby({ lat, lng }) {
     lat: parseFloat(it.mapy) || null,
     lng: parseFloat(it.mapx) || null,
     image: toHttps(it.firstimage2 || it.firstimage),
+    imageLarge: toHttps(it.firstimage), // 작은 사진(firstimage2)이 깨진 경우가 있어 대신 쓸 큰 사진
     pet: it.pet,
   }));
 }
@@ -1778,6 +1792,7 @@ async function fetchLocalFestivals({ regionKeyword, lat, lng }) {
     lat: parseFloat(it.mapy) || null,
     lng: parseFloat(it.mapx) || null,
     image: toHttps(it.firstimage2 || it.firstimage),
+    imageLarge: toHttps(it.firstimage), // 작은 사진(firstimage2)이 깨진 경우가 있어 대신 쓸 큰 사진
   }));
 }
 
@@ -2575,6 +2590,8 @@ function StatusBlock({ status, error, emptyText }) {
 
 // 장소 카드: 사진 · 이름 · 종류 배지 · 거리 · 주소, 누르면 카카오맵 길찾기
 function PlaceCard({ place, emoji }) {
+  // 사진이 없거나 사진 주소가 깨졌으면 빈칸 대신 탭 아이콘을 보여준다
+  const [imageBroken, setImageBroken] = useState(false);
   return (
     <a
       href={kakaoDirectionsUrl(place.name, place.lat, place.lng)}
@@ -2582,13 +2599,13 @@ function PlaceCard({ place, emoji }) {
       rel="noreferrer"
       className="flex gap-3 bg-white/50 border border-[#D9CBB0] rounded-lg p-2"
     >
-      {place.image ? (
+      {place.image && !imageBroken ? (
         <img
           src={place.image}
           alt=""
           loading="lazy"
           className="w-14 h-14 rounded-md object-cover shrink-0"
-          onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+          onError={(e) => retryLargeImage(e, place.imageLarge, () => setImageBroken(true))}
         />
       ) : (
         <span className="w-14 h-14 rounded-md shrink-0 flex items-center justify-center text-xl" style={{ background: "#F3E6C4" }}>
@@ -2645,7 +2662,7 @@ function FestivalCard({ festival }) {
           alt=""
           loading="lazy"
           className="w-14 h-14 rounded-md object-cover shrink-0"
-          onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+          onError={(e) => retryLargeImage(e, festival.imageLarge, (img) => { img.style.visibility = "hidden"; })}
         />
       ) : (
         <span className="w-14 h-14 rounded-md shrink-0 flex items-center justify-center text-xl" style={{ background: "#F3E6C4" }}>🎉</span>
@@ -2703,7 +2720,11 @@ const TAB_CONFIG = {
   },
   cafe: {
     label: "카페", icon: Coffee, color: "#8B5E3C", emoji: "☕", source: "ct39",
-    pick: (list) => list.filter((p) => p.cafe && !CHAIN_BRANDS.test(p.name)),
+    // 사진 있는 곳을 앞으로 (각 그룹 안에서는 가까운 순 유지)
+    pick: (list) => {
+      const cafes = list.filter((p) => p.cafe && !CHAIN_BRANDS.test(p.name));
+      return [...cafes.filter((p) => p.image), ...cafes.filter((p) => !p.image)];
+    },
   },
   festival: { label: "축제", icon: PartyPopper, color: "#2F6E68", emoji: "🎉", source: "festival" },
   lodging: {
