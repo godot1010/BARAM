@@ -3664,7 +3664,7 @@ function BaramApp() {
           <div ref={resultCardRef} className="mt-6 bg-white/60 border border-dashed border-[#B8860B] rounded-xl p-5" style={{ scrollMarginTop: 80 }}>
             {resultSource === PICKED_STAMP && (
               <p className="inline-flex items-center gap-1 mb-2 text-[10px] font-bold rounded-full px-2 py-0.5" style={{ background: "#ECE8E1", color: "#6B6457" }}>
-                <Search size={10} /> 직접 고른 여행지
+                <Search size={10} /> 내가 선택한 여행지
               </p>
             )}
             <div className="flex items-center justify-between">
@@ -3755,7 +3755,7 @@ function BaramApp() {
                   STAMP
                 </button>
                 {resultSource === PICKED_STAMP && (
-                  <p className="text-[11px] text-[#6B5F4F] text-center mt-1.5">직접 고른 곳은 회색 STAMP로 남아요. 금색 STAMP는 룰렛이 정해 준 곳에만!</p>
+                  <p className="text-[11px] text-[#6B5F4F] text-center mt-1.5">내가 선택한 곳은 회색 STAMP로 남아요. 금색 STAMP는 룰렛이 정해 준 곳에만!</p>
                 )}
               </>
             )}
