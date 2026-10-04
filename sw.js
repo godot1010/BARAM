@@ -6,8 +6,8 @@
 // 계속 보이는 버그가 있었다 (앱 재설치로도 안 고쳐짐 - 저장공간을 공유하기 때문).
 // v2부터는: 문서(HTML)는 항상 "네트워크 우선"으로 최신 버전을 먼저 시도하고,
 // 오프라인일 때만 캐시로 대체한다. 아이콘/매니페스트 같은 정적 자산만 캐시 우선을 유지.
-// v4 (2026-10-04): 앱 아이콘을 새 디자인(그림자 없는 룰렛 + 빨간 핀)으로 바꿔서, 폰에 저장돼 있던 예전 아이콘을 버리도록 버전을 올림
-const CACHE_NAME = "baram-cache-v4";
+// v5 (2026-10-04): 앱 아이콘을 새 디자인(룰렛 + 빨간 칸을 가리키는 핀 + 가운데 빨간 원에 흰 B)으로 바꿔서, 폰에 저장돼 있던 예전 아이콘을 버리도록 버전을 올림
+const CACHE_NAME = "baram-cache-v5";
 const CORE_ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png", "/icon-maskable-192.png", "/icon-maskable-512.png"];
 
 self.addEventListener("install", (event) => {
