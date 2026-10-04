@@ -2831,6 +2831,9 @@ const SOURCE_FETCHERS = {
 
 const PAGE_SIZE = 5;
 
+// 반려견 탭 아래 지도 검색 버튼 ("{지역} 애견동반 카페" 등으로 네이버 지도 검색)
+const PET_MAP_KEYWORDS = ["애견동반 카페", "애견동반 식당", "애견동반 숙소", "애견 운동장"];
+
 // 장소 수를 우리말로 (1 → "한 곳", 3 → "세 곳"). 열 곳이 넘으면 숫자로 ("12곳")
 const NATIVE_COUNTS = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
 function countPlaces(n) {
@@ -2952,6 +2955,26 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache }) {
               </button>
             )}
           </>
+        )}
+
+        {/* 관광정보에 등록된 반려동물 동반 장소는 지역마다 적다(제주시 5곳 등). 지도 검색으로 보완한다 */}
+        {tab === "pet" && (
+          <div className="pt-1">
+            <p className="text-[11px] text-[#6B5F4F] mb-1">🔎 지도에서 더 찾기 (네이버 지도)</p>
+            <div className="flex flex-wrap gap-1.5">
+              {PET_MAP_KEYWORDS.map((k) => (
+                <a
+                  key={k}
+                  href={`https://map.naver.com/p/search/${encodeURIComponent(`${spot.name} ${k}`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 bg-white/50 border border-[#D9CBB0] rounded-full px-3 py-1.5 text-xs text-[#2B2620]"
+                >
+                  {k} <ExternalLink size={11} className="text-[#2F6E68]" />
+                </a>
+              ))}
+            </div>
+          </div>
         )}
 
         {tab === "culture" && (
