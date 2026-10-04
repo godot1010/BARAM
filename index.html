@@ -2754,6 +2754,12 @@ const SOURCE_FETCHERS = {
 
 const PAGE_SIZE = 5;
 
+// 장소 수를 우리말로 (1 → "한 곳", 3 → "세 곳"). 열 곳이 넘으면 숫자로 ("12곳")
+const NATIVE_COUNTS = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
+function countPlaces(n) {
+  return NATIVE_COUNTS[n] ? `${NATIVE_COUNTS[n]} 곳` : `${n}곳`;
+}
+
 function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache }) {
   const [tab, setTab] = useState("landmark");
   const [shown, setShown] = useState(PAGE_SIZE);
@@ -2843,7 +2849,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache }) {
         )}
 
         {hidesPlanPlaces && hiddenCount > 0 && (
-          <p className="text-[11px] text-[#6B5F4F]">📅 오늘 일정에 넣은 {hiddenCount === 1 ? "한 곳" : `${hiddenCount}곳`}은 위 일정표에 있어서 빼고 보여줘요.</p>
+          <p className="text-[11px] text-[#6B5F4F]">📅 오늘 일정에 넣은 {countPlaces(hiddenCount)}은 위 일정표에 있어서 빼고 보여줘요.</p>
         )}
         {!entry || entry.status === "loading" ? (
           <StatusBlock status="loading" />
