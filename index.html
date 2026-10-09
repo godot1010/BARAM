@@ -1653,7 +1653,8 @@ async function fetchNearbyTourSpots({ lat, lng, contentTypeId, radius = 20000, n
     num: String(Math.max(num, 30)),
   });
   // 관광지(12)로 등록됐지만 볼거리가 아닌 곳(화장실, 사우나, 노인회 사무실 등)은 뺀다
-  const cleaned = contentTypeId === 12 ? arr.filter((it) => !NOT_ATTRACTION.test(it.title || "")) : arr;
+  const located = arr.filter((it) => !hasWrongCoords(it)); // 주소와 좌표가 어긋난 곳은 뺀다
+  const cleaned = contentTypeId === 12 ? located.filter((it) => !NOT_ATTRACTION.test(it.title || "")) : located;
   const ordered = preferImages ? [...cleaned.filter((it) => it.firstimage), ...cleaned.filter((it) => !it.firstimage)] : cleaned;
   return dedupeByName(ordered).slice(0, num).map((it) => ({
     id: it.contentid,
@@ -1670,6 +1671,34 @@ async function fetchNearbyTourSpots({ lat, lng, contentTypeId, radius = 20000, n
 }
 
 const NOT_ATTRACTION = /화장실|사우나|노인회|경로당|주차장|복지관|주민센터|행정복지/;
+
+// 관광정보에는 주소와 좌표가 서로 다른 곳이 있다. 예: '공주 우금치 전적'은 주소가 충남 공주시인데
+// 좌표가 평택 시내로 잘못 등록돼 있어 평택시 일정에 '0.9km' 명소로 나왔다 (2026-10-09 형이 발견).
+// 주소의 시·군·구를 지역 목록에서 찾아, 좌표가 그 지역 중심에서 50km 넘게 떨어져 있으면 뺀다.
+const METRO_PREFIXES = [["서울", "서울"], ["부산", "부산"], ["대구", "대구"], ["인천", "인천"], ["광주광역", "광주"], ["전남광주", "광주"], ["대전", "대전"], ["울산", "울산"]];
+// 2026년에 바뀐 구 이름 → 지역 목록의 이름
+const DISTRICT_ALIASES = { "인천 제물포구": "인천 중구", "인천 영종구": "인천 중구", "인천 검단구": "인천 서구", "인천 서해구": "인천 서구" };
+const LOCATION_BY_NAME = new Map(LOCATIONS.map((l) => [l.name, l]));
+function regionOfAddress(addr) {
+  const [sido = "", sgg = ""] = (addr || "").trim().split(/\s+/);
+  if (!sido) return null;
+  if (sido.startsWith("세종")) return LOCATION_BY_NAME.get("세종시");
+  const metro = (METRO_PREFIXES.find(([prefix]) => sido.startsWith(prefix)) || [])[1] || (sido === "광주" ? "광주" : null);
+  if (metro) {
+    const name = DISTRICT_ALIASES[`${metro} ${sgg}`] || `${metro} ${sgg}`;
+    return LOCATION_BY_NAME.get(name) || LOCATION_BY_NAME.get(sgg) || null; // 광역시 안의 군(강화군·달성군 등)은 이름만으로
+  }
+  if (sgg === "고성군") return LOCATION_BY_NAME.get(sido.startsWith("강원") ? "고성군-강원" : "고성군-경남");
+  return LOCATION_BY_NAME.get(sgg) || null;
+}
+const WRONG_COORDS_KM = 50;
+function hasWrongCoords(it) {
+  const region = regionOfAddress(it.addr1);
+  const lat = parseFloat(it.mapy);
+  const lng = parseFloat(it.mapx);
+  if (!region || !Number.isFinite(lat) || !Number.isFinite(lng)) return false; // 판단할 수 없으면 그대로 둔다
+  return haversineKm(lat, lng, region.lat, region.lng) > WRONG_COORDS_KM;
+}
 
 // 관광정보에는 같은 곳이 이름만 조금 다르게 여러 번 등록된 경우가 많다
 // (예: '진미반점'이 두 번, '인사동'/'안녕인사동', '흥국사(여수)'/'여수 흥국사 홍교', '용연'/'용연구름다리').
@@ -1747,7 +1776,7 @@ const CONTENT_TYPE_LABELS = { "12": "명소", "14": "문화", "28": "레포츠",
 const PET_TYPE_RANK = { "12": 0, "28": 0, "39": 1, "14": 1, "32": 2, "38": 3 };
 async function fetchPetNearby({ lat, lng }) {
   const arr = await tourApiProxyFetch("petNearby", { lat: String(lat), lng: String(lng) });
-  const ranked = [...arr].sort((a, b) =>
+  const ranked = arr.filter((it) => !hasWrongCoords(it)).sort((a, b) =>
     (PET_TYPE_RANK[a.contenttypeid] ?? 2) - (PET_TYPE_RANK[b.contenttypeid] ?? 2) ||
     (b.firstimage ? 1 : 0) - (a.firstimage ? 1 : 0) ||
     parseFloat(a.dist) - parseFloat(b.dist)
@@ -1775,8 +1804,8 @@ function petSummary(pet) {
 async function fetchLocalFestivals({ regionKeyword, lat, lng }) {
   const todayStr = yyyymmdd(new Date());
   const all = await loadFestivalList();
-  // 이미 끝난 축제는 뺀다
-  const arr = all.filter((it) => !it.eventenddate || it.eventenddate >= todayStr);
+  // 이미 끝난 축제와 주소·좌표가 어긋난 축제는 뺀다
+  const arr = all.filter((it) => (!it.eventenddate || it.eventenddate >= todayStr) && !hasWrongCoords(it));
 
   const withDistance = arr.map((it) => {
     const itLat = parseFloat(it.mapy);
