@@ -12,6 +12,7 @@
 // - festival  : 축제 목록 (searchFestival2)
 // - pet       : 반려동물 동반 여행 정보 원본 (detailPetTour2, 확인용)
 // - petNearby : 위치 주변의 '반려동물 동반 가능' 장소만 모아서, 동반 조건과 함께 돌려준다
+// - detail    : 장소 하나의 자세한 정보 (소개글·전화·홈페이지 + 이용 시간 등 + 사진 여러 장)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 
@@ -46,7 +47,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -265,6 +266,44 @@ async function petNearby(base, lat, lng) {
   return { items: items.slice(0, 80), petTotal: index.total, incomplete: failed > 0 };
 }
 
+// ------------------------------------------------------------------
+// 장소 자세한 정보: 공통정보(소개글 등) + 소개정보(이용 시간·쉬는 날 등, 종류마다 항목이 다름) + 사진 목록
+// 공통정보는 꼭 필요하고, 나머지 둘은 실패해도 공통정보만으로 보여준다(그때는 저장하지 않음).
+// ------------------------------------------------------------------
+const MAX_DETAIL_IMAGES = 10;
+
+async function placeDetail(base, contentId, contentTypeId) {
+  const [common, intro, images] = await Promise.all([
+    callTourApi("detailCommon2", { ...base, contentId }),
+    contentTypeId ? callTourApi("detailIntro2", { ...base, contentId, contentTypeId }).catch(() => null) : Promise.resolve({ items: [] }),
+    callTourApi("detailImage2", { ...base, contentId, imageYN: "Y" }).catch(() => null),
+  ]);
+  const c = common.items[0];
+  if (!c) throw new TourApiError({ error: "NOT_FOUND", message: "이 장소의 자세한 정보가 없어요." }, 404);
+  // 소개정보는 비어 있지 않은 칸만 남긴다 (앱이 종류별로 이름을 붙여 보여준다)
+  const introRaw = (intro && intro.items[0]) || {};
+  const introFields = {};
+  Object.entries(introRaw).forEach(([k, v]) => {
+    if (k === "contentid" || k === "contenttypeid") return;
+    if (typeof v === "string" && v.trim() && v.trim() !== "0") introFields[k] = v.trim();
+  });
+  return {
+    items: [{
+      contentid: c.contentid,
+      contenttypeid: c.contenttypeid,
+      title: c.title,
+      addr1: c.addr1,
+      tel: c.tel,
+      homepage: c.homepage,
+      overview: c.overview,
+      firstimage: c.firstimage,
+      intro: introFields,
+      images: ((images && images.items) || []).slice(0, MAX_DETAIL_IMAGES).map((im) => ({ url: im.originimgurl, small: im.smallimageurl })),
+    }],
+    incomplete: !intro || !images,
+  };
+}
+
 // Cloudflare Pages Functions는 (context) => Response 형태의 onRequest 핸들러를 쓴다.
 // context.env 로 환경변수에 접근한다 (Node의 process.env 대신).
 export async function onRequest(context) {
@@ -320,8 +359,13 @@ export async function onRequest(context) {
       const lng = url.searchParams.get("lng");
       if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
       payload = await petNearby(base, lat, lng);
+    } else if (action === "detail") {
+      const contentId = url.searchParams.get("contentId");
+      const contentTypeId = url.searchParams.get("contentTypeId") || "";
+      if (!contentId || !/^\d+$/.test(contentId)) return json({ error: "BAD_REQUEST", message: "contentId가 필요해요." }, 400);
+      payload = await placeDetail(base, contentId, /^\d+$/.test(contentTypeId) ? contentTypeId : "");
     } else {
-      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby 중 하나여야 해요." }, 400);
+      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail 중 하나여야 해요." }, 400);
     }
 
     // 일부만 받은 결과는 저장하지 않는다. 지난 저장본이 있으면 그쪽이 더 완전하다
