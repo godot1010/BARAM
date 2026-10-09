@@ -3129,6 +3129,8 @@ function BaramApp() {
 
   const wheelRef = useRef(null);
   const angleRef = useRef(0);
+  // 이 룰렛판으로 이미 한 번 뽑았는지. 다시 돌릴 때는 판을 새로 섞는다 (2026-10-09)
+  const boardUsedRef = useRef(false);
   const rafRef = useRef(null);
 
   // 스크롤을 내리면 머리 부분 아래에 그림자를 보여준다 (높이는 바꾸지 않음)
@@ -3176,6 +3178,7 @@ function BaramApp() {
     // 룰렛판만 새로 만든다. 이미 정해진 여행지(result)는 여기서 지우지 않는다 -
     // 권역/내 위치를 바꾸거나 앱을 다시 켜도 가던 여행지가 사라지면 안 되기 때문.
     setRouletteSpots(interleaved);
+    boardUsedRef.current = false;
     angleRef.current = 0;
     if (wheelRef.current) wheelRef.current.style.transform = "rotate(0deg)";
   }
@@ -3445,6 +3448,9 @@ function BaramApp() {
 
   function spinNow() {
     clearResult();
+    // 다시 돌리는 거면 판을 새로 섞는다. 결과가 나온 직후가 아니라 돌리기 시작할 때 섞어야
+    // 방금 핀이 가리킨 칸이 그대로 보인다. (처음 돌릴 때는 이미 새로 섞인 판이라 그대로)
+    if (boardUsedRef.current) pickRouletteSpots(spots, region, currentLocation);
     setPhase("ramping");
     const el = wheelRef.current;
     const rampTarget = angleRef.current + 720;
@@ -3487,6 +3493,7 @@ function BaramApp() {
     setTimeout(() => {
       setPhase("idle");
       const chosen = rouletteSpots[selectedIndex];
+      boardUsedRef.current = true;
       setResult(chosen);
       setResultSource("roulette");
       try {
