@@ -3717,8 +3717,8 @@ function BaramApp() {
       const chosen = rouletteSpots[selectedIndex];
       boardUsedRef.current = true;
       setWinnerId(chosen.id);
-      // 진동 한 번 (지원하는 폰만. 아이폰 사파리 등은 조용히 넘어간다)
-      try { if (navigator.vibrate) navigator.vibrate(60); } catch {}
+      // 진동 두 번: 60ms 울림 → 80ms 쉼 → 60ms 울림 (지원하는 폰만. 아이폰 사파리 등은 조용히 넘어간다)
+      try { if (navigator.vibrate) navigator.vibrate([60, 80, 60]); } catch {}
       setResult(chosen);
       setResultSource("roulette");
       try {
