@@ -2784,7 +2784,8 @@ function fetchPlaceDetail(place) {
   return placeDetailCache.get(key);
 }
 
-function PlaceDetailSheet({ place, onClose }) {
+// mood: 지금 여행지 테마 → 장소 이름 색 (감성 남색 / 활기 빨강, 결과 카드의 여행지 이름과 같은 색)
+function PlaceDetailSheet({ place, mood, onClose }) {
   const [state, setState] = useState({ status: "loading" });
   const [showAll, setShowAll] = useState(false);
   useEffect(() => {
@@ -2833,14 +2834,14 @@ function PlaceDetailSheet({ place, onClose }) {
         <div className="px-4 pt-3 pb-4">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h2 className="font-serif text-base font-bold text-[#2B2620]">{name}</h2>
+              <h2 className="font-serif text-base font-bold" style={{ color: mood === "energetic" ? "#A61B1B" : "#0F2D5C" }}>{name}</h2>
               <p className="text-[11px] text-[#6B5F4F] mt-0.5">
                 {[place.kind, place.distanceKm ? `시내에서 ${place.distanceKm}km` : null, place.area ? `이웃 · ${place.area}` : null].filter(Boolean).join(" · ")}
               </p>
             </div>
             <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F] shrink-0"><X size={18} /></button>
           </div>
-          {photos.length > 1 && <p className="text-[10px] text-[#A6987F] mt-1">사진 {photos.length}장 · 옆으로 넘겨 보세요 →</p>}
+          {photos.length > 1 && <p className="text-[11px] font-bold text-[#2F6E68] mt-1">📷 사진 {photos.length}장 · 옆으로 넘겨 보세요 →</p>}
           <p className="text-[11px] text-[#6B5F4F] mt-1.5">{(d && d.addr1) || place.address || place.location}</p>
 
           {state.status === "loading" && (
@@ -4161,7 +4162,7 @@ function BaramApp() {
           onClose={() => setBirthModalOpen(false)}
         />
       )}
-      {detailPlace && <PlaceDetailSheet key={detailPlace.id} place={detailPlace} onClose={() => setDetailPlace(null)} />}
+      {detailPlace && <PlaceDetailSheet key={detailPlace.id} place={detailPlace} mood={result ? result.mood : null} onClose={() => setDetailPlace(null)} />}
     </div>
     </PlaceDetailContext.Provider>
   );
