@@ -20,6 +20,9 @@
 </style>
 <style>
   html, body, #root { height: 100%; margin: 0; }
+  /* 룰렛 당첨 칸 반짝임 (3번 깜빡인 뒤 은은하게 남음) */
+  @keyframes baram-win { 0%, 100% { opacity: 0; } 50% { opacity: .8; } }
+  .baram-win-flash { animation: baram-win .4s ease-in-out 3; opacity: 0; }
   body { font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif; }
 </style>
 </head>
@@ -1928,7 +1931,8 @@ function MiniRoulette({ size = 40, fast = false }) {
   );
 }
 
-function RouletteWheel({ spots, wheelRef }) {
+// winnerId: 방금 뽑힌 칸. 하얗게 세 번 반짝이고 금색 테두리가 남는다
+function RouletteWheel({ spots, wheelRef, winnerId }) {
   const cx = 150, cy = 150, r = 140;
   const n = spots.length;
   const vertical = true; // 감성/활기 여행 룰렛 모두 지역명을 세로로 표기
@@ -1995,6 +1999,14 @@ function RouletteWheel({ spots, wheelRef }) {
           );
         })}
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="#B8860B" strokeWidth="2" />
+        {spots.map((s, i) =>
+          s.id === winnerId ? (
+            <g key={`win-${s.id}`} style={{ pointerEvents: "none" }}>
+              <path className="baram-win-flash" d={sliceDPath(cx, cy, r, i * sweep, (i + 1) * sweep)} fill="#FFFFFF" />
+              <path d={sliceDPath(cx, cy, r, i * sweep, (i + 1) * sweep)} fill="none" stroke="#B8860B" strokeWidth="3" strokeLinejoin="round" />
+            </g>
+          ) : null
+        )}
       </svg>
     </div>
   );
@@ -3349,6 +3361,8 @@ function BaramApp() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
   const rampTimeoutRef = useRef(null);
+  const pinRef = useRef(null);
+  const [winnerId, setWinnerId] = useState(null); // 방금 뽑힌 칸 (다시 돌리면 지움)
 
   const visitedCount = spots.filter((s) => s.isVisited).length;
   // 감성/활기를 더 이상 따로 고르지 않으므로, 뽑힌 결과의 테마에 맞춰 강조색이 바뀐다
@@ -3655,6 +3669,7 @@ function BaramApp() {
 
   function spinNow() {
     clearResult();
+    setWinnerId(null);
     // 다시 돌리는 거면 판을 새로 섞는다. 결과가 나온 직후가 아니라 돌리기 시작할 때 섞어야
     // 방금 핀이 가리킨 칸이 그대로 보인다. (처음 돌릴 때는 이미 새로 섞인 판이라 그대로)
     if (boardUsedRef.current) pickRouletteSpots(spots, region, currentLocation);
@@ -3701,6 +3716,9 @@ function BaramApp() {
       setPhase("idle");
       const chosen = rouletteSpots[selectedIndex];
       boardUsedRef.current = true;
+      setWinnerId(chosen.id);
+      // 진동 한 번 (지원하는 폰만. 아이폰 사파리 등은 조용히 넘어간다)
+      try { if (navigator.vibrate) navigator.vibrate(60); } catch {}
       setResult(chosen);
       setResultSource("roulette");
       try {
@@ -3719,6 +3737,38 @@ function BaramApp() {
     cancelAnimationFrame(rafRef.current);
     clearTimeout(rampTimeoutRef.current);
   }, []);
+
+  // 핀 튕김: 룰렛이 도는 동안(가속·회전·감속) 실제 화면의 회전 각도를 읽어서, 핀 아래 칸이 바뀔 때마다
+  // 핀을 살짝 젖혔다가 놓는다 (진짜 룰렛의 '딱딱딱'). 너무 빠를 때는 70ms에 한 번만.
+  useEffect(() => {
+    if (phase === "idle" || rouletteSpots.length === 0) return;
+    const sweep = 360 / rouletteSpots.length;
+    let raf = 0;
+    let lastIndex = null;
+    let lastKick = 0;
+    const tick = (now) => {
+      const el = wheelRef.current;
+      const pin = pinRef.current;
+      if (el && pin) {
+        const m = getComputedStyle(el).transform; // "matrix(a, b, c, d, e, f)"
+        const v = m && m !== "none" ? m.slice(7, -1).split(",").map(Number) : [1, 0];
+        const angle = ((Math.atan2(v[1], v[0]) * 180) / Math.PI + 360) % 360;
+        const index = Math.floor(((360 - angle) % 360) / sweep);
+        if (lastIndex !== null && index !== lastIndex && now - lastKick > 70 && pin.animate) {
+          lastKick = now;
+          pin.animate(
+            [{ transform: "rotate(0deg)" }, { transform: "rotate(-18deg)" }, { transform: "rotate(0deg)" }],
+            { duration: 140, easing: "ease-out" }
+          );
+        }
+        lastIndex = index;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, rouletteSpots]);
 
   // 룰렛 결과(지역)가 정해지면 그 지역의 명소·맛집을 공공데이터(TourAPI, 서버 프록시)로 불러와 하루 일정표를 구성한다
   const itineraryKey = result ? `${result.id}:itinerary` : null;
@@ -3932,7 +3982,7 @@ function BaramApp() {
         {/* 룰렛 */}
         <div className="relative mx-auto mt-8" style={{ width: 280, height: 280 }}>
           {rouletteSpots.length > 0 ? (
-            <RouletteWheel spots={rouletteSpots} wheelRef={wheelRef} />
+            <RouletteWheel spots={rouletteSpots} wheelRef={wheelRef} winnerId={phase === "idle" ? winnerId : null} />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-center text-sm text-[#6B5F4F] whitespace-pre-line">
               {"해당 조건의 미정복 도시를\n모두 탐험하셨습니다!"}
@@ -3940,11 +3990,14 @@ function BaramApp() {
           )}
 
           {/* 포인터: 지도 핀(물방울) 모양 - 빨간색, 아래쪽 뾰족한 부분을 더 길게 */}
-          <svg width="26" height="40" viewBox="0 0 26 40" className="absolute -top-3 left-1/2 -translate-x-1/2 drop-shadow-md">
-            <path d="M3 13 L13 38 L23 13 Z" fill="#DC2626" stroke="#2B2620" strokeWidth="1.2" strokeLinejoin="round" />
-            <circle cx="13" cy="12" r="10" fill="#DC2626" stroke="#2B2620" strokeWidth="1.2" />
-            <circle cx="13" cy="12" r="4" fill="#F6F1E7" />
-          </svg>
+          {/* 핀 튕김은 안쪽 svg만 돌린다 (바깥 div가 가운데 맞춤을 맡음). 머리(원) 중심을 축으로 */}
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2" style={{ width: 26, height: 40 }}>
+            <svg ref={pinRef} width="26" height="40" viewBox="0 0 26 40" className="drop-shadow-md" style={{ transformOrigin: "13px 12px" }}>
+              <path d="M3 13 L13 38 L23 13 Z" fill="#DC2626" stroke="#2B2620" strokeWidth="1.2" strokeLinejoin="round" />
+              <circle cx="13" cy="12" r="10" fill="#DC2626" stroke="#2B2620" strokeWidth="1.2" />
+              <circle cx="13" cy="12" r="4" fill="#F6F1E7" />
+            </svg>
+          </div>
 
           <button
             onClick={handleWheelTap}
