@@ -1421,12 +1421,14 @@ function buildPlanShareText({ spot, from, travel, plan }) {
     if (st.place) {
       lines.push(`${head}: ${st.place.name}`);
       if (st.note) lines.push(`   ${st.note}`);
-      lines.push(`   길찾기 ${kakaoDirectionsUrl(st.place.name, st.place.lat, st.place.lng)}`);
+      // 길찾기 링크는 카톡에서 아주 길게 보여서(한글이 %EC…로 바뀜) 주소만 적는다. 길찾기는 앱에서
+      const addr = st.place.address || st.place.location;
+      if (addr && addr !== "위치 정보 없음") lines.push(`   📍 ${addr}`);
     } else {
       lines.push(`${head} — ${st.fallback}`);
     }
   });
-  lines.push("", "룰렛이 정해 준 여행, BARAM 👉 https://baram-bh4.pages.dev");
+  lines.push("", "🧭 길찾기는 BARAM 앱에서 일정을 열고 '길찾기'를 눌러 주세요", "룰렛이 정해 준 여행, BARAM 👉 https://baram-bh4.pages.dev");
   return lines.join("\n");
 }
 
@@ -1436,7 +1438,7 @@ function SharePlanButton({ spot, from, travel, plan }) {
     const text = buildPlanShareText({ spot, from, travel, plan });
     try {
       if (navigator.share) {
-        await navigator.share({ title: `BARAM 여행 일정 — ${spot.name}`, text });
+        await navigator.share({ text }); // 제목을 따로 주면 카톡에서 제목이 두 번 나온다(본문 첫 줄이 제목)
         return;
       }
     } catch (err) {
