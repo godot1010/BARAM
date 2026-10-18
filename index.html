@@ -1406,6 +1406,63 @@ function buildDayPlan({ spot, arrival, data, offsets }) {
   return { steps, end: roundUp10(t), upcomingFestival: !festival ? (data?.festivals || []).find((f) => f.status === "upcoming") : null };
 }
 
+// ==========================================
+// 오늘의 일정 저장·공유 (2026-10-18 테스터 의견: "해남 코스를 저장하고 싶다")
+// 일정표를 읽기 쉬운 글로 만들어 폰의 공유 창(카톡·메모·문자)으로 보낸다. 공유 창이 없으면 복사한다.
+// ==========================================
+function buildPlanShareText({ spot, from, travel, plan }) {
+  const d = new Date();
+  const lines = [`🎡 BARAM 여행 일정 — ${spot.name} (${d.getMonth() + 1}월 ${d.getDate()}일)`];
+  if (travel.mode === "island") lines.push("⛴️✈️ 배·비행기 시간을 먼저 확인하세요");
+  else lines.push(`🚗 ${from.name}에서 ${fmtClock(travel.departure)} 출발 → ${fmtClock(travel.arrival)} 도착 (약 ${fmtDuration(travel.travel)})`);
+  lines.push("");
+  plan.steps.forEach((st) => {
+    const head = `${fmtClock(st.time)} ${st.icon} ${st.title}`;
+    if (st.place) {
+      lines.push(`${head}: ${st.place.name}`);
+      if (st.note) lines.push(`   ${st.note}`);
+      lines.push(`   길찾기 ${kakaoDirectionsUrl(st.place.name, st.place.lat, st.place.lng)}`);
+    } else {
+      lines.push(`${head} — ${st.fallback}`);
+    }
+  });
+  lines.push("", "룰렛이 정해 준 여행, BARAM 👉 https://baram-bh4.pages.dev");
+  return lines.join("\n");
+}
+
+function SharePlanButton({ spot, from, travel, plan }) {
+  const [notice, setNotice] = useState("");
+  async function share() {
+    const text = buildPlanShareText({ spot, from, travel, plan });
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `BARAM 여행 일정 — ${spot.name}`, text });
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return; // 공유 창을 그냥 닫은 경우
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice("일정을 복사했어요. 카톡이나 메모에 붙여 넣으세요.");
+    } catch {
+      setNotice("이 기기에서는 공유할 수 없어요.");
+    }
+    setTimeout(() => setNotice(""), 4000);
+  }
+  return (
+    <div className="mt-3">
+      <button
+        onClick={share}
+        className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-bold text-[#2F6E68] border border-[#2F6E68] bg-white/50"
+      >
+        📤 일정 저장·공유 <span className="text-[11px] font-normal text-[#6B5F4F]">(카톡·메모로 보내기)</span>
+      </button>
+      {notice && <p className="text-[11px] text-[#2F6E68] text-center mt-1">{notice}</p>}
+    </div>
+  );
+}
+
 function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPlanPlaces, onRetry, petById }) {
   const openDetail = useContext(PlaceDetailContext); // 사진을 누르면 장소 정보 창
   // 장소마다 '다른 곳 보기'를 누른 횟수 (부모에서 key={spot.id}로 여행지가 바뀌면 초기화)
@@ -1558,6 +1615,8 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
           📅 곧 열려요: <span className="font-bold text-[#2B2620]">{plan.upcomingFestival.title}</span> ({plan.upcomingFestival.shortPeriod})
         </a>
       )}
+
+      {!isLoading && <SharePlanButton spot={spot} from={from} travel={travel} plan={plan} />}
 
       <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2 flex items-center gap-1">
         <Music size={12} /> 오늘의 추천 음악
@@ -2556,7 +2615,7 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
               onClick={onExportBackup}
               className="flex-1 py-2 rounded-lg text-xs font-bold text-[#2B2620] border border-[#B8860B] bg-white/50"
             >
-              백업 파일 저장
+              기록 백업 (폰 바꿀 때)
             </button>
             <button
               onClick={() => importInputRef.current && importInputRef.current.click()}
@@ -2581,6 +2640,8 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
               (lastBackupAt
                 ? `마지막 백업: ${formatDate(lastBackupAt)}`
                 : "기록은 이 폰에만 저장돼요. 앱을 지우거나 폰을 바꾸기 전에 백업해 두세요.")}
+            <br />
+            <span className="text-[#A6987F]">백업 파일은 BARAM에서 다시 불러오는 용도라 열어 볼 필요는 없어요. 일정은 여행지 화면의 '📤 일정 저장·공유'로 저장하세요.</span>
           </p>
         </div>
       </div>
