@@ -4061,17 +4061,6 @@ function BaramApp() {
           <Search size={14} className="text-[#A6987F]" />
         </button>
 
-        {/* 오늘의 여행운 (재미 코너) */}
-        {travelFortune ? (
-          <TravelFortuneCard fortune={travelFortune} onEdit={() => setBirthModalOpen(true)} />
-        ) : (
-          <button
-            onClick={() => setBirthModalOpen(true)}
-            className="w-full mt-4 flex items-center justify-center gap-1.5 border border-dashed border-[#D9CBB0] rounded-xl px-4 py-2.5 text-xs text-[#6B5F4F]"
-          >
-            ✦ 생년월일을 입력하고 나만의 여행운 보기
-          </button>
-        )}
 
         {/* 감성+활기 통합 배너 (더 이상 따로 고르지 않음) */}
         <div
@@ -4173,6 +4162,19 @@ function BaramApp() {
         >
           <Search size={13} /> 가고 싶은 곳 찾기
         </button>
+
+        {/* 오늘의 여행운 (재미 코너): 앱을 열면 룰렛과 '가고 싶은 곳 찾기'가 한 화면에 보이도록 룰렛 아래에 둔다
+            (2026-10-18 테스터 의견: 여행운 카드 때문에 첫 화면에서 룰렛이 잘려 보임) */}
+        {travelFortune ? (
+          <TravelFortuneCard fortune={travelFortune} onEdit={() => setBirthModalOpen(true)} />
+        ) : (
+          <button
+            onClick={() => setBirthModalOpen(true)}
+            className="w-full mt-4 flex items-center justify-center gap-1.5 border border-dashed border-[#D9CBB0] rounded-xl px-4 py-2.5 text-xs text-[#6B5F4F]"
+          >
+            ✦ 생년월일을 입력하고 나만의 여행운 보기
+          </button>
+        )}
 
         {/* 결과 카드 */}
         {result && route && (
