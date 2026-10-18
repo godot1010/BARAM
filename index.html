@@ -2405,14 +2405,34 @@ function BirthInfoModal({ initial, onSave, onClose }) {
 // ==========================================
 // 3-2. 오늘의 여행운 카드
 // ==========================================
+// 평소에는 한 줄(방향·색·아이템)로 접혀 있고, 누르면 전체가 펼쳐진다. 펼침 여부는 폰에 기억한다
+const FORTUNE_OPEN_KEY = "baram_fortune_open";
 function TravelFortuneCard({ fortune, onEdit }) {
+  const [open, setOpen] = useState(() => {
+    try { return window.localStorage.getItem(FORTUNE_OPEN_KEY) === "1"; } catch { return false; }
+  });
+  const toggle = () => {
+    setOpen((v) => {
+      try { window.localStorage.setItem(FORTUNE_OPEN_KEY, v ? "0" : "1"); } catch {}
+      return !v;
+    });
+  };
+  const bg = { background: "linear-gradient(90deg, #DCE7F5 0%, #F3E9DC 50%, #F8DCDC 100%)", border: "1px solid #D9CBB0" };
+  if (!open) {
+    return (
+      <button onClick={toggle} className="w-full mt-3 rounded-xl px-3 py-2 flex items-center gap-2 text-left" style={bg} aria-label="오늘의 여행운 펼치기">
+        <span className="text-xs font-bold shrink-0" style={{ color: "#B8860B" }}>✦ 오늘의 여행운</span>
+        <span className="text-[11px] text-[#2B2620] truncate flex-1 min-w-0">{fortune.direction} · {fortune.colors} · {fortune.item}</span>
+        <span className="text-[11px] text-[#6B5F4F] shrink-0">▾</span>
+      </button>
+    );
+  }
   return (
-    <div
-      className="mt-4 rounded-xl px-4 py-3"
-      style={{ background: "linear-gradient(90deg, #DCE7F5 0%, #F3E9DC 50%, #F8DCDC 100%)", border: "1px solid #D9CBB0" }}
-    >
+    <div className="mt-3 rounded-xl px-4 py-3" style={bg}>
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium" style={{ color: "#B8860B" }}>✦ 오늘의 여행운</p>
+        <button onClick={toggle} className="text-sm font-medium flex items-center gap-1" style={{ color: "#B8860B" }} aria-label="오늘의 여행운 접기">
+          ✦ 오늘의 여행운 <span className="text-[11px] text-[#6B5F4F]">▴ 접기</span>
+        </button>
         <button onClick={onEdit} className="text-[10px] text-[#A6987F] underline">내 정보 수정</button>
       </div>
       <p className="text-xs text-[#2B2620] mt-1.5 leading-relaxed">{fortune.headline}</p>
@@ -4062,6 +4082,19 @@ function BaramApp() {
         </button>
 
 
+        {/* 오늘의 여행운 (재미 코너): 평소엔 한 줄로 접어 두고 누르면 펼친다.
+            앱을 열면 룰렛과 '가고 싶은 곳 찾기'까지 한 화면에 보이게 (2026-10-18 테스터 의견: 여행운 카드 때문에 룰렛이 잘려 보임) */}
+        {travelFortune ? (
+          <TravelFortuneCard fortune={travelFortune} onEdit={() => setBirthModalOpen(true)} />
+        ) : (
+          <button
+            onClick={() => setBirthModalOpen(true)}
+            className="w-full mt-3 flex items-center justify-center gap-1.5 border border-dashed border-[#D9CBB0] rounded-xl px-4 py-2 text-xs text-[#6B5F4F]"
+          >
+            ✦ 생년월일을 입력하고 나만의 여행운 보기
+          </button>
+        )}
+
         {/* 감성+활기 통합 배너 (더 이상 따로 고르지 않음) */}
         <div
           className="mt-4 rounded-xl px-4 py-3 text-center"
@@ -4162,19 +4195,6 @@ function BaramApp() {
         >
           <Search size={13} /> 가고 싶은 곳 찾기
         </button>
-
-        {/* 오늘의 여행운 (재미 코너): 앱을 열면 룰렛과 '가고 싶은 곳 찾기'가 한 화면에 보이도록 룰렛 아래에 둔다
-            (2026-10-18 테스터 의견: 여행운 카드 때문에 첫 화면에서 룰렛이 잘려 보임) */}
-        {travelFortune ? (
-          <TravelFortuneCard fortune={travelFortune} onEdit={() => setBirthModalOpen(true)} />
-        ) : (
-          <button
-            onClick={() => setBirthModalOpen(true)}
-            className="w-full mt-4 flex items-center justify-center gap-1.5 border border-dashed border-[#D9CBB0] rounded-xl px-4 py-2.5 text-xs text-[#6B5F4F]"
-          >
-            ✦ 생년월일을 입력하고 나만의 여행운 보기
-          </button>
-        )}
 
         {/* 결과 카드 */}
         {result && route && (
