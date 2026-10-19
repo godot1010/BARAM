@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>BARAM 사용 집계</title>
+<style>
+  body { margin: 0; background: #F6F1E7; color: #2B2620; font-family: 'Noto Sans KR', system-ui, sans-serif; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.2rem; margin: 0 0 4px; }
+  p.note { font-size: 0.8rem; color: #6B5F4F; margin: 0 0 16px; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #D9CBB0; border-radius: 12px; overflow: hidden; font-size: 0.85rem; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid #EFE6D4; }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #FFF4D6; font-weight: 700; }
+  td.app { font-weight: 700; color: #2F6E68; }
+  .bar { display: inline-block; height: 8px; background: #2F6E68; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+  .warn { background: #FFF4D6; border: 1px solid #B8860B; border-radius: 10px; padding: 10px 12px; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📊 BARAM 사용 집계</h1>
+  <p class="note">하루에 BARAM이 열린 폰 수(익명)예요. 이름·기기 번호는 저장하지 않아요.<br />
+    <b>앱</b> = 플레이스토어 앱으로 연 것 (구글 테스트에 중요한 숫자) · <b>웹</b> = 인터넷 주소로 연 것 · 한국 날짜 기준</p>
+  <div id="out">불러오는 중…</div>
+</div>
+<script>
+  fetch("/api/ping?view=stats").then(function (r) { return r.json(); }).then(function (d) {
+    var out = document.getElementById("out");
+    if (!d.connected) {
+      out.innerHTML = '<div class="warn">아직 저장 공간(KV)이 연결되지 않았어요. Cloudflare에서 BARAM_STATS를 연결하면 숫자가 쌓이기 시작해요.</div>';
+      return;
+    }
+    var max = 1;
+    d.days.forEach(function (x) { max = Math.max(max, x.app.devices); });
+    var rows = d.days.map(function (x) {
+      var w = Math.round((x.app.devices / max) * 80);
+      return "<tr><td>" + x.date.slice(5).replace("-", "/") + "</td>" +
+        '<td class="app">' + x.app.devices + '<span class="bar" style="width:' + w + 'px"></span></td>' +
+        "<td>" + x.app.opens + "</td><td>" + x.web.devices + "</td></tr>";
+    }).join("");
+    out.innerHTML = "<table><tr><th>날짜</th><th>앱 사용 폰</th><th>앱 열린 횟수</th><th>웹 사용 폰</th></tr>" + rows + "</table>";
+  }).catch(function () {
+    document.getElementById("out").textContent = "집계를 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.";
+  });
+</script>
+</body>
+</html>

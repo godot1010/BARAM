@@ -4402,6 +4402,27 @@ root.render(<BaramApp />);
 
 </script>
 <script>
+  // 익명 사용 집계 (2026-10-19): 앱이 열리면 "열렸다"는 신호만 /api/ping 으로 보낸다.
+  // 이름·기기 번호 같은 식별 정보는 보내지 않는다. 폰마다 하루 첫 사용인지(day=1)만 폰 안에 기억해 둔다.
+  // 플레이스토어 앱(TWA)으로 열면 처음 주소의 referrer가 android-app://패키지이름 이다 → 'app', 그 밖은 'web'.
+  (function () {
+    try {
+      var APP_REFERRER = "android-app://dev.pages.baram_bh4.twa";
+      if ((document.referrer || "").indexOf(APP_REFERRER) === 0) sessionStorage.setItem("baram_src", "app");
+      var src = sessionStorage.getItem("baram_src") === "app" ? "app" : "web";
+      if (sessionStorage.getItem("baram_ping_sent") === "1") return; // 같은 실행 중 새로고침은 한 번만
+      sessionStorage.setItem("baram_ping_sent", "1");
+      var today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10); // 한국 날짜
+      var dayKey = "baram_ping_day_" + src;
+      var firstToday = localStorage.getItem(dayKey) !== today;
+      if (firstToday) localStorage.setItem(dayKey, today);
+      if (location.hostname === "127.0.0.1" || location.hostname === "localhost") return; // 로컬 시험은 세지 않는다
+      fetch("/api/ping?src=" + src + (firstToday ? "&day=1" : ""), { method: "POST", keepalive: true }).catch(function () {});
+    } catch (e) {
+      // 저장소를 쓸 수 없는 환경 등 — 집계만 건너뛴다
+    }
+  })();
+
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
