@@ -2015,7 +2015,7 @@ function MiniRoulette({ size = 40, fast = false }) {
         <circle cx="13" cy="12" r="10" fill="#DC2626" />
         <circle cx="13" cy="12" r="4" fill="#F6F1E7" />
       </svg>
-      <div className="mini-roulette-spin" style={{ position: "absolute", left: 0, top: 6, width: size, height: size }}>
+      <div className="mini-roulette-spin" style={{ position: "absolute", left: 0, top: 6, width: size, height: size, borderRadius: "50%", overflow: "hidden" }}>
         <svg viewBox="0 0 100 100" width={size} height={size} className={fast ? "mini-roulette-fast" : ""} style={{ display: "block" }}>
           {MINI_SLICE_COLORS.map((c, i) => (
             <path key={i} d={sliceDPath(50, 50, 47, (i * 360) / n, ((i + 1) * 360) / n)} fill={c} stroke="#F6F1E7" strokeWidth="1.5" />
@@ -4158,7 +4158,11 @@ function BaramApp() {
         {/* 룰렛 */}
         <div className="relative mx-auto mt-8" style={{ width: 280, height: 280 }}>
           {rouletteSpots.length > 0 ? (
-            <RouletteWheel spots={rouletteSpots} wheelRef={wheelRef} winnerId={phase === "idle" ? winnerId : null} />
+            // 동그란 틀(overflow hidden)에 넣어 돌린다. 네모난 판을 그냥 돌리면 모서리가 밖으로 튀어나와 화면 크기가 계속 바뀌면서
+            // 오른쪽·아래 가장자리가 지글거렸다 (2026-10-19 테스터 의견, Galaxy S26)
+            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", overflow: "hidden" }}>
+              <RouletteWheel spots={rouletteSpots} wheelRef={wheelRef} winnerId={phase === "idle" ? winnerId : null} />
+            </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-center text-sm text-[#6B5F4F] whitespace-pre-line">
               {"해당 조건의 미정복 도시를\n모두 탐험하셨습니다!"}
