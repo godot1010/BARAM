@@ -2575,7 +2575,7 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20">
       <div className="w-full max-w-sm bg-[#F6F1E7] rounded-t-2xl border-t border-x border-[#D9CBB0] flex flex-col h-[80vh]">
         <div className="flex items-center justify-between px-5 pt-5 pb-1">
-          <h2 className="font-serif text-lg text-[#2B2620] flex items-center gap-1.5"><StampIcon size={16} className="text-[#B8860B]" /> STAMP TOUR</h2>
+          <h2 className="font-serif text-lg text-[#2B2620] flex items-center gap-1.5"><PressingStampIcon size={18} /> STAMP TOUR</h2>
           <div className="flex items-center gap-3">
             <span className="text-xs text-[#6B5F4F]">{visited.length} / {spots.length}</span>
             <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
