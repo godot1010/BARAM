@@ -432,9 +432,17 @@ const CURRENT_RESULT_SOURCE_KEY = "baram_current_result_source";
 // STAMP 종류. 룰렛이 정해 준 곳은 금색, 직접 고른 곳(가고 싶은 곳 찾기·STAMP TOUR에서 직접 찍기)은 회색으로 구분한다.
 // 예전 기록에는 이 값이 없다 → 룰렛 STAMP로 본다.
 const PICKED_STAMP = "picked";
-const STAMP_COLORS = { roulette: "#B8860B", picked: "#8C8577" };
+const STAMP_COLORS = { emotional: "#1B4B91", energetic: "#B3261E", picked: "#2A9D8F" };
+const STAMP_BGS = { emotional: "#EAF0F9", energetic: "#FBEAEA", picked: "#E3F4F1" }; // 목록 칸 바탕 (연하게)
+function stampKind(spot) {
+  if (spot.stampType === PICKED_STAMP) return "picked";
+  return spot.mood === "energetic" ? "energetic" : "emotional";
+}
+function stampBg(spot) {
+  return STAMP_BGS[stampKind(spot)];
+}
 function stampColor(spot) {
-  return spot.stampType === PICKED_STAMP ? STAMP_COLORS.picked : STAMP_COLORS.roulette;
+  return STAMP_COLORS[stampKind(spot)];
 }
 
 function openSpotsDB() {
@@ -2612,15 +2620,15 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
               {filtered.map((s) => {
                 const hasMemory = (s.photos && s.photos.some(Boolean)) || (s.memo && s.memo.trim().length > 0);
                 return (
-                  <li key={s.id} className="flex items-center gap-2 py-3">
+                  <li key={s.id} className="flex items-center gap-2 py-3" style={s.isVisited ? { background: stampBg(s), paddingLeft: 8, paddingRight: 4, borderRadius: 10, marginTop: 4 } : undefined}>
                     {s.isVisited ? (
                       <button onClick={() => onOpenStamp(s.id)} className="flex-1 flex items-center gap-3 text-left min-w-0">
-                        {/* 룰렛 STAMP는 금색, 직접 고른 곳의 STAMP는 회색 */}
+                        {/* 감성 룰렛 = 청색, 활기 룰렛 = 빨강, 내가 선택 = 청록. 동그라미를 색으로 채우고 아이콘은 흰색 */}
                         <span
-                          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2"
-                          style={{ borderColor: stampColor(s), background: hasMemory ? (s.stampType === PICKED_STAMP ? "#ECE8E1" : "#F3E6C4") : "transparent" }}
+                          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                          style={{ background: stampColor(s) }}
                         >
-                          <StampIcon size={15} style={{ color: stampColor(s) }} />
+                          <StampIcon size={16} style={{ color: "#FFFFFF" }} />
                         </span>
                         <span className="min-w-0">
                           <p className="text-sm text-[#2B2620] truncate">{s.name}</p>
@@ -2794,7 +2802,7 @@ function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, on
 
 // 다녀온 날짜를 고르는 창 - 새로 STAMP를 찍을 때와 이미 찍은 날짜를 고칠 때 같이 쓴다
 // color: 룰렛 STAMP는 금색, 직접 고른 곳의 STAMP는 회색
-function StampDateDialog({ spot, initialDate, title, confirmLabel, color = STAMP_COLORS.roulette, onConfirm, onCancel }) {
+function StampDateDialog({ spot, initialDate, title, confirmLabel, color = STAMP_COLORS.emotional, onConfirm, onCancel }) {
   const today = toDateInputValue();
   const [value, setValue] = useState(toDateInputValue(initialDate));
   const valid = /^\d{4}-\d{2}-\d{2}$/.test(value) && value <= today;
@@ -2830,7 +2838,7 @@ function StampDateDialog({ spot, initialDate, title, confirmLabel, color = STAMP
             disabled={!valid}
             onClick={() => onConfirm(fromDateInputValue(value))}
             className="flex-1 py-2.5 rounded-lg text-sm font-bold disabled:opacity-50"
-            style={{ background: color, color: color === STAMP_COLORS.picked ? "#F6F1E7" : "#2B2620" }}
+            style={{ background: color, color: "#FFFFFF" }}
           >
             {confirmLabel}
           </button>
@@ -3674,7 +3682,7 @@ function BaramApp() {
     pickRouletteSpots(spots, region, loc);
   }
 
-  // stampType: 룰렛으로 정한 곳이면 null(금색 STAMP), 직접 고른 곳이면 PICKED_STAMP(회색 STAMP)
+  // stampType: 룰렛으로 정한 곳이면 null(감성 청색·활기 빨강 STAMP), 직접 고른 곳이면 PICKED_STAMP(청록 STAMP)
   function conquerSpot(id, visitedDate = new Date().toISOString(), stampType = null) {
     // 지금 가기로 한 여행지에 도장을 찍었으면 여행이 끝난 것이므로 결과를 비운다
     if (result && result.id === id) clearResult();
@@ -4330,7 +4338,7 @@ function BaramApp() {
                   STAMP
                 </button>
                 {resultSource === PICKED_STAMP && (
-                  <p className="text-[11px] text-[#6B5F4F] text-center mt-1.5">내가 선택한 여행지는 회색 STAMP로 남아요. 금색 STAMP는 룰렛이 정해 준 곳에만!</p>
+                  <p className="text-[11px] text-[#6B5F4F] text-center mt-1.5">내가 선택한 여행지는 청록색 STAMP로 남아요. 청색·빨강 STAMP는 룰렛이 정해 준 곳에만!</p>
                 )}
               </>
             )}
@@ -4396,7 +4404,7 @@ function BaramApp() {
             initialDate={isEdit ? target.visitedDate : null}
             title={isEdit ? "다녀온 날짜 수정" : "STAMP를 찍을까요?"}
             confirmLabel={isEdit ? "저장" : "STAMP"}
-            color={isEdit ? stampColor(target) : stampDateTarget.stampType === PICKED_STAMP ? STAMP_COLORS.picked : STAMP_COLORS.roulette}
+            color={stampColor(isEdit ? target : { ...target, stampType: stampDateTarget.stampType })}
             onConfirm={(visitedDate) => {
               setStampDateTarget(null);
               if (isEdit) {
