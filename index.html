@@ -433,13 +433,9 @@ const CURRENT_RESULT_SOURCE_KEY = "baram_current_result_source";
 // 예전 기록에는 이 값이 없다 → 룰렛 STAMP로 본다.
 const PICKED_STAMP = "picked";
 const STAMP_COLORS = { emotional: "#1B4B91", energetic: "#B3261E", picked: "#2A9D8F" };
-const STAMP_BGS = { emotional: "#EAF0F9", energetic: "#FBEAEA", picked: "#E3F4F1" }; // 목록 칸 바탕 (연하게)
 function stampKind(spot) {
   if (spot.stampType === PICKED_STAMP) return "picked";
   return spot.mood === "energetic" ? "energetic" : "emotional";
-}
-function stampBg(spot) {
-  return STAMP_BGS[stampKind(spot)];
 }
 function stampColor(spot) {
   return STAMP_COLORS[stampKind(spot)];
@@ -2620,18 +2616,18 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
               {filtered.map((s) => {
                 const hasMemory = (s.photos && s.photos.some(Boolean)) || (s.memo && s.memo.trim().length > 0);
                 return (
-                  <li key={s.id} className="flex items-center gap-2 py-3" style={s.isVisited ? { background: stampBg(s), paddingLeft: 8, paddingRight: 4, borderRadius: 10, marginTop: 4 } : undefined}>
+                  <li key={s.id} className="flex items-center gap-2 py-3">
                     {s.isVisited ? (
                       <button onClick={() => onOpenStamp(s.id)} className="flex-1 flex items-center gap-3 text-left min-w-0">
-                        {/* 감성 룰렛 = 청색, 활기 룰렛 = 빨강, 내가 선택 = 청록. 동그라미를 색으로 채우고 아이콘은 흰색 */}
+                        {/* 감성 룰렛 = 청색, 활기 룰렛 = 빨강, 내가 선택 = 청록. 도장 테두리·도장·지역 이름만 그 색으로 (2026-10-20 형 요청) */}
                         <span
-                          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                          style={{ background: stampColor(s) }}
+                          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2"
+                          style={{ borderColor: stampColor(s) }}
                         >
-                          <StampIcon size={16} style={{ color: "#FFFFFF" }} />
+                          <StampIcon size={15} style={{ color: stampColor(s) }} />
                         </span>
                         <span className="min-w-0">
-                          <p className="text-sm text-[#2B2620] truncate">{s.name}</p>
+                          <p className="text-sm font-bold truncate" style={{ color: stampColor(s) }}>{s.name}</p>
                           {/* keep-all: "내가 선택"처럼 낱말 중간에서 줄이 바뀌지 않게 */}
                           <p className="text-xs text-[#6B5F4F] mt-0.5" style={{ wordBreak: "keep-all" }}>
                             {formatDate(s.visitedDate)} 다녀옴 · {s.region}{s.stampType === PICKED_STAMP ? " · 내가 선택" : ""}{hasMemory ? " · 추억 저장됨" : ""}
