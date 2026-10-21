@@ -1790,7 +1790,7 @@ function WeatherLine({ spot }) {
 
   const hour = data.hour;
   const now = weatherLabel(data.now, hour);
-  const evening = hour >= 18; // 저녁에는 내일 날씨를 같이 보여 준다
+  const evening = hour >= 18; // 저녁에는 오늘 대신 내일 날씨를 보여 준다
   const day = data.today;
   const next = evening ? data.tomorrow : null;
   // 비 소식: 낮에는 오늘 남은 시간, 저녁에는 내일
@@ -1800,10 +1800,10 @@ function WeatherLine({ spot }) {
     <div className="mt-2 rounded-lg border px-3 py-2 text-xs text-[#2B2620]" style={{ background: "#EEF5F4", borderColor: "#BFD8D5" }}>
       <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         <span className="font-bold">{now.icon} 지금 {Math.round(data.now.temp)}° {now.text}</span>
-        {day && day.min != null && day.max != null && (
+        {!evening && day && day.min != null && day.max != null && (
           <span className="text-[#6B5F4F]">오늘 {day.min}° / {day.max}°</span>
         )}
-        {day && day.pop != null && <span className="text-[#6B5F4F]">비 {day.pop}%</span>}
+        {!evening && day && day.pop != null && <span className="text-[#6B5F4F]">비 {day.pop}%</span>}
       </p>
       {next && next.min != null && next.max != null && (
         <p className="text-[#6B5F4F] mt-0.5">내일 {next.min}° / {next.max}°{next.pop != null ? ` · 비 ${next.pop}%` : ""}</p>

@@ -136,6 +136,11 @@ function collect(lists) {
   return { slots: [...slots.values()].sort((a, b) => (a.date + String(a.hour).padStart(2, "0")).localeCompare(b.date + String(b.hour).padStart(2, "0"))), daily };
 }
 
+function lowHigh(temps, extreme, pick) {
+  const all = Number.isFinite(extreme) ? [...temps, extreme] : temps;
+  return all.length ? Math.round(pick(...all)) : null;
+}
+
 // 하루 요약: 최저·최고, 낮(6~21시) 중 가장 높은 강수확률, 비·눈 소식이 있는 시각
 function summarize(date, slots, daily, fromHour) {
   const day = slots.filter((s) => s.date === date);
@@ -146,8 +151,9 @@ function summarize(date, slots, daily, fromHour) {
   const rainHours = daytime.filter((s) => s.PTY > 0 || s.POP >= 60).map((s) => s.hour);
   const snow = daytime.some((s) => s.PTY === 2 || s.PTY === 3);
   return {
-    min: Number.isFinite(d.TMN) ? Math.round(d.TMN) : temps.length ? Math.round(Math.min(...temps)) : null,
-    max: Number.isFinite(d.TMX) ? Math.round(d.TMX) : temps.length ? Math.round(Math.max(...temps)) : null,
+    // 최저·최고 예보(TMN·TMX)와 시간별 기온을 함께 본다 (밤에 '지금'이 최저보다 낮게 나오는 일이 없게)
+    min: lowHigh(temps, d.TMN, Math.min),
+    max: lowHigh(temps, d.TMX, Math.max),
     pop: daytime.length ? Math.max(...daytime.map((s) => s.POP || 0)) : null,
     rainHours,
     snow,
