@@ -1823,7 +1823,7 @@ function WeatherLine({ spot }) {
   return (
     <div className="mt-2 rounded-lg border px-2 py-1.5 text-[11px] text-[#2B2620]" style={{ background: "#EEF5F4", borderColor: "#BFD8D5", marginLeft: -10, marginRight: -10 }}>
       <p ref={lineRef} className="flex items-center gap-x-1.5 whitespace-nowrap overflow-hidden">
-        <span className="font-bold flex items-center" style={{ marginRight: 6 }}><span className={`wx-icon ${now.anim}`}>{now.icon}</span>지금 {Math.round(data.now.temp)}° {now.text}</span>
+        <span className="font-bold flex items-center"><span className={`wx-icon ${now.anim}`}>{now.icon}</span>지금 {Math.round(data.now.temp)}°<span style={{ marginLeft: 6 }}>{now.text}</span></span>
         {range(day) && <span className="font-bold">오늘 {range(day)}</span>}
         {range(next) && <span className="font-bold">내일 {range(next)}</span>}
         {rainDay && rainDay.pop != null && <span className="font-bold text-[#2F6E68]">비 {rainDay.pop}%</span>}
