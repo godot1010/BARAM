@@ -1805,15 +1805,21 @@ function WeatherLine({ spot }) {
   const next = data.tomorrow;
   const rainDay = evening ? next : day;
   const rain = rainDay && rainDay.rainHours && rainDay.rainHours.length > 0;
-  const range = (d) => (d && d.min != null && d.max != null ? `${d.min}°/${d.max}°` : null);
+  // 최저는 파랑, 최고는 빨강 (STAMP 감성·활기 색과 같은 계열)
+  const range = (d) =>
+    d && d.min != null && d.max != null ? (
+      <>
+        <span style={{ color: "#1B4B91" }}>{d.min}°</span>/<span style={{ color: "#B3261E" }}>{d.max}°</span>
+      </>
+    ) : null;
   return (
     <div className="mt-2 rounded-lg border px-2 py-1.5 text-[11px] text-[#2B2620]" style={{ background: "#EEF5F4", borderColor: "#BFD8D5" }}>
       <p ref={lineRef} className="flex items-center gap-x-1.5 whitespace-nowrap overflow-hidden">
         <span className="font-bold">{now.icon} 지금 {Math.round(data.now.temp)}° {now.text}</span>
-        {range(day) && <span className="text-[#6B5F4F]">오늘 {range(day)}</span>}
-        {range(next) && <span className="text-[#6B5F4F]">내일 {range(next)}</span>}
-        {rainDay && rainDay.pop != null && <span className="text-[#6B5F4F]">비 {rainDay.pop}%</span>}
-        <span className="text-[#A6987F]">기상청</span>
+        {range(day) && <span className="font-bold">오늘 {range(day)}</span>}
+        {range(next) && <span className="font-bold">내일 {range(next)}</span>}
+        {rainDay && rainDay.pop != null && <span className="font-bold text-[#2F6E68]">비 {rainDay.pop}%</span>}
+        <span className="text-[#6B5F4F]">기상청</span>
       </p>
       {rain && (
         <p className="font-bold text-[#2F6E68] mt-0.5">
