@@ -1786,8 +1786,15 @@ function WeatherLine({ spot }) {
   React.useLayoutEffect(() => {
     const el = lineRef.current;
     if (!el) return;
-    el.style.fontSize = "11px";
-    if (el.scrollWidth > el.clientWidth) el.style.fontSize = `${Math.max(9, Math.floor((11 * el.clientWidth) / el.scrollWidth * 10) / 10 - 0.2)}px`;
+    el.style.fontSize = "13px";
+    if (el.scrollWidth <= el.clientWidth) return;
+    let size = Math.floor((13 * el.clientWidth) / el.scrollWidth * 10) / 10;
+    el.style.fontSize = `${size}px`;
+    // 띄어쓰기 폭은 글자 크기와 같이 줄지 않아서, 그래도 넘치면 조금씩 더 줄인다
+    while (el.scrollWidth > el.clientWidth && size > 9) {
+      size = Math.round((size - 0.2) * 10) / 10;
+      el.style.fontSize = `${size}px`;
+    }
   }, [data]);
   useEffect(() => {
     let alive = true;
@@ -1814,9 +1821,9 @@ function WeatherLine({ spot }) {
       </>
     ) : null;
   return (
-    <div className="mt-2 rounded-lg border px-2 py-1.5 text-[11px] text-[#2B2620]" style={{ background: "#EEF5F4", borderColor: "#BFD8D5" }}>
+    <div className="mt-2 rounded-lg border px-2 py-1.5 text-[11px] text-[#2B2620]" style={{ background: "#EEF5F4", borderColor: "#BFD8D5", marginLeft: -10, marginRight: -10 }}>
       <p ref={lineRef} className="flex items-center gap-x-1.5 whitespace-nowrap overflow-hidden">
-        <span className="font-bold flex items-center"><span className={`wx-icon ${now.anim}`}>{now.icon}</span>지금 {Math.round(data.now.temp)}° {now.text}</span>
+        <span className="font-bold flex items-center" style={{ marginRight: 6 }}><span className={`wx-icon ${now.anim}`}>{now.icon}</span>지금 {Math.round(data.now.temp)}° {now.text}</span>
         {range(day) && <span className="font-bold">오늘 {range(day)}</span>}
         {range(next) && <span className="font-bold">내일 {range(next)}</span>}
         {rainDay && rainDay.pop != null && <span className="font-bold text-[#2F6E68]">비 {rainDay.pop}%</span>}
