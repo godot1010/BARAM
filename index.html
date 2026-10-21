@@ -1735,6 +1735,89 @@ function tourApiProxyFetch(action, extraParams) {
   return tourApiRequestCache.get(key);
 }
 
+// ---- 여행지 날씨 (2026-10-21, 기상청 단기예보 → /api/weather) ----
+// 못 받아 오면 null. 화면은 날씨 줄을 조용히 숨긴다 (다른 화면에는 영향 없음)
+const weatherCache = new Map();
+function fetchWeather(lat, lng) {
+  const key = `${Number(lat).toFixed(3)},${Number(lng).toFixed(3)}`;
+  const hit = weatherCache.get(key);
+  if (hit && Date.now() - hit.at < 30 * 60 * 1000) return hit.promise;
+  const promise = (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    try {
+      const res = await fetch(`/api/weather?lat=${lat}&lng=${lng}`, { signal: controller.signal });
+      const data = await res.json();
+      return res.ok && !data.error && data.now ? data : null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  })();
+  weatherCache.set(key, { at: Date.now(), promise });
+  promise.then((d) => { if (!d) weatherCache.delete(key); });
+  return promise;
+}
+
+// 기상청 하늘(SKY 1 맑음, 3 구름많음, 4 흐림)과 강수 형태(PTY 1 비, 2 비/눈, 3 눈, 4 소나기)
+function weatherLabel(w, hour) {
+  const night = hour >= 19 || hour < 6;
+  if (w.pty === 1) return { icon: "🌧️", text: "비" };
+  if (w.pty === 2) return { icon: "🌨️", text: "비/눈" };
+  if (w.pty === 3) return { icon: "❄️", text: "눈" };
+  if (w.pty === 4) return { icon: "🌦️", text: "소나기" };
+  if (w.sky === 4) return { icon: "☁️", text: "흐림" };
+  if (w.sky === 3) return { icon: night ? "☁️" : "⛅", text: "구름 많음" };
+  return { icon: night ? "🌙" : "☀️", text: "맑음" };
+}
+
+function rainHoursText(hours) {
+  if (!hours || !hours.length) return "";
+  const first = hours[0], last = hours[hours.length - 1];
+  return first === last ? `${first}시쯤` : `${first}~${last}시`;
+}
+
+function WeatherLine({ spot }) {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    setData(null);
+    fetchWeather(spot.lat, spot.lng).then((d) => { if (alive) setData(d); });
+    return () => { alive = false; };
+  }, [spot.lat, spot.lng]);
+  if (!data) return null;
+
+  const hour = data.hour;
+  const now = weatherLabel(data.now, hour);
+  const evening = hour >= 18; // 저녁에는 내일 날씨를 같이 보여 준다
+  const day = data.today;
+  const next = evening ? data.tomorrow : null;
+  // 비 소식: 낮에는 오늘 남은 시간, 저녁에는 내일
+  const rainDay = evening ? next : day;
+  const rain = rainDay && rainDay.rainHours && rainDay.rainHours.length > 0;
+  return (
+    <div className="mt-2 rounded-lg border px-3 py-2 text-xs text-[#2B2620]" style={{ background: "#EEF5F4", borderColor: "#BFD8D5" }}>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        <span className="font-bold">{now.icon} 지금 {Math.round(data.now.temp)}° {now.text}</span>
+        {day && day.min != null && day.max != null && (
+          <span className="text-[#6B5F4F]">오늘 {day.min}° / {day.max}°</span>
+        )}
+        {day && day.pop != null && <span className="text-[#6B5F4F]">비 {day.pop}%</span>}
+      </p>
+      {next && next.min != null && next.max != null && (
+        <p className="text-[#6B5F4F] mt-0.5">내일 {next.min}° / {next.max}°{next.pop != null ? ` · 비 ${next.pop}%` : ""}</p>
+      )}
+      {rain && (
+        <p className="font-bold text-[#2F6E68] mt-0.5">
+          ☔ {evening ? "내일 " : ""}{rainHoursText(rainDay.rainHours)} {rainDay.snow ? "눈·비" : "비"} 소식, 우산 챙기세요
+        </p>
+      )}
+      <p className="text-[10px] text-[#A6987F] mt-0.5">기상청 단기예보</p>
+    </div>
+  );
+}
+
 async function tourApiProxyFetchOnce(action, extraParams) {
   const params = new URLSearchParams({ action, ...extraParams });
   const url = `/api/tourapi?${params.toString()}`;
@@ -4272,6 +4355,7 @@ function BaramApp() {
                 🍜 {result.name} 별미: {regionFoods.join(" · ")}
               </p>
             )}
+            <WeatherLine spot={result} />
 
             <div className="border-t border-[#D9CBB0] my-3" />
             {needsFerryOrFlight(currentLocation.name, result.name) ? (
