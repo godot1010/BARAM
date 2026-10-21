@@ -1820,7 +1820,6 @@ function WeatherLine({ spot }) {
         {range(day) && <span className="font-bold">오늘 {range(day)}</span>}
         {range(next) && <span className="font-bold">내일 {range(next)}</span>}
         {rainDay && rainDay.pop != null && <span className="font-bold text-[#2F6E68]">비 {rainDay.pop}%</span>}
-        <span className="text-[#6B5F4F]">기상청</span>
       </p>
       {rain && (
         <p className="font-bold text-[#2F6E68] mt-0.5">
@@ -4412,6 +4411,8 @@ function BaramApp() {
               cache={detailCache}
               setCache={setDetailCache}
             />
+            {/* 공공데이터 출처 표시 (날씨 줄에서 '기상청'을 빼고 여기로 옮김, 2026-10-21) */}
+            <p className="text-[10px] text-[#A6987F] mt-2">정보 출처: 한국관광공사(관광정보), 기상청(날씨)</p>
 
             {resultSpot && resultSpot.isVisited ? (
               <button
