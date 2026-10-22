@@ -1831,7 +1831,7 @@ function WeatherLine({ spot }) {
         )}
       </p>
       {rain && (
-        <p className="font-bold text-[#2F6E68] mt-0.5">
+        <p className="font-bold text-[#2F6E68] mt-0.5" style={{ paddingLeft: 23 }}>
           ☔ {evening ? "내일 " : ""}{rainHoursText(rainDay.rainHours)} {rainDay.snow ? "눈·비" : "비"} 소식, 우산 챙기세요
         </p>
       )}
