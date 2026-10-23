@@ -1833,7 +1833,7 @@ function WeatherLine({ spot }) {
       {rain && (
         <p className="font-bold text-[#2F6E68] mt-0.5 flex items-center">
           {/* 우산은 날씨 아이콘 바로 아래 가운데에 */}
-          <span style={{ display: "inline-block", width: 22, textAlign: "center", marginRight: 10 }}>☔</span>
+          <span style={{ display: "inline-block", width: 22, textAlign: "center", marginRight: 6 }}>☔</span>
           {evening ? "내일 " : ""}{rainHoursText(rainDay.rainHours)} {rainDay.snow ? "눈·비" : "비"} 소식, 우산 챙기세요
         </p>
       )}
