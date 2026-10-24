@@ -3691,8 +3691,30 @@ function BaramApp() {
       if (currentRegion !== "전체" && s.region !== currentRegion) return false;
       return true;
     });
-    const emotional = shuffle(candidates.filter((s) => s.mood === "emotional"));
-    const energetic = shuffle(candidates.filter((s) => s.mood === "energetic"));
+    // '전체' 판에서는 대도시(서울·부산·인천·대구·대전·광주·울산)의 구가 한 판에 도시마다 1칸만 나오게 한다.
+    // (229곳 중 약 70곳이 대도시 구라 무작위로 뽑으면 판이 서울·부산 구로 몰렸음, 2026-10-25 형 요청)
+    // 도시 이름은 "서울 서대문구"처럼 지역 이름 앞부분에 있다. 시·군은 이름이 한 단어라 제한 없음
+    const metroOf = (s) => (s.name.includes(" ") ? s.name.split(" ")[0] : null);
+    const limitMetro = (list) => {
+      if (currentRegion !== "전체") return list;
+      return list.filter((s) => {
+        const m = metroOf(s);
+        if (!m) return true;
+        if (usedMetros.has(m)) return false;
+        usedMetros.add(m);
+        return true;
+      });
+    };
+    const usedMetros = new Set();
+    // 감성·활기 목록을 각각 섞은 뒤 도시별 1칸을 남긴다. 두 목록이 같은 도시를 나눠 갖지 않도록 하나의 Set을 같이 쓰되,
+    // 한쪽이 대도시를 독차지하지 않게 섞인 순서대로 번갈아 고른다
+    const emoAll = shuffle(candidates.filter((s) => s.mood === "emotional"));
+    const eneAll = shuffle(candidates.filter((s) => s.mood === "energetic"));
+    const emotional = [], energetic = [];
+    for (let k = 0; k < Math.max(emoAll.length, eneAll.length); k++) {
+      if (k < emoAll.length) emotional.push(...limitMetro([emoAll[k]]));
+      if (k < eneAll.length) energetic.push(...limitMetro([eneAll[k]]));
+    }
 
     // 감성/활기 두 목록을 하나씩 번갈아 채워서 사이사이에 섞이도록 구성
     const interleaved = [];
