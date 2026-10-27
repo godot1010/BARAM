@@ -1865,8 +1865,7 @@ function BenefitInfoDialog({ kind, spot, half, onClose }) {
   const moodColor = spot.mood === "energetic" ? "#B3261E" : "#1B4B91";
   const lines = isHalf
     ? [
-        "여행에서 쓴 돈(숙박·식사·체험 등)의 절반을 지역화폐로 돌려받아요.",
-        "1인 최대 10만 원, 2인 이상 최대 20만 원. 청년(만 19~34세)은 70%까지 돌려받아요.",
+        "숙박·식사·체험 등 여행에서 쓴 돈이 대상이에요.",
         "⚠️ 꼭 여행 가기 전에 신청해야 해요. 신청하지 않으면 받을 수 없어요.",
         "사는 곳과 같거나 이웃한 지역은 신청할 수 없고, 예산이 떨어지면 일찍 끝날 수 있어요.",
         `${name} 여행 기간: ${formatMonthDay(half.until)}까지${half.status === "soon" ? " (곧 접수 시작)" : ""}`,
@@ -1883,6 +1882,15 @@ function BenefitInfoDialog({ kind, spot, half, onClose }) {
         <h2 className="font-serif text-lg font-bold" style={{ color: moodColor }}>
           {isHalf ? "💸 반값여행" : "🎫 디지털관광주민증"} · {name}
         </h2>
+        {isHalf && (
+          // 사용자가 가장 궁금해하는 돌려받는 금액은 눈에 띄게 따로 보여 준다
+          <div className="mt-3 rounded-xl border text-center" style={{ background: "#FDECEA", borderColor: "#E8A39C", padding: "10px 12px" }}>
+            <p className="text-xs font-bold" style={{ color: "#8E1F16" }}>💰 쓴 돈의 절반을 지역화폐로 돌려받아요</p>
+            <p className="text-lg font-bold" style={{ color: "#B3261E", marginTop: 2 }}>1인 최대 10만 원</p>
+            <p className="text-lg font-bold" style={{ color: "#B3261E" }}>2인 이상 최대 20만 원</p>
+            <p className="text-xs font-bold" style={{ color: "#8E1F16", marginTop: 2 }}>청년(만 19~34세)은 70%까지!</p>
+          </div>
+        )}
         <ul className="mt-3 space-y-2">
           {lines.map((line) => (
             <li key={line} className="text-sm text-[#2B2620]" style={{ lineHeight: 1.4 }}>· {line}</li>
