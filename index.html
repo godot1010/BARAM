@@ -87,6 +87,7 @@ const Camera = (p) => (<Icon {...p}><path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a
 const Coffee = (p) => (<Icon {...p}><path d="M17 8h1a3 3 0 0 1 0 6h-1" /><path d="M3 8h14v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" /><path d="M6 2v2M10 2v2M14 2v2" /></Icon>);
 const Bed = (p) => (<Icon {...p}><path d="M2 4v16" /><path d="M2 8h18a2 2 0 0 1 2 2v10" /><path d="M2 17h20" /><path d="M6 8v9" /></Icon>);
 const Museum = (p) => (<Icon {...p}><path d="M3 22h18" /><path d="M6 18v-7" /><path d="M10 18v-7" /><path d="M14 18v-7" /><path d="M18 18v-7" /><path d="M12 2 20 7H4Z" /></Icon>);
+const Sparkle = (p) => (<Icon {...p}><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z" /></Icon>);
 const Paw = (p) => (<Icon {...p}><circle cx="11" cy="4" r="2" /><circle cx="18" cy="8" r="2" /><circle cx="20" cy="16" r="2" /><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.05Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" /></Icon>);
 
 // STAMP TOUR 전용 도장 아이콘 - 손잡이(위) + 몸통 + 찍힌 자국(아래 넓은 타원)을 함께 그린
@@ -2203,6 +2204,104 @@ async function fetchPetNearby({ lat, lng, spotName }) {
   }));
 }
 
+// 테마 탭 ♿ 무장애 (2026-10-27): 관광공사 '무장애 여행 정보'(KorWithService2)에 등록된 여행지 주변 20km 장소.
+// 목록에는 편의 정보가 없고, 장소를 누르면 장소 정보 창이 편의 정보(barrierFreeDetail)를 따로 받는다(호출 수 절약)
+const BF_TYPE_RANK = { "12": 0, "14": 0, "28": 1, "39": 1, "32": 2, "38": 3 };
+async function fetchBarrierFreeNearby({ lat, lng, spotName }) {
+  const arr = await tourApiProxyFetch("barrierFree", { lat: String(lat), lng: String(lng) });
+  const ranked = arr.filter((it) => !hasWrongCoords(it)).sort((a, b) =>
+    areaRank(a.addr1, spotName) - areaRank(b.addr1, spotName) ||
+    (BF_TYPE_RANK[a.contenttypeid] ?? 2) - (BF_TYPE_RANK[b.contenttypeid] ?? 2) ||
+    (b.firstimage ? 1 : 0) - (a.firstimage ? 1 : 0) ||
+    parseFloat(a.dist) - parseFloat(b.dist)
+  );
+  return dedupeByName(ranked).map((it) => ({
+    id: it.contentid,
+    name: it.title,
+    kind: it.cat3 === "A05020900" ? "카페" : CONTENT_TYPE_LABELS[it.contenttypeid] || "",
+    address: it.addr1 || "",
+    distanceKm: it.dist ? (parseFloat(it.dist) / 1000).toFixed(1) : null,
+    lat: parseFloat(it.mapy) || null,
+    lng: parseFloat(it.mapx) || null,
+    image: toHttps(it.firstimage2 || it.firstimage),
+    imageLarge: toHttps(it.firstimage),
+    barrierFree: true,
+    typeId: it.contenttypeid,
+    area: neighborArea(it.addr1, spotName),
+  }));
+}
+
+// 무장애 편의 정보 항목 (detailWithTour2 칸 이름 → 화면 이름). 묶음마다 제목을 붙여 보여준다
+const BARRIER_FREE_GROUPS = [
+  ["♿ 휠체어·거동 불편", [
+    ["parking", "🅿️ 주차"], ["publictransport", "🚌 대중교통"], ["route", "🛤️ 다니는 길"], ["exit", "🚪 출입구"],
+    ["elevator", "🛗 엘리베이터"], ["restroom", "🚻 화장실"], ["wheelchair", "♿ 휠체어 대여"], ["ticketoffice", "🎫 매표소"],
+    ["auditorium", "🎭 관람석"], ["room", "🛏️ 객실"], ["promotion", "📄 안내 자료"], ["handicapetc", "➕ 그 밖에"],
+  ]],
+  ["👁️ 눈이 불편한 분", [
+    ["braileblock", "점자 블록"], ["helpdog", "🦮 안내견"], ["guidehuman", "🙋 안내 도우미"], ["audioguide", "🎧 음성 안내"],
+    ["bigprint", "🔠 큰 글자 안내"], ["brailepromotion", "점자 안내 자료"], ["guidesystem", "유도 안내"], ["blindhandicapetc", "➕ 그 밖에"],
+  ]],
+  ["👂 귀가 불편한 분", [
+    ["signguide", "🤟 수어 안내"], ["videoguide", "📺 자막·영상 안내"], ["hearingroom", "🛏️ 객실"], ["hearinghandicapetc", "➕ 그 밖에"],
+  ]],
+  ["👶 아기와 함께", [
+    ["stroller", "👶 유모차"], ["lactationroom", "🍼 수유실"], ["babysparechair", "🪑 아기 의자"], ["infantsfamilyetc", "➕ 그 밖에"],
+  ]],
+];
+
+const barrierFreeDetailCache = new Map(); // 장소 id → Promise
+function fetchBarrierFreeDetail(id) {
+  const key = String(id);
+  if (!barrierFreeDetailCache.has(key)) {
+    const promise = tourApiProxyFetch("barrierFreeDetail", { contentId: key }).then((items) => items[0] || {});
+    barrierFreeDetailCache.set(key, promise);
+    promise.catch(() => barrierFreeDetailCache.delete(key));
+  }
+  return barrierFreeDetailCache.get(key);
+}
+
+// 장소 정보 창 안의 '♿ 무장애 편의 정보' 묶음
+function BarrierFreeInfo({ place }) {
+  const [state, setState] = useState({ status: "loading" });
+  useEffect(() => {
+    let alive = true;
+    fetchBarrierFreeDetail(place.id)
+      .then((data) => alive && setState({ status: "success", data }))
+      .catch(() => alive && setState({ status: "error" }));
+    return () => { alive = false; };
+  }, [place.id]);
+  if (state.status === "loading") {
+    return <p className="text-xs text-[#A6987F] mt-3 flex items-center gap-1.5"><Loader2 size={13} className="animate-spin" /> 무장애 편의 정보를 불러오는 중…</p>;
+  }
+  if (state.status === "error") return <p className="text-xs text-[#A8441F] mt-3">무장애 편의 정보를 불러오지 못했어요.</p>;
+  const groups = BARRIER_FREE_GROUPS.map(([title, rows]) => [
+    title,
+    rows.map(([k, label]) => [label, cleanTourText(state.data[k])]).filter(([, v]) => v),
+  ]).filter(([, rows]) => rows.length > 0);
+  if (groups.length === 0) return <p className="text-xs text-[#6B5F4F] mt-3">♿ 등록된 무장애 편의 정보가 없어요.</p>;
+  return (
+    <div className="mt-3">
+      <p className="text-[11px] font-bold mb-1" style={{ color: BARRIER_FREE_COLOR }}>♿ 무장애 편의 정보</p>
+      <div className="space-y-2">
+        {groups.map(([title, rows]) => (
+          <div key={title} className="bg-white/50 border rounded-lg" style={{ borderColor: "#B9D3C6" }}>
+            <p className="text-[11px] font-bold px-3 pt-1.5" style={{ color: BARRIER_FREE_COLOR }}>{title}</p>
+            <div className="divide-y divide-[#E9DFCC]">
+              {rows.map(([label, value]) => (
+                <div key={label} className="flex gap-2 px-3 py-1.5 text-[11px]">
+                  <span className="shrink-0 text-[#6B5F4F]" style={{ width: 96 }}>{label}</span>
+                  <span className="text-[#2B2620] whitespace-pre-line min-w-0" style={{ wordBreak: "keep-all" }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // 반려동물 동반 조건을 한 줄로 (예: "전구역 동반가능 · 목줄 착용")
 function petSummary(pet) {
   if (!pet) return "";
@@ -3265,6 +3364,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
           )}
 
           {place.pet && <p className="text-xs font-bold text-[#9A5B2E] mt-3">🐶 {petSummary(place.pet)}</p>}
+          {place.barrierFree && <BarrierFreeInfo place={place} />}
 
           {overview && (
             <div className="mt-3">
@@ -3419,6 +3519,9 @@ function PlaceCard({ place, emoji }) {
         {place.pet && (
           <p className="text-[11px] font-bold text-[#9A5B2E] mt-0.5 line-clamp-1">🐶 {petSummary(place.pet)}</p>
         )}
+        {place.barrierFree && (
+          <p className="text-[11px] font-bold mt-0.5 line-clamp-1" style={{ color: BARRIER_FREE_COLOR }}>♿ 무장애 정보 있음 · 눌러서 편의시설 보기</p>
+        )}
         {place.pet && (place.pet.animals || place.pet.etc) && (
           <p className="text-[10px] text-[#6B5F4F] line-clamp-1">{[place.pet.animals, place.pet.etc.replace(/\s*\n\s*/g, " ")].filter(Boolean).join(" · ")}</p>
         )}
@@ -3527,6 +3630,9 @@ function MapLinkList({ links }) {
   );
 }
 
+// 테마 탭·무장애 정보 색 (초록)
+const BARRIER_FREE_COLOR = "#2E7D5B";
+
 // 탭 구성. source = 관광정보에서 받아 올 종류(같은 source는 한 번만 받아 여러 탭이 나눠 쓴다),
 // pick = 받아 온 목록에서 이 탭에 보여줄 것만 고르기
 const TAB_CONFIG = {
@@ -3561,6 +3667,11 @@ const TAB_CONFIG = {
     label: "반려견", icon: Paw, color: "#9A5B2E", emoji: "🐶", source: "pet",
     pick: (list) => list,
   },
+  // 테마 여행 (2026-10-27~): 지금은 ♿ 무장애. 걷기길·차박·낚시·서핑을 차례로 더한다
+  theme: {
+    label: "테마", icon: Sparkle, color: BARRIER_FREE_COLOR, emoji: "♿", source: "barrierFree",
+    pick: (list) => list,
+  },
 };
 
 const SOURCE_FETCHERS = {
@@ -3570,6 +3681,7 @@ const SOURCE_FETCHERS = {
   ct14: (spot) => fetchNearbyTourSpots({ lat: spot.lat, lng: spot.lng, spotName: spot.name, contentTypeId: 14, num: 30, preferImages: true }),
   festival: (spot) => fetchLocalFestivals({ regionKeyword: spot.name, lat: spot.lat, lng: spot.lng }),
   pet: (spot) => fetchPetNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
+  barrierFree: (spot) => fetchBarrierFreeNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
 };
 
 const PAGE_SIZE = 5;
@@ -3665,6 +3777,18 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache }) {
             {" "}동반 조건은 바뀔 수 있으니 방문 전에 꼭 확인하세요.
           </p>
         )}
+        {tab === "theme" && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs font-bold rounded-full px-3 py-1" style={{ background: BARRIER_FREE_COLOR, color: "#F6F1E7" }}>♿ 무장애 여행</span>
+            <span className="text-[11px] text-[#A6987F]">걷기길·차박 등은 곧 추가돼요</span>
+          </div>
+        )}
+        {tab === "theme" && entry && entry.status === "success" && (
+          <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
+            ♿ 휠체어·유모차로 다니기 편하도록 정보가 등록된 곳이에요{items.length > 0 ? ` (주변 20km, ${items.length}곳)` : ""}.
+            {" "}장소를 누르면 주차·화장실·엘리베이터·수유실 같은 편의 정보를 볼 수 있어요. 어르신·아기와 함께하는 여행에도 좋아요.
+          </p>
+        )}
         {tab === "lodging" && overnight && (
           <p className="text-xs text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
             🛏️ 오늘 일정은 1박 2일을 추천해요. 묵을 곳을 미리 확인해 보세요.
@@ -3682,7 +3806,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache }) {
           tab === "cafe" ? (
             <MapLinkList links={buildMapSearchLinks(spot, "카페")} />
           ) : (
-            <StatusBlock status="empty" emptyText={tab === "festival" ? "가까운 곳에 열리는 축제가 없어요." : tab === "pet" ? "이 지역은 반려동물 동반 정보가 아직 없어요." : "검색된 정보가 없어요."} />
+            <StatusBlock status="empty" emptyText={tab === "festival" ? "가까운 곳에 열리는 축제가 없어요." : tab === "pet" ? "이 지역은 반려동물 동반 정보가 아직 없어요." : tab === "theme" ? "이 지역 주변에는 무장애 여행 정보가 아직 없어요." : "검색된 정보가 없어요."} />
           )
         ) : (
           <>

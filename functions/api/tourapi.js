@@ -385,7 +385,7 @@ export async function onRequest(context) {
         if (k === "contentid") return;
         if (typeof v === "string" && v.trim() && v.trim() !== "0") fields[k] = v.trim();
       });
-      payload = { contentId, fields };
+      payload = { items: [{ contentid: contentId, ...fields }] };
     } else {
       return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail 중 하나여야 해요." }, 400);
     }
