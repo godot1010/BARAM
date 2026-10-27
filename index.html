@@ -1779,6 +1779,132 @@ function rainHoursText(hours) {
   return first === last ? `${first}시쯤` : `${first}~${last}시`;
 }
 
+// ==========================================
+// 인구감소지역 여행 혜택 배지 (반값여행 · 디지털관광주민증)
+// 공공 API가 없어 공식 페이지를 보고 지역 목록을 직접 넣는다. 한 달에 한 번쯤 확인해서 고칠 것.
+// ==========================================
+const BENEFIT_CHECKED = "10월 27일"; // 마지막으로 공식 페이지를 확인한 날 (창에 보여 줌)
+const HALF_PRICE_URL = "https://korean.visitkorea.or.kr/dgtourcard/tour50.do";
+const DIGITAL_RESIDENT_URL = "https://korean.visitkorea.or.kr/dgtourcard/biz/main/main.do";
+
+// 반값여행: 신청 받는 중(open)·곧 접수(soon)인 곳만 넣는다. until(마지막 여행 날)이 지나면 배지가 저절로 사라진다.
+// 마감된 곳(합천·해남·하동·영월·고창·영광·제천·평창·남해·횡성·서천·안동)은 넣지 않는다.
+const HALF_PRICE_TRIP = {
+  고흥군: { status: "open", until: "2026-11-30" },
+  함양군: { status: "open", until: "2026-12-10" },
+  밀양시: { status: "open", until: "2026-11-30" },
+  강진군: { status: "open", until: "2026-11-30" },
+  완도군: { status: "open", until: "2026-11-30" },
+  산청군: { status: "open", until: "2026-11-17" },
+  영천시: { status: "open", until: "2026-11-30" },
+  거창군: { status: "open", until: "2026-11-30" },
+  "고성군-경남": { status: "open", until: "2026-11-30" },
+  장흥군: { status: "open", until: "2026-11-02" },
+  화천군: { status: "open", until: "2026-11-30" },
+  영암군: { status: "soon", until: "2026-12-13" },
+  태안군: { status: "soon", until: "2026-11-23" },
+};
+
+// 디지털관광주민증 운영 지역 52곳 (2026-06-08 확대)
+const DIGITAL_RESIDENT_REGIONS = new Set([
+  "철원군", "양양군", "정선군", "삼척시", "태백시", "홍천군", "평창군", "영월군",
+  "연천군", "가평군", "강화군",
+  "태안군", "예산군", "보령시",
+  "제천시", "단양군", "괴산군", "옥천군", "영동군", "보은군",
+  "김제시", "무주군", "고창군", "임실군", "남원시", "순창군",
+  "영광군", "함평군", "곡성군", "신안군", "해남군", "장흥군", "구례군", "담양군", "고흥군", "완도군",
+  "영주시", "안동시", "영덕군", "청도군", "고령군", "의성군", "울진군",
+  "부산 동구", "부산 영도구", "부산 서구",
+  "밀양시", "하동군", "합천군", "거창군", "함양군", "산청군",
+]);
+
+function halfPriceOf(spotName) {
+  const info = HALF_PRICE_TRIP[spotName];
+  return info && toDateInputValue() <= info.until ? info : null;
+}
+
+function shortSpotName(name) {
+  return name.replace(/-.*$/, "");
+}
+
+function formatMonthDay(ymd) {
+  const [, m, d] = ymd.split("-").map(Number);
+  return `${m}월 ${d}일`;
+}
+
+function BenefitBadges({ spot }) {
+  const [open, setOpen] = useState(null); // "half" | "resident" | null
+  const half = halfPriceOf(spot.name);
+  const resident = DIGITAL_RESIDENT_REGIONS.has(spot.name);
+  if (!half && !resident) return null;
+  const badge = "mt-1.5 flex items-center gap-1 text-left text-xs font-bold rounded-full border px-2.5 py-1";
+  return (
+    <div className="flex flex-col items-start">
+      {half && (
+        <button onClick={() => setOpen("half")} className={badge} style={{ background: "#FDECEA", borderColor: "#E8A39C", color: "#8E1F16" }}>
+          💸 반값여행 {half.status === "open" ? "신청 중" : "곧 접수"} · 여행 경비 50% 돌려받기 <span className="font-normal" style={{ opacity: 0.7 }}>ⓘ</span>
+        </button>
+      )}
+      {resident && (
+        <button onClick={() => setOpen("resident")} className={badge} style={{ background: "#EAF0FA", borderColor: "#A9BEE0", color: "#1B4B91" }}>
+          🎫 디지털관광주민증 지역 · 할인 혜택 <span className="font-normal" style={{ opacity: 0.7 }}>ⓘ</span>
+        </button>
+      )}
+      {open && <BenefitInfoDialog kind={open} spot={spot} half={half} onClose={() => setOpen(null)} />}
+    </div>
+  );
+}
+
+function BenefitInfoDialog({ kind, spot, half, onClose }) {
+  const name = shortSpotName(spot.name);
+  const isHalf = kind === "half";
+  const lines = isHalf
+    ? [
+        "여행에서 쓴 돈(숙박·식사·체험 등)의 절반을 지역화폐로 돌려받아요.",
+        "1인 최대 10만 원, 2인 이상 최대 20만 원. 청년(만 19~34세)은 70%까지 돌려받아요.",
+        "⚠️ 꼭 여행 가기 전에 신청해야 해요. 신청하지 않으면 받을 수 없어요.",
+        "사는 곳과 같거나 이웃한 지역은 신청할 수 없고, 예산이 떨어지면 일찍 끝날 수 있어요.",
+        `${name} 여행 기간: ${formatMonthDay(half.until)}까지${half.status === "soon" ? " (곧 접수 시작)" : ""}`,
+      ]
+    : [
+        "휴대폰으로 무료로 받는 '여행자용 주민증'이에요.",
+        `${name}의 숙소·식당·관광지 등 가맹점에서 할인 혜택을 받을 수 있어요.`,
+        "만 14세 이상이면 받을 수 있고, 사는 곳과 같은 지역은 발급되지 않아요.",
+        "전국 52개 인구감소지역에서 운영해요.",
+      ];
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
+      <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-5" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-serif text-lg text-[#2B2620]">
+          {isHalf ? "💸 반값여행" : "🎫 디지털관광주민증"} · {name}
+        </h2>
+        <ul className="mt-3 space-y-2">
+          {lines.map((line) => (
+            <li key={line} className="text-sm text-[#2B2620]" style={{ lineHeight: 1.4 }}>· {line}</li>
+          ))}
+        </ul>
+        <p className="text-[11px] text-[#A6987F] mt-3">
+          {BENEFIT_CHECKED} 공식 페이지 기준이에요. 조건과 기간은 바뀔 수 있으니 신청 전에 꼭 확인하세요.
+        </p>
+        <div className="flex gap-2 mt-4">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg text-sm font-medium text-[#6B5F4F] border border-[#D9CBB0]">
+            닫기
+          </button>
+          <a
+            href={isHalf ? HALF_PRICE_URL : DIGITAL_RESIDENT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 py-2.5 rounded-lg text-sm font-bold text-center text-white"
+            style={{ background: isHalf ? "#B3261E" : "#1B4B91" }}
+          >
+            {isHalf ? "공식 페이지에서 신청 ↗" : "공식 페이지 보기 ↗"}
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WeatherLine({ spot }) {
   const [data, setData] = useState(null);
   const lineRef = useRef(null);
@@ -4400,6 +4526,7 @@ function BaramApp() {
                 🍜 {result.name} 별미: {regionFoods.join(" · ")}
               </p>
             )}
+            <BenefitBadges spot={result} />
             <WeatherLine spot={result} />
 
             <div className="border-t border-[#D9CBB0] my-3" />
