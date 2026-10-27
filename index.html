@@ -1861,6 +1861,8 @@ function BenefitBadges({ spot }) {
 function BenefitInfoDialog({ kind, spot, half, onClose }) {
   const name = shortSpotName(spot.name);
   const isHalf = kind === "half";
+  // 제목·안내 글은 여행지 테마 색 (감성 청색, 활기 빨강 - STAMP 색과 같음)
+  const moodColor = spot.mood === "energetic" ? "#B3261E" : "#1B4B91";
   const lines = isHalf
     ? [
         "여행에서 쓴 돈(숙박·식사·체험 등)의 절반을 지역화폐로 돌려받아요.",
@@ -1878,7 +1880,7 @@ function BenefitInfoDialog({ kind, spot, half, onClose }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
       <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-5" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-serif text-lg text-[#2B2620]">
+        <h2 className="font-serif text-lg font-bold" style={{ color: moodColor }}>
           {isHalf ? "💸 반값여행" : "🎫 디지털관광주민증"} · {name}
         </h2>
         <ul className="mt-3 space-y-2">
@@ -1886,7 +1888,7 @@ function BenefitInfoDialog({ kind, spot, half, onClose }) {
             <li key={line} className="text-sm text-[#2B2620]" style={{ lineHeight: 1.4 }}>· {line}</li>
           ))}
         </ul>
-        <p className="text-[11px] text-[#A6987F] mt-3">
+        <p className="text-xs mt-3" style={{ color: moodColor }}>
           {BENEFIT_CHECKED} 공식 페이지 기준이에요. 조건과 기간은 바뀔 수 있으니 신청 전에 꼭 확인하세요.
         </p>
         <div className="flex gap-2 mt-4">
