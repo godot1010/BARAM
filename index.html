@@ -1884,11 +1884,11 @@ function BenefitInfoDialog({ kind, spot, half, onClose }) {
         </h2>
         {isHalf && (
           // 사용자가 가장 궁금해하는 돌려받는 금액은 눈에 띄게 따로 보여 준다
-          <div className="mt-3 rounded-xl border text-center" style={{ background: "#FDECEA", borderColor: "#E8A39C", padding: "10px 12px" }}>
+          <div className="mt-3 rounded-xl border text-center" style={{ background: "#FDECEA", borderColor: "#E8A39C", padding: "6px 10px" }}>
             <p className="text-xs font-bold" style={{ color: "#8E1F16" }}>💰 쓴 돈의 절반을 지역화폐로 돌려받아요</p>
-            <p className="text-lg font-bold" style={{ color: "#B3261E", marginTop: 2 }}>1인 최대 10만원</p>
-            <p className="text-lg font-bold" style={{ color: "#B3261E" }}>2인 이상 최대 20만원</p>
-            <p className="text-xs font-bold" style={{ color: "#8E1F16", marginTop: 2 }}>청년(만 19~34세)은 70%까지!</p>
+            <p className="text-base font-bold" style={{ color: "#B3261E", marginTop: 1, lineHeight: 1.35 }}>1인 최대 10만원</p>
+            <p className="text-base font-bold" style={{ color: "#B3261E", lineHeight: 1.35 }}>2인 이상 최대 20만원</p>
+            <p className="text-xs font-bold" style={{ color: "#8E1F16", marginTop: 1 }}>청년(만 19~34세)은 70%까지!</p>
           </div>
         )}
         <ul className="mt-3 space-y-2">
