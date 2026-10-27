@@ -13,8 +13,12 @@
 // - pet       : 반려동물 동반 여행 정보 원본 (detailPetTour2, 확인용)
 // - petNearby : 위치 주변의 '반려동물 동반 가능' 장소만 모아서, 동반 조건과 함께 돌려준다
 // - detail    : 장소 하나의 자세한 정보 (소개글·전화·홈페이지 + 이용 시간 등 + 사진 여러 장)
+// - barrierFree       : 위치 주변의 무장애 여행 장소 목록 (무장애 여행 정보 KorWithService2 locationBasedList2)
+// - barrierFreeDetail : 장소 하나의 무장애 편의 정보 (detailWithTour2, 휠체어·화장실·유모차 등 - 비어 있지 않은 칸만)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
+// 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
+const WITH_API_BASE = "https://apis.data.go.kr/B551011/KorWithService2";
 
 function normalizeServiceKey(key) {
   try {
@@ -47,7 +51,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -134,9 +138,9 @@ class TourApiError extends Error {
   }
 }
 
-async function callTourApi(path, params) {
+async function callTourApi(path, params, apiBase = TOUR_API_BASE) {
   const qs = new URLSearchParams(params).toString();
-  const res = await fetch(`${TOUR_API_BASE}/${path}?${qs}`);
+  const res = await fetch(`${apiBase}/${path}?${qs}`);
   const bodyText = await res.text();
 
   if (!res.ok) {
@@ -364,8 +368,26 @@ export async function onRequest(context) {
       const contentTypeId = url.searchParams.get("contentTypeId") || "";
       if (!contentId || !/^\d+$/.test(contentId)) return json({ error: "BAD_REQUEST", message: "contentId가 필요해요." }, 400);
       payload = await placeDetail(base, contentId, /^\d+$/.test(contentTypeId) ? contentTypeId : "");
+    } else if (action === "barrierFree") {
+      const lat = url.searchParams.get("lat");
+      const lng = url.searchParams.get("lng");
+      if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
+      // 종류를 가리지 않고 가까운 순으로 받는다 (관광지·음식점·숙박 등이 섞여 온다)
+      const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius: "20000", numOfRows: "60", pageNo: "1" }, WITH_API_BASE);
+      payload = { items };
+    } else if (action === "barrierFreeDetail") {
+      const contentId = url.searchParams.get("contentId");
+      if (!contentId || !/^\d+$/.test(contentId)) return json({ error: "BAD_REQUEST", message: "contentId가 필요해요." }, 400);
+      const { items } = await callTourApi("detailWithTour2", { ...base, contentId }, WITH_API_BASE);
+      // 비어 있지 않은 칸만 남긴다 (앱이 항목마다 이름과 그림을 붙여 보여준다)
+      const fields = {};
+      Object.entries(items[0] || {}).forEach(([k, v]) => {
+        if (k === "contentid") return;
+        if (typeof v === "string" && v.trim() && v.trim() !== "0") fields[k] = v.trim();
+      });
+      payload = { contentId, fields };
     } else {
-      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail 중 하나여야 해요." }, 400);
+      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail 중 하나여야 해요." }, 400);
     }
 
     // 일부만 받은 결과는 저장하지 않는다. 지난 저장본이 있으면 그쪽이 더 완전하다
