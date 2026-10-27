@@ -2254,7 +2254,7 @@ const barrierFreeDetailCache = new Map(); // 장소 id → Promise
 function fetchBarrierFreeDetail(id) {
   const key = String(id);
   if (!barrierFreeDetailCache.has(key)) {
-    const promise = tourApiProxyFetch("barrierFreeDetail", { contentId: key }).then((items) => items[0] || {});
+    const promise = tourApiProxyFetch("barrierFreeDetail", { contentId: key, v: "2" }) /* v: 응답 모양을 바꾼 뒤 예전 저장본을 안 쓰게 */.then((items) => items[0] || {});
     barrierFreeDetailCache.set(key, promise);
     promise.catch(() => barrierFreeDetailCache.delete(key));
   }
