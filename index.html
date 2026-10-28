@@ -1784,12 +1784,12 @@ function rainHoursText(hours) {
 // 인구감소지역 여행 혜택 배지 (반값여행 · 디지털관광주민증)
 // 공공 API가 없어 공식 페이지를 보고 지역 목록을 직접 넣는다. 한 달에 한 번쯤 확인해서 고칠 것.
 // ==========================================
-const BENEFIT_CHECKED = "10월 27일"; // 마지막으로 공식 페이지를 확인한 날 (창에 보여 줌)
+const BENEFIT_CHECKED = "10월 28일"; // 마지막으로 공식 페이지를 확인한 날 (창에 보여 줌)
 const HALF_PRICE_URL = "https://korean.visitkorea.or.kr/dgtourcard/tour50.do";
 const DIGITAL_RESIDENT_URL = "https://korean.visitkorea.or.kr/dgtourcard/biz/main/main.do";
 
 // 반값여행: 신청 받는 중(open)·곧 접수(soon)인 곳만 넣는다. until(마지막 여행 날)이 지나면 배지가 저절로 사라진다.
-// 마감된 곳(합천·해남·하동·영월·고창·영광·제천·평창·남해·횡성·서천·안동)은 넣지 않는다.
+// 마감된 곳(합천·해남·하동·영월·고창·영광·제천·평창·남해·횡성·서천)은 넣지 않는다.
 const HALF_PRICE_TRIP = {
   고흥군: { status: "open", until: "2026-11-30" },
   함양군: { status: "open", until: "2026-12-10" },
@@ -1804,6 +1804,7 @@ const HALF_PRICE_TRIP = {
   화천군: { status: "open", until: "2026-11-30" },
   영암군: { status: "soon", until: "2026-12-13" },
   태안군: { status: "soon", until: "2026-11-23" },
+  안동시: { status: "soon", until: "2026-11-30" },
 };
 
 // 디지털관광주민증 운영 지역 52곳 (2026-06-08 확대)
