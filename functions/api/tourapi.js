@@ -373,7 +373,9 @@ export async function onRequest(context) {
       const lng = url.searchParams.get("lng");
       if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
       // 종류를 가리지 않고 가까운 순으로 받는다 (관광지·음식점·숙박 등이 섞여 온다)
-      const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius: "20000", numOfRows: "60", pageNo: "1" }, WITH_API_BASE);
+      // 도시는 주변에 장소가 많아 60곳으로는 우리 지역 장소가 잘린다 → 앱이 rows로 더 받는다 (테마 룰렛, 최대 300곳)
+      const rows = Math.min(Math.max(parseInt(url.searchParams.get("rows"), 10) || 60, 60), 300);
+      const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius: "20000", numOfRows: String(rows), pageNo: "1" }, WITH_API_BASE);
       payload = { items };
     } else if (action === "barrierFreeDetail") {
       const contentId = url.searchParams.get("contentId");
