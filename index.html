@@ -4577,7 +4577,7 @@ function BaramApp() {
         </div>
 
         {/* 테마 룰렛: 고르면 아래 권역 버튼과 룰렛판이 그 테마 지역으로 바뀐다 */}
-        <div className="mt-4">
+        <div className="mt-4" style={{ letterSpacing: "0.05em" }}>
           <button
             disabled={disabled}
             onClick={() => setThemeMenuOpen((v) => !v)}
@@ -4776,7 +4776,7 @@ function BaramApp() {
               <button
                 onClick={() => tabsTitleRef.current && tabsTitleRef.current.scrollIntoView({ behavior: "smooth", block: "start" })}
                 className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mb-3"
-                style={{ borderColor: THEME_ROULETTE[resultTheme].color, color: THEME_ROULETTE[resultTheme].color }}
+                style={{ borderColor: THEME_ROULETTE[resultTheme].color, color: THEME_ROULETTE[resultTheme].color, letterSpacing: "0.05em" }}
               >
                 {THEME_ROULETTE[resultTheme].emoji} {THEME_ROULETTE[resultTheme].label} 룰렛으로 정한 여행지 · 장소 보기 ↓
               </button>
