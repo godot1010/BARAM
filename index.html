@@ -4583,7 +4583,7 @@ function BaramApp() {
             onClick={() => setThemeMenuOpen((v) => !v)}
             className="w-full text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60"
             style={rouletteTheme
-              ? { borderColor: THEME_ROULETTE[rouletteTheme].color, background: THEME_ROULETTE[rouletteTheme].color, color: "#F6F1E7" }
+              ? { borderColor: `${THEME_ROULETTE[rouletteTheme].color}80`, background: `${THEME_ROULETTE[rouletteTheme].color}1F`, color: THEME_ROULETTE[rouletteTheme].color }
               : { borderColor: "#D9CBB0", background: "transparent", color: "#2B2620" }}
           >
             {rouletteTheme ? `${THEME_ROULETTE[rouletteTheme].emoji} ${THEME_ROULETTE[rouletteTheme].label} 룰렛` : "테마 룰렛"} ▾
@@ -4596,7 +4596,7 @@ function BaramApp() {
                   disabled={disabled}
                   onClick={() => changeTheme(key)}
                   className="flex-1 text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60 whitespace-nowrap"
-                  style={{ borderColor: t.color, background: rouletteTheme === key ? t.color : `${t.color}1F`, color: rouletteTheme === key ? "#F6F1E7" : t.color }}
+                  style={{ borderColor: rouletteTheme === key ? t.color : `${t.color}80`, background: rouletteTheme === key ? `${t.color}33` : `${t.color}14`, color: t.color }}
                 >
                   {t.emoji} {t.label} {themePlaceTotal(key)}곳
                 </button>
