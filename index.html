@@ -4626,9 +4626,9 @@ function BaramApp() {
 
         {/* 룰렛 고르기: 평소에는 '테마'와 '지역' 두 칸만, 누르면 그 칸이 아래로 열려 목록이 룰렛판 위에 겹쳐 나온다 (2026-11-01 형 결정) */}
         {pickerOpen && !disabled && (
-          <div onClick={() => setPickerOpen(null)} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
+          <div onClick={() => setPickerOpen(null)} style={{ position: "fixed", inset: 0, zIndex: 38 }} />
         )}
-        <div className="mt-4 flex gap-2 relative" style={{ letterSpacing: "0.05em", zIndex: 61 }}>
+        <div className="mt-4 flex gap-2 relative" style={{ letterSpacing: "0.05em", zIndex: 39 }}>
           <div className="flex-1 relative" style={{ minWidth: 0 }}>
             <button
               disabled={disabled}
