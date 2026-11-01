@@ -4514,7 +4514,7 @@ function BaramApp() {
   // 테마·지역 칸 바로 아래로 열리는 목록
   function pickerMenu(options) {
     return (
-      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: -1, background: "#F6F1E7", border: "1px solid #D9CBB0", borderRadius: "0 0 14px 14px", overflow: "hidden", boxShadow: "0 8px 16px rgba(0,0,0,0.18)" }}>
+      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: -1, background: "#FFFDF8", border: "1px solid #D9CBB0", borderRadius: "0 0 14px 14px", overflow: "hidden", boxShadow: "0 8px 16px rgba(0,0,0,0.18)" }}>
         {options.map((o, i) => (
           <button
             key={o.key}
@@ -4636,7 +4636,7 @@ function BaramApp() {
               className="w-full text-xs px-2 py-1.5 border font-bold disabled:opacity-60 whitespace-nowrap"
               style={{
                 borderRadius: pickerOpen === "theme" ? "14px 14px 0 0" : 9999,
-                ...(pickerOpen === "theme" ? { background: "#F6F1E7" } : {}),
+                ...(pickerOpen === "theme" || !rouletteTheme ? { background: "#FFFDF8" } : {}),
                 ...(rouletteTheme
                   ? { borderColor: `${THEME_ROULETTE[rouletteTheme].color}80`, ...(pickerOpen === "theme" ? {} : { background: `${THEME_ROULETTE[rouletteTheme].color}1F` }), color: THEME_ROULETTE[rouletteTheme].color }
                   : { borderColor: "#D9CBB0", color: "#2B2620" }),
@@ -4658,7 +4658,7 @@ function BaramApp() {
               className="w-full text-xs px-2 py-1.5 border font-bold disabled:opacity-60 whitespace-nowrap"
               style={{
                 borderRadius: pickerOpen === "region" ? "14px 14px 0 0" : 9999,
-                ...(pickerOpen === "region" ? { background: "#F6F1E7" } : {}),
+                ...(pickerOpen === "region" || region === "전체" ? { background: "#FFFDF8" } : {}),
                 ...(region === "전체"
                   ? { borderColor: "#D9CBB0", color: "#2B2620" }
                   : { borderColor: `${REGION_COLORS[region]}80`, ...(pickerOpen === "region" ? {} : { background: `${REGION_COLORS[region]}1F` }), color: REGION_COLORS[region] }),
