@@ -3919,7 +3919,7 @@ function BaramApp() {
   // 지금 여행지를 룰렛으로 정했는지("roulette"), '가고 싶은 곳 찾기'로 직접 골랐는지("picked")
   const [resultSource, setResultSource] = useState("roulette");
   const [rouletteTheme, setRouletteTheme] = useState(null); // 고른 테마 룰렛 (없으면 일반 룰렛)
-  const [pickerOpen, setPickerOpen] = useState(null); // "theme" | "region" | null (두 칸 아래에 펼쳐지는 고르기 칸)
+  const [pickerOpen, setPickerOpen] = useState(null); // "theme" | "region" | null (아래로 열린 칸)
   const [benefitOpen, setBenefitOpen] = useState(false); // 반값여행 룰렛 결과에서 여는 혜택 설명 창
   const [resultTheme, setResultTheme] = useState(null); // 지금 여행지를 어느 테마 룰렛으로 정했는지
   const tabsTitleRef = useRef(null);
@@ -4511,6 +4511,31 @@ function BaramApp() {
   const route = result ? distanceEta(currentLocation.lat, currentLocation.lng, result.lat, result.lng) : null;
   const disabled = phase !== "idle";
 
+  // 테마·지역 칸 바로 아래로 열리는 목록
+  function pickerMenu(options) {
+    return (
+      <div style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: -1, background: "#F6F1E7", border: "1px solid #D9CBB0", borderRadius: "0 0 14px 14px", overflow: "hidden", boxShadow: "0 8px 16px rgba(0,0,0,0.18)" }}>
+        {options.map((o, i) => (
+          <button
+            key={o.key}
+            disabled={o.off}
+            onClick={o.pick}
+            className="w-full flex items-center text-left text-xs font-bold whitespace-nowrap"
+            style={{
+              padding: "10px 12px",
+              color: o.off ? "#A6987F" : o.color,
+              background: o.on ? `${o.color}1F` : "transparent",
+              borderTop: i === 0 ? "none" : "1px solid #E6DCC8",
+            }}
+          >
+            {o.label}
+            <span className="font-normal text-[#6B5F4F]" style={{ marginLeft: "auto", fontSize: 11 }}>{o.on ? "✓ " : ""}{o.note}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <PlaceDetailContext.Provider value={setDetailPlace}>
     <div className="min-h-screen bg-[#F6F1E7] flex flex-col items-center">
@@ -4599,65 +4624,54 @@ function BaramApp() {
           </p>
         </div>
 
-        {/* 룰렛 고르기: 평소에는 '테마'와 '지역' 두 칸만, 누르면 바로 아래에 고르는 칸이 펼쳐진다 (2026-11-01 형 결정) */}
-        <div className="mt-4 flex gap-2" style={{ letterSpacing: "0.05em" }}>
-          <button
-            disabled={disabled}
-            onClick={() => setPickerOpen(pickerOpen === "theme" ? null : "theme")}
-            className="flex-1 text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60 whitespace-nowrap"
-            style={rouletteTheme
-              ? { borderColor: `${THEME_ROULETTE[rouletteTheme].color}80`, background: `${THEME_ROULETTE[rouletteTheme].color}1F`, color: THEME_ROULETTE[rouletteTheme].color }
-              : { borderColor: "#D9CBB0", background: "transparent", color: "#2B2620" }}
-          >
-            테마: {rouletteTheme ? `${THEME_ROULETTE[rouletteTheme].emoji} ${THEME_ROULETTE[rouletteTheme].label}` : "일반"} {pickerOpen === "theme" ? "▴" : "▾"}
-          </button>
-          <button
-            disabled={disabled}
-            onClick={() => setPickerOpen(pickerOpen === "region" ? null : "region")}
-            className="flex-1 text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60 whitespace-nowrap"
-            style={region === "전체"
-              ? { borderColor: "#D9CBB0", background: "transparent", color: "#2B2620" }
-              : { borderColor: `${REGION_COLORS[region]}80`, background: `${REGION_COLORS[region]}1F`, color: REGION_COLORS[region] }}
-          >
-            지역: {region} {pickerOpen === "region" ? "▴" : "▾"}
-          </button>
-        </div>
-
+        {/* 룰렛 고르기: 평소에는 '테마'와 '지역' 두 칸만, 누르면 그 칸이 아래로 열려 목록이 룰렛판 위에 겹쳐 나온다 (2026-11-01 형 결정) */}
         {pickerOpen && !disabled && (
-          <div className="mt-2" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}>
-            {(pickerOpen === "theme"
-              ? [
-                  { key: "normal", label: "일반", color: "#2B2620", note: `${spots.length}곳`, on: !rouletteTheme, pick: () => changeTheme(null) },
-                  ...Object.entries(THEME_ROULETTE).filter(([key]) => themeAvailable(key)).map(([key, t]) => (
-                    { key, label: `${t.emoji} ${t.label}`, color: t.color, note: `${themeTotal(key)}곳`, on: rouletteTheme === key, pick: () => changeTheme(key) }
-                  )),
-                ]
-              : REGION_LIST.map((r) => {
-                  const n = rouletteCandidates(spots, r, currentLocation, rouletteTheme).length;
-                  return { key: r, label: r, color: REGION_COLORS[r], note: n === 0 ? "없음" : `${n}곳`, on: region === r, off: n === 0, pick: () => { setPickerOpen(null); changeRegion(r); } };
-                })
-            ).map((o) => (
-              <button
-                key={o.key}
-                disabled={o.off}
-                onClick={o.pick}
-                className="rounded-xl border font-bold disabled:opacity-60 whitespace-nowrap"
-                style={{
-                  padding: "6px 0",
-                  fontSize: 11,
-                  lineHeight: 1.35,
-                  overflow: "hidden",
-                  color: o.off ? "#A6987F" : o.color,
-                  borderColor: o.on ? o.color : "#D9CBB0",
-                  background: o.on ? `${o.color}1F` : "transparent",
-                }}
-              >
-                {o.label}
-                <span style={{ display: "block", fontSize: 10, fontWeight: 400, color: "#6B5F4F" }}>{o.note}</span>
-              </button>
-            ))}
-          </div>
+          <div onClick={() => setPickerOpen(null)} style={{ position: "fixed", inset: 0, zIndex: 60 }} />
         )}
+        <div className="mt-4 flex gap-2 relative" style={{ letterSpacing: "0.05em", zIndex: 61 }}>
+          <div className="flex-1 relative" style={{ minWidth: 0 }}>
+            <button
+              disabled={disabled}
+              onClick={() => setPickerOpen(pickerOpen === "theme" ? null : "theme")}
+              className="w-full text-xs px-2 py-1.5 border font-bold disabled:opacity-60 whitespace-nowrap"
+              style={{
+                borderRadius: pickerOpen === "theme" ? "14px 14px 0 0" : 9999,
+                ...(pickerOpen === "theme" ? { background: "#F6F1E7" } : {}),
+                ...(rouletteTheme
+                  ? { borderColor: `${THEME_ROULETTE[rouletteTheme].color}80`, ...(pickerOpen === "theme" ? {} : { background: `${THEME_ROULETTE[rouletteTheme].color}1F` }), color: THEME_ROULETTE[rouletteTheme].color }
+                  : { borderColor: "#D9CBB0", color: "#2B2620" }),
+              }}
+            >
+              테마: {rouletteTheme ? `${THEME_ROULETTE[rouletteTheme].emoji} ${THEME_ROULETTE[rouletteTheme].label}` : "일반"} {pickerOpen === "theme" ? "▴" : "▾"}
+            </button>
+            {pickerOpen === "theme" && !disabled && pickerMenu([
+              { key: "normal", label: "일반", color: "#2B2620", note: `${spots.length}곳`, on: !rouletteTheme, pick: () => changeTheme(null) },
+              ...Object.entries(THEME_ROULETTE).filter(([key]) => themeAvailable(key)).map(([key, t]) => (
+                { key, label: `${t.emoji} ${t.label}`, color: t.color, note: `${themeTotal(key)}곳`, on: rouletteTheme === key, pick: () => changeTheme(key) }
+              )),
+            ])}
+          </div>
+          <div className="flex-1 relative" style={{ minWidth: 0 }}>
+            <button
+              disabled={disabled}
+              onClick={() => setPickerOpen(pickerOpen === "region" ? null : "region")}
+              className="w-full text-xs px-2 py-1.5 border font-bold disabled:opacity-60 whitespace-nowrap"
+              style={{
+                borderRadius: pickerOpen === "region" ? "14px 14px 0 0" : 9999,
+                ...(pickerOpen === "region" ? { background: "#F6F1E7" } : {}),
+                ...(region === "전체"
+                  ? { borderColor: "#D9CBB0", color: "#2B2620" }
+                  : { borderColor: `${REGION_COLORS[region]}80`, ...(pickerOpen === "region" ? {} : { background: `${REGION_COLORS[region]}1F` }), color: REGION_COLORS[region] }),
+              }}
+            >
+              지역: {region} {pickerOpen === "region" ? "▴" : "▾"}
+            </button>
+            {pickerOpen === "region" && !disabled && pickerMenu(REGION_LIST.map((r) => {
+              const n = rouletteCandidates(spots, r, currentLocation, rouletteTheme).length;
+              return { key: r, label: r, color: REGION_COLORS[r], note: n === 0 ? "없음" : `${n}곳`, on: region === r, off: n === 0, pick: () => { setPickerOpen(null); changeRegion(r); } };
+            }))}
+          </div>
+        </div>
 
         {/* 룰렛 */}
         <div className="relative mx-auto mt-8" style={{ width: 280, height: 280 }}>
