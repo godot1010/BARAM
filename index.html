@@ -4785,7 +4785,7 @@ function BaramApp() {
             <DayItinerary key={`${result.id}:plan`} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} onPlanPlaces={setPlanPlaceIdsKey} onRetry={retryItinerary} petById={petById} />
 
             <div className="border-t border-[#D9CBB0] my-4" />
-            <p ref={tabsTitleRef} className="text-xs font-medium text-[#2B2620] mb-1">더 알아보기</p>
+            <p ref={tabsTitleRef} className="text-xs font-medium text-[#2B2620] mb-1" style={{ scrollMarginTop: 80 }}>더 알아보기</p>
             <ResultDetailTabs
               key={`${result.id}:${resultTheme || "all"}:tabs`}
               initialTab={resultTheme && THEME_ROULETTE[resultTheme] ? THEME_ROULETTE[resultTheme].tab : undefined}
