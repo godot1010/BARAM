@@ -4589,7 +4589,7 @@ function BaramApp() {
             {rouletteTheme ? `${THEME_ROULETTE[rouletteTheme].emoji} ${THEME_ROULETTE[rouletteTheme].label} 룰렛` : "테마 룰렛"} ▾
           </button>
           {themeMenuOpen && (
-            <div className="flex gap-2 justify-center mt-2">
+            <div className="flex gap-2 justify-center mt-2" style={{ flexWrap: "wrap" }}>
               {Object.entries(THEME_ROULETTE).map(([key, t]) => (
                 <button
                   key={key}
