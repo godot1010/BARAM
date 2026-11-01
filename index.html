@@ -2209,7 +2209,7 @@ async function fetchPetNearby({ lat, lng, spotName }) {
 // 목록에는 편의 정보가 없고, 장소를 누르면 장소 정보 창이 편의 정보(barrierFreeDetail)를 따로 받는다(호출 수 절약)
 const BF_TYPE_RANK = { "12": 0, "14": 0, "28": 1, "39": 1, "32": 2, "38": 3 };
 async function fetchBarrierFreeNearby({ lat, lng, spotName }) {
-  const arr = await tourApiProxyFetch("barrierFree", { lat: String(lat), lng: String(lng) });
+  const arr = await tourApiProxyFetch("barrierFree", { lat: String(lat), lng: String(lng), rows: "300" });
   const ranked = arr.filter((it) => !hasWrongCoords(it)).sort((a, b) =>
     areaRank(a.addr1, spotName) - areaRank(b.addr1, spotName) ||
     (BF_TYPE_RANK[a.contenttypeid] ?? 2) - (BF_TYPE_RANK[b.contenttypeid] ?? 2) ||
@@ -3696,8 +3696,8 @@ function countPlaces(n) {
   return NATIVE_COUNTS[n] ? `${NATIVE_COUNTS[n]} 곳` : `${n}곳`;
 }
 
-function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache }) {
-  const [tab, setTab] = useState("landmark");
+function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initialTab }) {
+  const [tab, setTab] = useState(initialTab || "landmark");
   const [shown, setShown] = useState(PAGE_SIZE);
   const [retry, setRetry] = useState(0); // 실패한 탭을 다시 눌렀을 때 다시 불러오기
   const cfg = TAB_CONFIG[tab];
@@ -3781,7 +3781,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache }) {
         {tab === "barrierFree" && entry && entry.status === "success" && (
           <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
             ♿ 휠체어·유모차로 다니기 편하도록 정보가 등록된 곳이에요{items.length > 0 ? ` (주변 20km, ${items.length}곳)` : ""}.
-            {" "}장소를 누르면 주차·화장실·엘리베이터·수유실 같은 편의 정보를 볼 수 있어요. 어르신·아기와 함께하는 여행에도 좋아요.
+            {" "}장소를 누르면 주차·화장실·엘리베이터·수유실 같은 편의 정보를 볼 수 있어요. 어르신·아기와 함께하는 여행에도 좋아요. 실제 이용 조건은 방문 전에 확인해 주세요.
           </p>
         )}
         {tab === "lodging" && overnight && (
@@ -3877,6 +3877,27 @@ function usePersistentState(key, initialValue) {
   return [value, setValue];
 }
 
+// 테마 룰렛 (2026-11-01 형 설계): 테마를 고르면 그 테마 장소가 있는 지역만 판에 올린다. 칸에는 지역 이름(A안).
+// counts = 지역별 장소 수(주소가 그 지역인 곳, 식당·숙소 제외, 2026-11-01 전체 점검). 장소가 많은 지역이 판에 더 잘 올라온다.
+// 결과 화면에는 식당·숙소도 함께 보인다. 무장애는 주변 300곳까지 받아 센 숫자라 서울 등 24개 지역은 실제로 더 있을 수 있다.
+const CURRENT_RESULT_THEME_KEY = "baram_current_result_theme";
+const THEME_ROULETTE = {
+  barrierFree: { label: "무장애", emoji: "♿", color: BARRIER_FREE_COLOR, tab: "barrierFree",
+    counts: { "서울 종로구": 19, "서울 중구": 21, "서울 용산구": 7, "서울 성동구": 6, "서울 광진구": 4, "서울 동대문구": 2, "서울 중랑구": 1, "서울 성북구": 6, "서울 강북구": 3, "서울 도봉구": 1, "서울 노원구": 3, "서울 은평구": 5, "서울 서대문구": 7, "서울 마포구": 9, "서울 양천구": 6, "서울 강서구": 3, "서울 구로구": 10, "서울 영등포구": 6, "서울 동작구": 3, "서울 관악구": 3, "서울 서초구": 6, "서울 강남구": 10, "서울 송파구": 4, "서울 강동구": 2, "수원시": 18, "성남시": 10, "의정부시": 2, "안양시": 2, "부천시": 13, "평택시": 5, "동두천시": 2, "안산시": 5, "고양시": 10, "구리시": 2, "남양주시": 6, "오산시": 4, "시흥시": 9, "군포시": 1, "의왕시": 1, "하남시": 4, "용인시": 15, "파주시": 11, "이천시": 2, "안성시": 5, "김포시": 5, "화성시": 4, "광주시": 4, "양주시": 2, "여주시": 2, "연천군": 4, "가평군": 6, "양평군": 8, "인천 중구": 11, "인천 미추홀구": 2, "인천 연수구": 2, "인천 남동구": 2, "인천 부평구": 6, "인천 계양구": 4, "인천 서구": 1, "강화군": 5, "제주시": 12, "서귀포시": 8, "춘천시": 11, "원주시": 5, "강릉시": 34, "동해시": 1, "태백시": 4, "속초시": 11, "삼척시": 4, "홍천군": 1, "횡성군": 1, "영월군": 3, "평창군": 2, "정선군": 3, "화천군": 3, "인제군": 2, "고성군-강원": 3, "양양군": 11, "청주시": 12, "충주시": 9, "제천시": 5, "보은군": 6, "옥천군": 3, "영동군": 4, "증평군": 3, "진천군": 1, "괴산군": 2, "음성군": 5, "단양군": 4, "천안시": 7, "공주시": 4, "보령시": 6, "아산시": 7, "서산시": 5, "논산시": 3, "당진시": 7, "금산군": 3, "부여군": 5, "서천군": 3, "청양군": 3, "홍성군": 3, "예산군": 4, "태안군": 17, "대전 동구": 2, "대전 중구": 1, "대전 유성구": 5, "대전 대덕구": 1, "세종시": 3, "포항시": 5, "경주시": 15, "안동시": 7, "구미시": 4, "영주시": 4, "영천시": 3, "상주시": 2, "문경시": 2, "경산시": 3, "의성군": 1, "청송군": 1, "영양군": 1, "영덕군": 6, "청도군": 4, "고령군": 3, "성주군": 4, "칠곡군": 1, "예천군": 4, "봉화군": 2, "울진군": 3, "울릉군": 1, "대구 중구": 7, "대구 동구": 6, "대구 서구": 3, "대구 남구": 6, "대구 북구": 3, "대구 수성구": 1, "대구 달서구": 3, "달성군": 6, "부산 중구": 5, "부산 서구": 2, "부산 동구": 1, "부산 영도구": 4, "부산 부산진구": 1, "부산 동래구": 1, "부산 남구": 3, "부산 북구": 2, "부산 해운대구": 8, "부산 사하구": 1, "부산 금정구": 3, "부산 수영구": 1, "부산 사상구": 3, "울산 중구": 1, "울산 남구": 2, "울산 동구": 5, "울산 북구": 1, "울주군": 3, "창원시": 17, "진주시": 4, "통영시": 8, "사천시": 3, "김해시": 5, "밀양시": 1, "거제시": 6, "양산시": 1, "의령군": 1, "창녕군": 3, "고성군-경남": 1, "남해군": 3, "하동군": 3, "산청군": 4, "합천군": 2, "전주시": 7, "군산시": 7, "익산시": 3, "정읍시": 6, "남원시": 7, "완주군": 7, "진안군": 2, "무주군": 2, "장수군": 1, "임실군": 6, "순창군": 2, "고창군": 3, "부안군": 2, "목포시": 5, "여수시": 12, "순천시": 3, "나주시": 5, "광양시": 1, "담양군": 1, "곡성군": 4, "구례군": 4, "고흥군": 1, "보성군": 4, "화순군": 2, "장흥군": 3, "해남군": 5, "영암군": 5, "무안군": 5, "함평군": 2, "영광군": 2, "장성군": 4, "완도군": 2, "진도군": 6, "신안군": 4, "광주 동구": 5, "광주 서구": 4, "광주 남구": 2, "광주 북구": 4, "광주 광산구": 2 } },
+  pet: { label: "반려견", emoji: "🐶", color: "#9A5B2E", tab: "pet",
+    counts: { "서울 종로구": 3, "서울 중구": 4, "서울 용산구": 2, "서울 중랑구": 1, "서울 성북구": 1, "서울 강북구": 1, "서울 마포구": 1, "서울 구로구": 1, "서울 영등포구": 2, "서울 서초구": 3, "수원시": 1, "성남시": 1, "부천시": 1, "동두천시": 1, "용인시": 4, "파주시": 2, "이천시": 1, "양주시": 1, "가평군": 2, "양평군": 1, "인천 중구": 3, "인천 남동구": 1, "강화군": 1, "제주시": 2, "서귀포시": 1, "춘천시": 3, "원주시": 1, "강릉시": 5, "태백시": 1, "속초시": 1, "영월군": 1, "정선군": 2, "철원군": 2, "화천군": 6, "고성군-강원": 1, "양양군": 2, "청주시": 1, "충주시": 4, "제천시": 1, "옥천군": 1, "음성군": 1, "단양군": 2, "보령시": 1, "아산시": 1, "논산시": 1, "계룡시": 1, "당진시": 1, "서천군": 2, "태안군": 5, "대전 동구": 1, "세종시": 1, "포항시": 3, "경주시": 3, "구미시": 1, "상주시": 1, "문경시": 2, "영덕군": 2, "청도군": 1, "고령군": 1, "울진군": 1, "대구 중구": 2, "대구 동구": 1, "부산 서구": 2, "부산 영도구": 1, "부산 사하구": 1, "부산 수영구": 1, "울산 중구": 3, "울산 남구": 1, "울산 동구": 2, "울산 북구": 1, "울주군": 5, "창원시": 2, "통영시": 1, "밀양시": 2, "거제시": 2, "남해군": 1, "하동군": 1, "산청군": 1, "합천군": 1, "전주시": 1, "군산시": 2, "익산시": 2, "임실군": 1, "순창군": 1, "고창군": 1, "여수시": 6, "순천시": 1, "광양시": 1, "담양군": 1, "구례군": 1, "장흥군": 2 } },
+};
+function themePlaceTotal(key) {
+  return Object.values(THEME_ROULETTE[key].counts).reduce((sum, n) => sum + n, 0);
+}
+// 장소 수에 비례해 앞쪽에 오도록 섞는다
+function weightedShuffle(list, weightOf) {
+  return list
+    .map((item) => ({ item, rank: Math.pow(Math.random(), 1 / weightOf(item)) }))
+    .sort((a, b) => b.rank - a.rank)
+    .map((x) => x.item);
+}
+
 function BaramApp() {
   const [spots, setSpots] = useState(() => buildSpots());
   const [region, setRegion] = useState("전체");
@@ -3885,6 +3906,10 @@ function BaramApp() {
   const [result, setResult] = useState(null);
   // 지금 여행지를 룰렛으로 정했는지("roulette"), '가고 싶은 곳 찾기'로 직접 골랐는지("picked")
   const [resultSource, setResultSource] = useState("roulette");
+  const [rouletteTheme, setRouletteTheme] = useState(null); // 고른 테마 룰렛 (없으면 일반 룰렛)
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const [resultTheme, setResultTheme] = useState(null); // 지금 여행지를 어느 테마 룰렛으로 정했는지
+  const tabsTitleRef = useRef(null);
   const [finderOpen, setFinderOpen] = useState(false);
   const [detailPlace, setDetailPlace] = useState(null); // 정보 창에 보여줄 장소
   const resultCardRef = useRef(null);
@@ -3942,13 +3967,16 @@ function BaramApp() {
   const accent = result ? (result.mood === "emotional" ? "#1B4B91" : "#B3261E") : "#2B2620";
 
   // 감성 여행 + 활기찬 여행을 하나로 합쳐, 두 테마가 최대한 번갈아 나오도록 ROULETTE_SIZE곳을 뽑는다
-  function pickRouletteSpots(currentSpots, currentRegion, currentLoc) {
+  function pickRouletteSpots(currentSpots, currentRegion, currentLoc, theme = rouletteTheme) {
+    const themeCounts = theme ? THEME_ROULETTE[theme].counts : null;
     const candidates = currentSpots.filter((s) => {
       if (s.isVisited) return false;
       if (s.name === currentLoc.name) return false;
       if (currentRegion !== "전체" && s.region !== currentRegion) return false;
+      if (themeCounts && !themeCounts[s.name]) return false;
       return true;
     });
+    const mix = (list) => (themeCounts ? weightedShuffle(list, (s) => themeCounts[s.name]) : shuffle(list));
     // '전체' 판에서는 대도시(서울·부산·인천·대구·대전·광주·울산)의 구가 한 판에 도시마다 1칸만 나오게 한다.
     // (229곳 중 약 70곳이 대도시 구라 무작위로 뽑으면 판이 서울·부산 구로 몰렸음, 2026-10-25 형 요청)
     // 도시 이름은 "서울 서대문구"처럼 지역 이름 앞부분에 있다. 시·군은 이름이 한 단어라 제한 없음
@@ -3966,8 +3994,8 @@ function BaramApp() {
     const usedMetros = new Set();
     // 감성·활기 목록을 각각 섞은 뒤 도시별 1칸을 남긴다. 두 목록이 같은 도시를 나눠 갖지 않도록 하나의 Set을 같이 쓰되,
     // 한쪽이 대도시를 독차지하지 않게 섞인 순서대로 번갈아 고른다
-    const emoAll = shuffle(candidates.filter((s) => s.mood === "emotional"));
-    const eneAll = shuffle(candidates.filter((s) => s.mood === "energetic"));
+    const emoAll = mix(candidates.filter((s) => s.mood === "emotional"));
+    const eneAll = mix(candidates.filter((s) => s.mood === "energetic"));
     const emotional = [], energetic = [];
     for (let k = 0; k < Math.max(emoAll.length, eneAll.length); k++) {
       if (k < emoAll.length) emotional.push(...limitMetro([emoAll[k]]));
@@ -4040,6 +4068,8 @@ function BaramApp() {
           if (savedSpot && (!savedSpot.isVisited || savedSource === PICKED_STAMP)) {
             setResult(savedSpot);
             setResultSource(savedSource);
+            const savedTheme = window.localStorage.getItem(CURRENT_RESULT_THEME_KEY);
+            if (savedTheme && THEME_ROULETTE[savedTheme]) setResultTheme(savedTheme);
           }
         }
       } catch {
@@ -4055,6 +4085,13 @@ function BaramApp() {
     if (phase !== "idle") return;
     setRegion(next);
     pickRouletteSpots(spots, next, currentLocation);
+  }
+
+  function changeTheme(next) {
+    setThemeMenuOpen(false);
+    if (phase !== "idle") return;
+    setRouletteTheme(next);
+    pickRouletteSpots(spots, region, currentLocation, next);
   }
 
   function selectLocation(loc) {
@@ -4214,9 +4251,11 @@ function BaramApp() {
   function clearResult() {
     setResult(null);
     setResultSource("roulette");
+    setResultTheme(null);
     try {
       window.localStorage.removeItem(CURRENT_RESULT_KEY);
       window.localStorage.removeItem(CURRENT_RESULT_SOURCE_KEY);
+      window.localStorage.removeItem(CURRENT_RESULT_THEME_KEY);
     } catch {}
   }
 
@@ -4226,9 +4265,11 @@ function BaramApp() {
     const show = () => {
       setResult(spot);
       setResultSource(PICKED_STAMP);
+      setResultTheme(null);
       try {
         window.localStorage.setItem(CURRENT_RESULT_KEY, spot.id);
         window.localStorage.setItem(CURRENT_RESULT_SOURCE_KEY, PICKED_STAMP);
+        window.localStorage.removeItem(CURRENT_RESULT_THEME_KEY);
       } catch {}
       // 결과 카드가 그려진 다음 그쪽으로 내려간다
       setTimeout(() => {
@@ -4316,9 +4357,12 @@ function BaramApp() {
       try { if (navigator.vibrate) navigator.vibrate([60, 80, 60]); } catch {}
       setResult(chosen);
       setResultSource("roulette");
+      setResultTheme(rouletteTheme);
       try {
         window.localStorage.setItem(CURRENT_RESULT_KEY, chosen.id);
         window.localStorage.setItem(CURRENT_RESULT_SOURCE_KEY, "roulette");
+        if (rouletteTheme) window.localStorage.setItem(CURRENT_RESULT_THEME_KEY, rouletteTheme);
+        else window.localStorage.removeItem(CURRENT_RESULT_THEME_KEY);
       } catch {}
     }, 3050);
   }
@@ -4532,6 +4576,43 @@ function BaramApp() {
           </p>
         </div>
 
+        {/* 테마 룰렛: 고르면 아래 권역 버튼과 룰렛판이 그 테마 지역으로 바뀐다 */}
+        <div className="mt-4">
+          <button
+            disabled={disabled}
+            onClick={() => setThemeMenuOpen((v) => !v)}
+            className="w-full text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60"
+            style={rouletteTheme
+              ? { borderColor: THEME_ROULETTE[rouletteTheme].color, background: THEME_ROULETTE[rouletteTheme].color, color: "#F6F1E7" }
+              : { borderColor: "#D9CBB0", background: "transparent", color: "#2B2620" }}
+          >
+            {rouletteTheme ? `${THEME_ROULETTE[rouletteTheme].emoji} ${THEME_ROULETTE[rouletteTheme].label} 룰렛` : "테마 룰렛"} ▾
+          </button>
+          {themeMenuOpen && (
+            <div className="flex gap-2 justify-center mt-2">
+              {Object.entries(THEME_ROULETTE).map(([key, t]) => (
+                <button
+                  key={key}
+                  disabled={disabled}
+                  onClick={() => changeTheme(key)}
+                  className="flex-1 text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60 whitespace-nowrap"
+                  style={{ borderColor: t.color, background: rouletteTheme === key ? t.color : `${t.color}1F`, color: rouletteTheme === key ? "#F6F1E7" : t.color }}
+                >
+                  {t.emoji} {t.label} {themePlaceTotal(key)}곳
+                </button>
+              ))}
+              <button
+                disabled={disabled}
+                onClick={() => changeTheme(null)}
+                className="flex-1 text-xs px-2 py-1.5 rounded-full border font-bold disabled:opacity-60 whitespace-nowrap"
+                style={{ borderColor: "#D9CBB0", background: rouletteTheme ? "transparent" : "#2B2620", color: rouletteTheme ? "#2B2620" : "#F6F1E7" }}
+              >
+                일반 룰렛
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* 지역 필터 (1줄: 전체·서울·경기·인천·제주 / 2줄: 강원·충청·영남·호남) - 지역마다 고유 색상 */}
         <div className="mt-4 space-y-2">
           <div className="flex gap-2 justify-center">
@@ -4612,7 +4693,7 @@ function BaramApp() {
           </button>
         </div>
         <p className="text-center text-[11px] text-[#A6987F] mt-2">
-          내 위치({currentLocation.name}) 제외 · 후보 {rouletteSpots.length}곳
+          내 위치({currentLocation.name}) 제외 · 후보 {rouletteSpots.length}곳{rouletteTheme ? ` · ${THEME_ROULETTE[rouletteTheme].emoji} ${THEME_ROULETTE[rouletteTheme].label} 장소가 있는 지역` : ""}
         </p>
 
         {/* 가고 싶은 곳 찾기: 목적지가 이미 정해진 사람을 위해 지역을 직접 골라 정보를 본다 (룰렛이 주인공이라 작게) */}
@@ -4691,12 +4772,23 @@ function BaramApp() {
               </a>
             </div>
 
+            {resultTheme && THEME_ROULETTE[resultTheme] && (
+              <button
+                onClick={() => tabsTitleRef.current && tabsTitleRef.current.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mb-3"
+                style={{ borderColor: THEME_ROULETTE[resultTheme].color, color: THEME_ROULETTE[resultTheme].color }}
+              >
+                {THEME_ROULETTE[resultTheme].emoji} {THEME_ROULETTE[resultTheme].label} 룰렛으로 정한 여행지 · 장소 보기 ↓
+              </button>
+            )}
+
             <DayItinerary key={`${result.id}:plan`} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} onPlanPlaces={setPlanPlaceIdsKey} onRetry={retryItinerary} petById={petById} />
 
             <div className="border-t border-[#D9CBB0] my-4" />
-            <p className="text-xs font-medium text-[#2B2620] mb-1">더 알아보기</p>
+            <p ref={tabsTitleRef} className="text-xs font-medium text-[#2B2620] mb-1">더 알아보기</p>
             <ResultDetailTabs
-              key={`${result.id}:tabs`}
+              key={`${result.id}:${resultTheme || "all"}:tabs`}
+              initialTab={resultTheme && THEME_ROULETTE[resultTheme] ? THEME_ROULETTE[resultTheme].tab : undefined}
               spot={result}
               from={currentLocation}
               excludeIds={planPlaceIds}
