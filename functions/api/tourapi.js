@@ -16,12 +16,16 @@
 // - barrierFree       : 위치 주변의 무장애 여행 장소 목록 (무장애 여행 정보 KorWithService2 locationBasedList2)
 // - barrierFreeDetail : 장소 하나의 무장애 편의 정보 (detailWithTour2, 휠체어·화장실·유모차 등 - 비어 있지 않은 칸만)
 // - camping           : 위치 주변 캠핑장 목록 (고캠핑 GoCamping locationBasedList)
+// - mountains         : 100대 명산 전체 (위치·높이 = 한국등산트레킹지원센터 + 소개·선정 이유·교통 = 산림청 명산등산로, 산 코드로 합침)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
 const WITH_API_BASE = "https://apis.data.go.kr/B551011/KorWithService2";
 // 고캠핑(전국 야영장)도 같은 키로 쓰는 다른 서비스 (2026-11-04 형이 활용신청·승인)
 const CAMPING_API_BASE = "https://apis.data.go.kr/B551011/GoCamping";
+// 100대 명산 (2026-11-04 형이 둘 다 활용신청·승인). 산림청 쪽은 XML만 준다
+const MOUNTAIN_LIST_URL = "https://apis.data.go.kr/B553662/top100FamtListBasiInfoService/getTop100FamtListBasiInfoList";
+const MOUNTAIN_INFO_URL = "https://apis.data.go.kr/1400000/cultureInfoService/gdTrailInfoOpenAPI";
 
 function normalizeServiceKey(key) {
   try {
@@ -54,7 +58,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -313,6 +317,56 @@ async function placeDetail(base, contentId, contentTypeId) {
 
 // Cloudflare Pages Functions는 (context) => Response 형태의 onRequest 핸들러를 쓴다.
 // context.env 로 환경변수에 접근한다 (Node의 process.env 대신).
+// XML의 <item> 안 칸들을 { 칸이름: 값 } 으로 (산림청 명산등산로는 JSON을 주지 않는다)
+function xmlItems(text) {
+  const decode = (s) => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&").trim();
+  return [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => {
+    const it = {};
+    for (const f of m[1].matchAll(/<(\w+)>([\s\S]*?)<\/>/g)) it[f[1]] = decode(f[2]);
+    return it;
+  });
+}
+
+async function fetchText(url) {
+  const res = await fetch(url);
+  const text = await res.text();
+  if (!res.ok) throw new TourApiError({ error: "UPSTREAM_ERROR", status: res.status, upstreamBody: text.slice(0, 300), message: `명산 정보 응답 오류 (HTTP ${res.status})` }, 502);
+  return text;
+}
+
+async function mountains(serviceKey) {
+  const listText = await fetchText(`${MOUNTAIN_LIST_URL}?${new URLSearchParams({ serviceKey, pageNo: "1", numOfRows: "200", type: "json" })}`);
+  let list;
+  try {
+    const raw = JSON.parse(listText)?.response?.body?.items?.item;
+    list = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  } catch {
+    // JSON이 아니면 XML로 읽어 본다
+    list = xmlItems(listText);
+  }
+  if (list.length === 0) throw new TourApiError({ error: "UPSTREAM_EMPTY", upstreamBody: listText.slice(0, 300), message: "100대 명산 목록을 받지 못했어요." }, 502);
+  // 소개 자료는 없어도 위치·높이만으로 보여줄 수 있게, 실패해도 목록은 돌려준다
+  let infos = [];
+  try {
+    infos = xmlItems(await fetchText(`${MOUNTAIN_INFO_URL}?${new URLSearchParams({ serviceKey, pageNo: "1", numOfRows: "200" })}`));
+  } catch {}
+  const infoByCode = new Map(infos.map((it) => [String(it.mntncd), it]));
+  const infoByName = new Map(infos.map((it) => [it.mntnm, it]));
+  return {
+    infoCount: infos.length,
+    items: list.map((m) => {
+      const info = infoByCode.get(String(m.mtnCd)) || infoByName.get(m.frtrlNm) || {};
+      return {
+        id: m.frtrlId || m.mtnCd, code: m.mtnCd, name: m.frtrlNm, sido: m.ctpvNm, addr: m.addrNm,
+        lat: m.lat, lng: m.lot, height: m.aslAltide,
+        sub: info.subnm || "", area: info.areanm || "", reason: info.aeatreason || "", overview: info.overview || "",
+        details: info.details || "", transport: info.transport || "", tourism: info.tourisminf || "", course: info.etccourse || "",
+      };
+    }),
+  };
+}
+
 export async function onRequest(context) {
   // 지난 저장본(새로 받을 때가 됐지만 7일 안의 것). 공공데이터 서버가 실패하면 이걸 돌려준다
   let stale = null;
@@ -405,8 +459,10 @@ export async function onRequest(context) {
           trailer: it.trlerAcmpnyAt, caravan: it.caravAcmpnyAt, image: it.firstImageUrl,
         })),
       };
+    } else if (action === "mountains") {
+      payload = await mountains(serviceKey);
     } else {
-      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail, camping 중 하나여야 해요." }, 400);
+      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail, camping, mountains 중 하나여야 해요." }, 400);
     }
 
     // 일부만 받은 결과는 저장하지 않는다. 지난 저장본이 있으면 그쪽이 더 완전하다
