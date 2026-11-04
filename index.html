@@ -2284,7 +2284,8 @@ async function fetchCampingNearby({ lat, lng, spotName }) {
 }
 // 카드 한 줄 요약: "오토캠핑·카라반 · 🐶 소형견 가능"
 function campingSummary(c) {
-  const pet = /가능/.test(c.pet) ? (/소형/.test(c.pet) ? "🐶 소형견 가능" : "🐶 반려견 가능") : null;
+  // "불가능"에도 "가능"이 들어 있으니 앞에서부터 비교한다 (값: 가능 / 가능(소형견) / 불가능 / 빈칸)
+  const pet = c.pet.trim().startsWith("가능") ? (/소형/.test(c.pet) ? "🐶 소형견 가능" : "🐶 반려견 가능") : null;
   return [c.kinds.join("·") || null, c.env ? c.env.replace(/,/g, "·") : null, pet].filter(Boolean).join(" · ");
 }
 // 장소 정보 창의 캠핑장 정보 (받아 온 칸 중 비어 있지 않은 것만)
