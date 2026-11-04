@@ -4707,7 +4707,7 @@ function BaramApp() {
           setSpots(merged);
           if (result && resultSource !== PICKED_STAMP && merged.find((s) => s.id === result.id && s.isVisited)) clearResult();
           pickRouletteSpots(merged, region, currentLocation);
-          setBackupNotice(`백업을 불러왔어요. STAMP ${stampCount}곳`);
+          setBackupNotice(`백업을 불러왔어요. STAMP ${stampCount}곳${parsed.mountains ? `, 명산 ${Object.keys(parsed.mountains).length}곳` : ""}`);
         },
       });
     });
