@@ -4833,7 +4833,7 @@ function BaramApp() {
             {pickerOpen === "theme" && !disabled && pickerMenu([
               { key: "normal", label: "일반", color: "#2B2620", note: `${spots.length}곳`, on: !rouletteTheme, pick: () => changeTheme(null) },
               ...Object.entries(THEME_ROULETTE).filter(([key]) => themeAvailable(key)).map(([key, t]) => (
-                { key, label: `${t.emoji} ${t.label}`, color: t.color, note: `${themeTotal(key)}곳`, on: rouletteTheme === key, pick: () => changeTheme(key) }
+                { key, label: `${t.emoji} ${t.label}`, color: t.color, note: `${themeTotal(key).toLocaleString()}곳`, on: rouletteTheme === key, pick: () => changeTheme(key) }
               )),
             ])}
           </div>
