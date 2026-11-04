@@ -3755,6 +3755,14 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
   useEffect(() => {
     if (cfg.theme) setLastTheme(tab);
   }, [tab, cfg.theme]);
+  // 보고 있는 칩이 0곳인데 다른 칩에 장소가 있으면 그쪽으로 옮긴다 (예: 무장애 0곳, 반려견 3곳)
+  const themeCountsKey = THEME_TAB_KEYS.map((key) => themeCount(key)).join(",");
+  useEffect(() => {
+    if (!cfg.theme || themeCount(tab) !== 0) return;
+    const other = THEME_TAB_KEYS.find((key) => themeCount(key) > 0);
+    if (other) setTab(other);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.theme, tab, themeCountsKey]);
 
   // 명소·맛집·카페 탭에서는 이미 오늘 일정에 넣은 곳은 빼고 보여준다 (일정과 같은 곳이 반복되지 않게)
   const picked = entry && entry.status === "success" ? (cfg.pick ? cfg.pick(entry.data) : entry.data) : [];
