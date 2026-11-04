@@ -88,6 +88,7 @@ const Coffee = (p) => (<Icon {...p}><path d="M17 8h1a3 3 0 0 1 0 6h-1" /><path d
 const Bed = (p) => (<Icon {...p}><path d="M2 4v16" /><path d="M2 8h18a2 2 0 0 1 2 2v10" /><path d="M2 17h20" /><path d="M6 8v9" /></Icon>);
 const Museum = (p) => (<Icon {...p}><path d="M3 22h18" /><path d="M6 18v-7" /><path d="M10 18v-7" /><path d="M14 18v-7" /><path d="M18 18v-7" /><path d="M12 2 20 7H4Z" /></Icon>);
 const Wheelchair = (p) => (<Icon {...p}><circle cx="16" cy="4" r="1" /><path d="m18 19 1-7-6 1" /><path d="m5 8 3-3 5.5 3-2.36 3.5" /><path d="M4.24 14.5a5 5 0 0 0 6.88 6" /><path d="M13.76 17.5a5 5 0 0 0-6.88-6" /></Icon>);
+const Sparkles = (p) => (<Icon {...p}><path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z" /><path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" /></Icon>);
 const Paw = (p) => (<Icon {...p}><circle cx="11" cy="4" r="2" /><circle cx="18" cy="8" r="2" /><circle cx="20" cy="16" r="2" /><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.05Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" /></Icon>);
 
 // STAMP TOUR 전용 도장 아이콘 - 손잡이(위) + 몸통 + 찍힌 자국(아래 넓은 타원)을 함께 그린
@@ -3664,17 +3665,19 @@ const TAB_CONFIG = {
     label: "문화", icon: Museum, color: "#2B4C7E", emoji: "🖼️", source: "ct14",
     pick: (list) => list,
   },
-  // 반려동물 동반 가능 장소(명소·음식점·카페·숙소·레포츠·쇼핑)를 동반 조건과 함께
-  pet: {
-    label: "반려견", icon: Paw, color: "#9A5B2E", emoji: "🐶", source: "pet",
+  // theme: true → 탭 줄에는 '테마' 하나만 두고, 그 안에서 칩으로 고른다 (2026-11-04 형 결정 A안: 테마가 늘어도 탭은 7개)
+  // ♿ 무장애 여행 (2026-10-27)
+  barrierFree: {
+    label: "무장애", icon: Wheelchair, color: BARRIER_FREE_COLOR, emoji: "♿", source: "barrierFree", theme: true,
     pick: (list) => list,
   },
-  // ♿ 무장애 여행 (2026-10-27, 처음엔 '테마' 탭이었다가 형 요청으로 '무장애' 탭으로)
-  barrierFree: {
-    label: "무장애", icon: Wheelchair, color: BARRIER_FREE_COLOR, emoji: "♿", source: "barrierFree",
+  // 반려동물 동반 가능 장소(명소·음식점·카페·숙소·레포츠·쇼핑)를 동반 조건과 함께
+  pet: {
+    label: "반려견", icon: Paw, color: "#9A5B2E", emoji: "🐶", source: "pet", theme: true,
     pick: (list) => list,
   },
 };
+const THEME_TAB_KEYS = Object.keys(TAB_CONFIG).filter((key) => TAB_CONFIG[key].theme);
 
 const SOURCE_FETCHERS = {
   ct12: (spot) => fetchNearbyTourSpots({ lat: spot.lat, lng: spot.lng, spotName: spot.name, contentTypeId: 12, num: 30, preferImages: true }),
@@ -3712,20 +3715,46 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
   // 불러오는 도중 다른 탭으로 바꿔도 결과는 그 source 칸(cacheKey)에 그대로 저장한다.
   // (도중에 취소하면 '불러오는 중'으로 영영 멈춘다 - 맛집·카페처럼 같은 source를 쓰는 탭이 있어서)
   // 실패했던 source는 탭을 다시 누르면 다시 시도한다.
-  useEffect(() => {
-    setShown(PAGE_SIZE);
-    if (cache[cacheKey] && cache[cacheKey].status !== "error") return;
-    setCache((prev) => ({ ...prev, [cacheKey]: { status: "loading" } }));
-    SOURCE_FETCHERS[cfg.source](spot)
+  function loadSource(source) {
+    const key = `${spot.id}:${source}`;
+    setCache((prev) => ({ ...prev, [key]: { status: "loading" } }));
+    SOURCE_FETCHERS[source](spot)
       .then((data) => {
-        setCache((prev) => ({ ...prev, [cacheKey]: { status: "success", data } }));
+        setCache((prev) => ({ ...prev, [key]: { status: "success", data } }));
       })
       .catch((err) => {
         const message = `${err.message}${err.code === "HTTP_ERROR" ? " 탭을 다시 누르면 다시 불러와요." : ""}`;
-        setCache((prev) => ({ ...prev, [cacheKey]: { status: "error", message } }));
+        setCache((prev) => ({ ...prev, [key]: { status: "error", message } }));
       });
+  }
+
+  useEffect(() => {
+    setShown(PAGE_SIZE);
+    if (cache[cacheKey] && cache[cacheKey].status !== "error") return;
+    loadSource(cfg.source);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, spot.id, retry]);
+
+  // '테마' 탭을 열면 다른 칩의 자료도 받아 장소 수를 보여 준다 (실패한 칩은 눌렀을 때 다시 시도)
+  useEffect(() => {
+    if (!cfg.theme) return;
+    THEME_TAB_KEYS.forEach((key) => {
+      if (!cache[`${spot.id}:${TAB_CONFIG[key].source}`]) loadSource(TAB_CONFIG[key].source);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.theme, spot.id]);
+
+  // 칩에 붙일 장소 수 (아직 못 받았으면 null)
+  function themeCount(key) {
+    const e = cache[`${spot.id}:${TAB_CONFIG[key].source}`];
+    return e && e.status === "success" ? TAB_CONFIG[key].pick(e.data).length : null;
+  }
+  // 자료가 없는 칩은 숨긴다. 지금 보고 있는 칩과, 숫자를 아직 모르는 칩은 그대로 둔다
+  const themeChips = THEME_TAB_KEYS.filter((key) => key === tab || themeCount(key) !== 0);
+  const [lastTheme, setLastTheme] = useState(TAB_CONFIG[initialTab] && TAB_CONFIG[initialTab].theme ? initialTab : THEME_TAB_KEYS[0]);
+  useEffect(() => {
+    if (cfg.theme) setLastTheme(tab);
+  }, [tab, cfg.theme]);
 
   // 명소·맛집·카페 탭에서는 이미 오늘 일정에 넣은 곳은 빼고 보여준다 (일정과 같은 곳이 반복되지 않게)
   const picked = entry && entry.status === "success" ? (cfg.pick ? cfg.pick(entry.data) : entry.data) : [];
@@ -3736,7 +3765,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
   return (
     <div className="mt-4">
       <div className="flex gap-1 bg-white/40 rounded-lg p-1 overflow-x-auto">
-        {Object.entries(TAB_CONFIG).map(([key, t]) => {
+        {Object.entries(TAB_CONFIG).filter(([, t]) => !t.theme).map(([key, t]) => {
           const Icon = t.icon;
           const active = tab === key;
           // minWidth: 0 → 탭 7개가 한 줄 너비를 똑같이 나눠 쓴다 (최소 너비가 있으면 폰에서 마지막 탭이 잘림)
@@ -3758,7 +3787,41 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
             </button>
           );
         })}
+        <button
+          onClick={() => {
+            if (cfg.theme && entry && entry.status === "error") setRetry((n) => n + 1);
+            if (!cfg.theme) setTab(lastTheme);
+          }}
+          className="relative flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-md text-[10px] font-medium min-w-[44px]"
+          style={{ background: cfg.theme ? cfg.color : "transparent", color: cfg.theme ? "#F6F1E7" : "#6B5F4F", minWidth: 0 }}
+        >
+          <Sparkles size={13} />
+          테마
+        </button>
       </div>
+
+      {cfg.theme && (
+        <div className="flex gap-1.5 mt-2" style={{ flexWrap: "wrap", letterSpacing: "0.03em" }}>
+          {themeChips.map((key) => {
+            const t = TAB_CONFIG[key];
+            const n = themeCount(key);
+            const on = key === tab;
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  if (on && entry && entry.status === "error") setRetry((r) => r + 1);
+                  setTab(key);
+                }}
+                className="text-xs font-bold rounded-full border whitespace-nowrap"
+                style={{ padding: "5px 11px", color: t.color, borderColor: on ? t.color : "#D9CBB0", background: on ? `${t.color}1F` : "#FFFDF8" }}
+              >
+                {t.emoji} {t.label}{n !== null ? ` ${n}` : ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mt-3 space-y-2">
         {tab === "restaurant" && foods && (
