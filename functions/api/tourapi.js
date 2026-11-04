@@ -396,7 +396,15 @@ export async function onRequest(context) {
       const lng = url.searchParams.get("lng");
       if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
       const { items } = await callTourApi("locationBasedList", { ...base, mapX: lng, mapY: lat, radius: "20000", numOfRows: "100", pageNo: "1" }, CAMPING_API_BASE);
-      payload = { items };
+      // 칸이 80개가 넘어 앱에 필요한 것만 남긴다. 운영 중인 곳만 (휴장·폐업 빼기)
+      payload = {
+        items: items.filter((it) => it.manageSttus === "운영").map((it) => ({
+          id: it.contentId, name: it.facltNm, line: it.lineIntro, intro: it.intro, kinds: it.induty, env: it.lctCl,
+          facilities: it.sbrsCl, pet: it.animalCmgCl, addr: it.addr1, lat: it.mapY, lng: it.mapX, tel: it.tel,
+          homepage: it.homepage, reserveUrl: it.resveUrl, reserve: it.resveCl, season: it.operPdCl, days: it.operDeCl,
+          trailer: it.trlerAcmpnyAt, caravan: it.caravAcmpnyAt, image: it.firstImageUrl,
+        })),
+      };
     } else {
       return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail, camping 중 하나여야 해요." }, 400);
     }
