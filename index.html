@@ -3926,9 +3926,9 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
                   setTab(key);
                 }}
                 className="text-xs font-bold rounded-full border whitespace-nowrap"
-                style={{ padding: "5px 11px", color: t.color, borderColor: on ? t.color : "#D9CBB0", background: on ? `${t.color}1F` : "#FFFDF8" }}
+                style={{ padding: "5px 9px", color: t.color, borderColor: on ? t.color : "#D9CBB0", background: on ? `${t.color}1F` : "#FFFDF8" }}
               >
-                {t.emoji} {t.label}{n !== null ? ` ${n}` : ""}
+                {t.emoji} {t.label}{n !== null ? ` ${n}${key === "barrierFree" && n >= 300 ? "+" : ""}` : ""}
               </button>
             );
           })}
