@@ -15,10 +15,13 @@
 // - detail    : 장소 하나의 자세한 정보 (소개글·전화·홈페이지 + 이용 시간 등 + 사진 여러 장)
 // - barrierFree       : 위치 주변의 무장애 여행 장소 목록 (무장애 여행 정보 KorWithService2 locationBasedList2)
 // - barrierFreeDetail : 장소 하나의 무장애 편의 정보 (detailWithTour2, 휠체어·화장실·유모차 등 - 비어 있지 않은 칸만)
+// - camping           : 위치 주변 캠핑장 목록 (고캠핑 GoCamping locationBasedList)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
 const WITH_API_BASE = "https://apis.data.go.kr/B551011/KorWithService2";
+// 고캠핑(전국 야영장)도 같은 키로 쓰는 다른 서비스 (2026-11-04 형이 활용신청·승인)
+const CAMPING_API_BASE = "https://apis.data.go.kr/B551011/GoCamping";
 
 function normalizeServiceKey(key) {
   try {
@@ -51,7 +54,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -388,8 +391,14 @@ export async function onRequest(context) {
         if (typeof v === "string" && v.trim() && v.trim() !== "0") fields[k] = v.trim();
       });
       payload = { items: [{ contentid: contentId, ...fields }] };
+    } else if (action === "camping") {
+      const lat = url.searchParams.get("lat");
+      const lng = url.searchParams.get("lng");
+      if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
+      const { items } = await callTourApi("locationBasedList", { ...base, mapX: lng, mapY: lat, radius: "20000", numOfRows: "100", pageNo: "1" }, CAMPING_API_BASE);
+      payload = { items };
     } else {
-      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail 중 하나여야 해요." }, 400);
+      return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail, camping 중 하나여야 해요." }, 400);
     }
 
     // 일부만 받은 결과는 저장하지 않는다. 지난 저장본이 있으면 그쪽이 더 완전하다
