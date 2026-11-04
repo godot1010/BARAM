@@ -461,6 +461,12 @@ export async function onRequest(context) {
       };
     } else if (action === "mountains") {
       payload = await mountains(serviceKey);
+    } else if (action === "mountainProbe") {
+      // 산림청 산정보(3,368곳) 자료 모양 확인용 (임시)
+      const q = { ServiceKey: serviceKey, pageNo: url.searchParams.get("pageNo") || "1", numOfRows: url.searchParams.get("numOfRows") || "5" };
+      if (url.searchParams.get("searchWrd")) q.searchWrd = url.searchParams.get("searchWrd");
+      const text = await fetchText(`https://apis.data.go.kr/1400000/service/cultureInfoService2/mntInfoOpenAPI2?${new URLSearchParams(q)}`);
+      payload = { total: (text.match(/<totalCount>(\d+)<\/totalCount>/) || [])[1], items: xmlItems(text), head: text.slice(0, 300) };
     } else {
       return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail, camping, mountains 중 하나여야 해요." }, 400);
     }
