@@ -361,7 +361,7 @@ async function mountains(serviceKey) {
         id: m.frtrlId || m.mtnCd, code: m.mtnCd, name: m.frtrlNm, sido: m.ctpvNm, addr: m.addrNm,
         lat: m.lat, lng: m.lot, height: m.aslAltide,
         sub: info.subnm || "", area: info.areanm || "", reason: info.aeatreason || "", overview: info.overview || "",
-        details: info.details || "", transport: info.transport || "", tourism: info.tourisminf || "", course: info.etccourse || "",
+        details: info.details || "", transport: info.transport || "", course: info.etccourse || "",
       };
     }),
   };

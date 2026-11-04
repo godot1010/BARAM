@@ -89,6 +89,7 @@ const Bed = (p) => (<Icon {...p}><path d="M2 4v16" /><path d="M2 8h18a2 2 0 0 1 
 const Museum = (p) => (<Icon {...p}><path d="M3 22h18" /><path d="M6 18v-7" /><path d="M10 18v-7" /><path d="M14 18v-7" /><path d="M18 18v-7" /><path d="M12 2 20 7H4Z" /></Icon>);
 const Wheelchair = (p) => (<Icon {...p}><circle cx="16" cy="4" r="1" /><path d="m18 19 1-7-6 1" /><path d="m5 8 3-3 5.5 3-2.36 3.5" /><path d="M4.24 14.5a5 5 0 0 0 6.88 6" /><path d="M13.76 17.5a5 5 0 0 0-6.88-6" /></Icon>);
 const Sparkles = (p) => (<Icon {...p}><path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z" /><path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" /></Icon>);
+const MountainIcon = (p) => (<Icon {...p}><path d="m8 3 4 8 5-5 5 15H2L8 3z" /></Icon>);
 const Tent = (p) => (<Icon {...p}><path d="M3.5 21 14 3" /><path d="M20.5 21 10 3" /><path d="M15.5 21 12 15l-3.5 6" /><path d="M2 21h20" /></Icon>);
 const Paw = (p) => (<Icon {...p}><circle cx="11" cy="4" r="2" /><circle cx="18" cy="8" r="2" /><circle cx="20" cy="16" r="2" /><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.05Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" /></Icon>);
 
@@ -2288,6 +2289,94 @@ function campingSummary(c) {
   const pet = c.pet.trim().startsWith("가능") ? (/소형/.test(c.pet) ? "🐶 소형견 가능" : "🐶 반려견 가능") : null;
   return [c.kinds.join("·") || null, c.env ? c.env.replace(/,/g, "·") : null, pet].filter(Boolean).join(" · ");
 }
+// ⛰️ 100대 명산 (2026-11-04). 전국 100곳을 한 번 받아 두고 여행지마다 골라 쓴다
+const MOUNTAIN_COLOR = "#5B4A8A";
+const MOUNTAIN_NEAR_KM = 25; // 주소에 여행지가 없어도 이 거리 안이면 '이웃' 명산으로 보여준다
+const METRO_SHORT = [["서울", "서울"], ["부산", "부산"], ["대구", "대구"], ["인천", "인천"], ["광주광역", "광주"], ["대전", "대전"], ["울산", "울산"]];
+// 명산 주소("강원도 양양군 서면ㆍ강현면, 속초시 설악동, 인제군 북면")에 들어 있는 우리 지역 이름들
+function mountainRegions(m) {
+  let sido = "";
+  const out = [];
+  (m.addr || "").split(/[\s,ㆍ·]+/).forEach((tok) => {
+    if (!tok) return;
+    if (/(특별시|광역시|특별자치시)$/.test(tok)) {
+      sido = tok;
+      if (tok.startsWith("세종")) out.push("세종시");
+      return;
+    }
+    if (/(특별자치도|도)$/.test(tok) && !/(시|군|구)$/.test(tok)) { sido = tok; return; }
+    if (!/(시|군|구)$/.test(tok)) return;
+    const metro = (METRO_SHORT.find(([p]) => sido.startsWith(p)) || [])[1];
+    let name = null;
+    if (metro && LOCATIONS.some((l) => l.name === `${metro} ${tok}`)) name = `${metro} ${tok}`;
+    else if (tok === "고성군") name = sido.startsWith("강원") ? "고성군-강원" : "고성군-경남";
+    else if (LOCATIONS.some((l) => l.name === tok)) name = tok;
+    if (name && !out.includes(name)) out.push(name);
+  });
+  // 한라산처럼 주소에 시·군이 없으면 가까운 지역(30km 안 두 곳)으로
+  if (out.length === 0 && m.lat && m.lng) {
+    LOCATIONS.map((l) => ({ name: l.name, km: haversineKm(m.lat, m.lng, l.lat, l.lng) }))
+      .filter((x) => x.km <= 30).sort((a, b) => a.km - b.km).slice(0, 2).forEach((x) => out.push(x.name));
+  }
+  return out;
+}
+let mountainListPromise = null;
+function loadMountains() {
+  if (!mountainListPromise) {
+    mountainListPromise = tourApiProxyFetch("mountains", { v: "1" }).then((arr) => arr.map((m) => {
+      const lat = parseFloat(m.lat), lng = parseFloat(m.lng);
+      return { ...m, lat, lng, regions: mountainRegions({ addr: m.addr, lat, lng }) };
+    }));
+    mountainListPromise.catch(() => { mountainListPromise = null; }); // 실패하면 다음에 다시
+  }
+  return mountainListPromise;
+}
+async function fetchMountainsNearby({ lat, lng, spotName }) {
+  const all = await loadMountains();
+  return all
+    .map((m) => ({ m, km: haversineKm(lat, lng, m.lat, m.lng), own: m.regions.includes(spotName) }))
+    .filter((x) => x.own || x.km <= MOUNTAIN_NEAR_KM)
+    .sort((a, b) => (b.own ? 1 : 0) - (a.own ? 1 : 0) || a.km - b.km)
+    .map(({ m, km, own }) => ({
+      id: `mtn_${m.id}`,
+      name: m.name,
+      kind: m.height ? `${Number(m.height).toLocaleString()}m` : "명산",
+      address: m.addr || "",
+      distanceKm: Number.isFinite(km) ? km.toFixed(1) : null,
+      lat: m.lat,
+      lng: m.lng,
+      image: null,
+      area: own ? null : (m.regions[0] || "").replace(/-.*$/, "").replace(/^\S+ /, "") || null,
+      mountain: { height: m.height, sub: m.sub, reason: m.reason, course: m.course, transport: m.transport, regions: m.regions },
+      overview: [m.overview, m.details].filter(Boolean).join("<br><br>"),
+    }));
+}
+// 장소 정보 창의 명산 정보: 100대 명산 선정 이유 · 등산 코스 · 대중교통
+function MountainInfo({ place }) {
+  const m = place.mountain;
+  const rows = [
+    ["⛰️ 높이", m.height ? `${Number(m.height).toLocaleString()}m` : ""],
+    ["🗺️ 걸친 지역", m.regions.map((r) => r.replace(/-.*$/, "")).join(", ")],
+    ["🥾 등산 코스", cleanTourText(m.course)],
+    ["🚌 대중교통", cleanTourText(m.transport)],
+    ["🏅 선정 이유", cleanTourText(m.reason)],
+  ].filter(([, v]) => v);
+  return (
+    <div className="mt-3">
+      {m.sub && <p className="text-xs font-bold mb-1.5" style={{ color: MOUNTAIN_COLOR }}>“{cleanTourText(m.sub)}”</p>}
+      <div className="bg-white/50 border border-[#D9CBB0] rounded-lg divide-y divide-[#E9DFCC]">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex gap-2 px-3 py-1.5 text-[11px]">
+            <span className="shrink-0 text-[#6B5F4F] w-20">{label}</span>
+            <span className="text-[#2B2620] whitespace-pre-line min-w-0" style={{ wordBreak: "keep-all" }}>{value}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-[#A6987F] mt-1.5">정보: 산림청·한국등산트레킹지원센터 100대 명산. 등산 전 날씨와 입산 통제 여부를 꼭 확인하세요.</p>
+    </div>
+  );
+}
+
 // 장소 정보 창의 캠핑장 정보 (받아 온 칸 중 비어 있지 않은 것만)
 function CampingInfo({ place }) {
   const c = place.camping;
@@ -3378,6 +3467,9 @@ function phoneNumber(text) {
 const placeDetailCache = new Map(); // 장소 id → Promise (같은 장소는 한 번만 받는다)
 function fetchPlaceDetail(place) {
   // 캠핑장은 목록에 이미 소개·전화·홈페이지가 있다 (관광정보 상세가 없는 다른 자료)
+  if (place.mountain) {
+    return Promise.resolve({ overview: place.overview, addr1: place.address, intro: {} });
+  }
   if (place.camping) {
     return Promise.resolve({ overview: place.camping.intro, tel: place.camping.tel, homepage: place.camping.homepage, addr1: place.address, intro: {} });
   }
@@ -3464,6 +3556,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
           {place.pet && <p className="text-xs font-bold text-[#9A5B2E] mt-3">🐶 {petSummary(place.pet)}</p>}
           {place.barrierFree && <BarrierFreeInfo place={place} />}
           {place.camping && <CampingInfo place={place} />}
+          {place.mountain && <MountainInfo place={place} />}
 
           {overview && (
             <div className="mt-3">
@@ -3620,6 +3713,9 @@ function PlaceCard({ place, emoji }) {
         )}
         {place.barrierFree && (
           <p className="text-[11px] font-bold mt-0.5 line-clamp-1" style={{ color: BARRIER_FREE_COLOR }}>♿ 무장애 정보 있음 · 눌러서 편의시설 보기</p>
+        )}
+        {place.mountain && (
+          <p className="text-[11px] font-bold mt-0.5 line-clamp-1" style={{ color: MOUNTAIN_COLOR }}>⛰️ 100대 명산{place.mountain.sub ? ` · ${cleanTourText(place.mountain.sub)}` : ""}</p>
         )}
         {place.camping && campingSummary(place.camping) && (
           <p className="text-[11px] font-bold mt-0.5 line-clamp-1" style={{ color: CAMPING_COLOR }}>🏕️ {campingSummary(place.camping)}</p>
@@ -3780,6 +3876,11 @@ const TAB_CONFIG = {
     label: "캠핑", icon: Tent, color: CAMPING_COLOR, emoji: "🏕️", source: "camping", theme: true,
     pick: (list) => list,
   },
+  // ⛰️ 100대 명산 (2026-11-04)
+  mountain: {
+    label: "등산", icon: MountainIcon, color: MOUNTAIN_COLOR, emoji: "⛰️", source: "mountain", theme: true,
+    pick: (list) => list,
+  },
 };
 const THEME_TAB_KEYS = Object.keys(TAB_CONFIG).filter((key) => TAB_CONFIG[key].theme);
 
@@ -3792,6 +3893,7 @@ const SOURCE_FETCHERS = {
   pet: (spot) => fetchPetNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
   barrierFree: (spot) => fetchBarrierFreeNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
   camping: (spot) => fetchCampingNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
+  mountain: (spot) => fetchMountainsNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
 };
 
 const PAGE_SIZE = 5;
@@ -3967,6 +4069,12 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
             {" "}운영·예약 여부는 방문 전에 꼭 확인하세요.
           </p>
         )}
+        {tab === "mountain" && entry && entry.status === "success" && (
+          <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
+            ⛰️ 이 지역에 걸쳐 있거나 가까운({MOUNTAIN_NEAR_KM}km 안) 100대 명산이에요{items.length > 0 ? ` (${items.length}곳)` : ""}. 산을 누르면 등산 코스와 소요 시간, 대중교통을 볼 수 있어요.
+            {" "}등산 전 날씨와 입산 통제 여부를 꼭 확인하세요.
+          </p>
+        )}
         {tab === "lodging" && overnight && (
           <p className="text-xs text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
             🛏️ 오늘 일정은 1박 2일을 추천해요. 묵을 곳을 미리 확인해 보세요.
@@ -3984,7 +4092,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
           tab === "cafe" ? (
             <MapLinkList links={buildMapSearchLinks(spot, "카페")} />
           ) : (
-            <StatusBlock status="empty" emptyText={tab === "festival" ? "가까운 곳에 열리는 축제가 없어요." : tab === "pet" ? "이 지역은 반려동물 동반 정보가 아직 없어요." : tab === "barrierFree" ? "이 지역 주변에는 무장애 여행 정보가 아직 없어요." : tab === "camping" ? "이 지역 주변 20km 안에는 등록된 캠핑장이 없어요." : "검색된 정보가 없어요."} />
+            <StatusBlock status="empty" emptyText={tab === "festival" ? "가까운 곳에 열리는 축제가 없어요." : tab === "pet" ? "이 지역은 반려동물 동반 정보가 아직 없어요." : tab === "barrierFree" ? "이 지역 주변에는 무장애 여행 정보가 아직 없어요." : tab === "camping" ? "이 지역 주변 20km 안에는 등록된 캠핑장이 없어요." : tab === "mountain" ? "이 지역 가까이에는 100대 명산이 없어요." : "검색된 정보가 없어요."} />
           )
         ) : (
           <>
@@ -4072,6 +4180,9 @@ const THEME_ROULETTE = {
   // 🏕️ 캠핑 룰렛 (2026-11-04): 고캠핑 주변 20km 중 주소가 그 지역인 운영 중 캠핑장 수 (229개 지역 점검, 188곳 지역·2,198곳)
   camping: { label: "캠핑", emoji: "🏕️", color: CAMPING_COLOR, tab: "camping",
     counts: { "서울 종로구": 1, "서울 중랑구": 1, "서울 은평구": 4, "서울 마포구": 1, "서울 구로구": 2, "서울 관악구": 1, "서울 서초구": 2, "서울 강동구": 1, "수원시": 2, "성남시": 1, "의정부시": 1, "안양시": 2, "광명시": 1, "평택시": 10, "동두천시": 5, "안산시": 3, "고양시": 4, "과천시": 1, "구리시": 2, "남양주시": 17, "오산시": 2, "시흥시": 5, "군포시": 1, "의왕시": 5, "하남시": 5, "용인시": 28, "파주시": 34, "이천시": 9, "안성시": 25, "김포시": 8, "화성시": 23, "광주시": 5, "양주시": 29, "포천시": 43, "여주시": 20, "연천군": 35, "가평군": 74, "양평군": 43, "인천 중구": 2, "인천 남동구": 2, "인천 서구": 2, "강화군": 39, "제주시": 16, "서귀포시": 12, "춘천시": 37, "원주시": 16, "강릉시": 24, "동해시": 7, "태백시": 3, "속초시": 4, "삼척시": 12, "홍천군": 29, "횡성군": 25, "영월군": 35, "평창군": 13, "정선군": 12, "철원군": 15, "화천군": 10, "양구군": 4, "인제군": 18, "고성군-강원": 18, "양양군": 41, "청주시": 16, "충주시": 33, "제천시": 46, "보은군": 13, "옥천군": 7, "영동군": 9, "증평군": 1, "진천군": 11, "괴산군": 29, "음성군": 4, "단양군": 22, "천안시": 26, "공주시": 21, "보령시": 15, "아산시": 22, "서산시": 9, "논산시": 14, "계룡시": 1, "당진시": 11, "금산군": 19, "부여군": 9, "서천군": 17, "청양군": 3, "홍성군": 10, "예산군": 7, "태안군": 57, "대전 동구": 4, "대전 중구": 1, "대전 서구": 6, "대전 유성구": 3, "대전 대덕구": 1, "세종시": 6, "포항시": 14, "경주시": 39, "김천시": 8, "안동시": 3, "구미시": 8, "영주시": 7, "영천시": 13, "상주시": 7, "문경시": 12, "경산시": 6, "의성군": 2, "청송군": 1, "영양군": 1, "영덕군": 8, "청도군": 28, "고령군": 15, "성주군": 14, "칠곡군": 23, "예천군": 2, "봉화군": 4, "울진군": 8, "울릉군": 3, "대구 동구": 5, "대구 수성구": 1, "대구 달서구": 1, "달성군": 6, "군위군": 5, "부산 영도구": 1, "부산 북구": 1, "부산 강서구": 1, "부산 사상구": 1, "기장군": 1, "울산 중구": 4, "울산 북구": 2, "울주군": 14, "창원시": 6, "진주시": 9, "통영시": 17, "사천시": 25, "김해시": 11, "밀양시": 35, "거제시": 17, "양산시": 8, "의령군": 8, "함안군": 10, "창녕군": 8, "고성군-경남": 18, "남해군": 27, "하동군": 12, "산청군": 29, "함양군": 11, "거창군": 17, "합천군": 24, "전주시": 3, "군산시": 3, "익산시": 5, "정읍시": 9, "남원시": 9, "김제시": 2, "완주군": 8, "진안군": 8, "무주군": 20, "장수군": 3, "임실군": 7, "순창군": 7, "고창군": 4, "부안군": 5, "목포시": 1, "여수시": 20, "순천시": 9, "나주시": 7, "광양시": 13, "담양군": 20, "곡성군": 18, "구례군": 8, "고흥군": 16, "보성군": 9, "화순군": 14, "장흥군": 9, "강진군": 8, "해남군": 4, "영암군": 8, "무안군": 7, "함평군": 8, "영광군": 6, "장성군": 28, "완도군": 9, "진도군": 2, "신안군": 7, "광주 동구": 1, "광주 서구": 1, "광주 남구": 2, "광주 북구": 2, "광주 광산구": 2 } },
+  // ⛰️ 등산 룰렛 (2026-11-04): 100대 명산 주소에 들어 있는 지역 (한 산이 여러 지역에 걸침, 한라산은 제주시·서귀포시)
+  mountain: { label: "등산", emoji: "⛰️", color: MOUNTAIN_COLOR, tab: "mountain", total: 100,
+    counts: { "서울 종로구": 1, "서울 성북구": 1, "서울 강북구": 1, "서울 도봉구": 1, "서울 은평구": 1, "서울 관악구": 1, "의정부시": 1, "안양시": 1, "동두천시": 1, "고양시": 1, "과천시": 1, "남양주시": 2, "파주시": 1, "양주시": 3, "포천시": 4, "연천군": 1, "가평군": 5, "양평군": 2, "강화군": 1, "제주시": 1, "서귀포시": 1, "춘천시": 4, "원주시": 1, "강릉시": 1, "동해시": 1, "태백시": 2, "속초시": 1, "삼척시": 3, "홍천군": 6, "횡성군": 2, "영월군": 3, "평창군": 5, "정선군": 2, "철원군": 1, "화천군": 4, "양구군": 1, "인제군": 4, "양양군": 2, "제천시": 2, "보은군": 2, "옥천군": 1, "영동군": 2, "괴산군": 2, "단양군": 4, "공주시": 1, "논산시": 2, "계룡시": 1, "금산군": 3, "청양군": 1, "예산군": 1, "포항시": 1, "경주시": 1, "김천시": 3, "안동시": 1, "구미시": 1, "영주시": 1, "영천시": 1, "상주시": 1, "문경시": 4, "청송군": 1, "영덕군": 2, "청도군": 3, "성주군": 1, "칠곡군": 1, "봉화군": 2, "울진군": 1, "울릉군": 1, "대구 동구": 1, "달성군": 1, "군위군": 1, "부산 북구": 1, "부산 금정구": 1, "울주군": 3, "창원시": 1, "통영시": 2, "밀양시": 3, "양산시": 2, "창녕군": 1, "고성군-경남": 1, "남해군": 1, "하동군": 1, "산청군": 2, "함양군": 3, "거창군": 2, "합천군": 2, "전주시": 1, "정읍시": 2, "남원시": 1, "김제시": 1, "완주군": 3, "진안군": 2, "무주군": 3, "장수군": 2, "순창군": 4, "고창군": 2, "부안군": 1, "순천시": 1, "광양시": 1, "담양군": 3, "구례군": 2, "고흥군": 1, "화순군": 1, "장흥군": 1, "강진군": 1, "해남군": 1, "영암군": 1, "장성군": 2, "신안군": 1, "광주 동구": 1 } },
   halfPrice: { label: "반값여행", emoji: "💸", color: "#8E1F16", tab: null, counts: null, unit: "개 지역" },
 };
 // 지역별 후보 수. 반값여행은 장소가 아니라 지역 단위이고, 기간이 지난 곳은 저절로 빠진다
@@ -4082,6 +4193,7 @@ function themeCountsOf(key) {
   return counts;
 }
 function themeTotal(key) {
+  if (THEME_ROULETTE[key].total) return THEME_ROULETTE[key].total; // 등산: 지역마다 세면 겹치므로 명산 수(100)
   return Object.values(themeCountsOf(key)).reduce((sum, n) => sum + n, 0);
 }
 // 후보가 너무 적으면(반값여행 2곳 미만) 고를 수 없게 목록에서 숨긴다
