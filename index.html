@@ -3300,6 +3300,7 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
   const [query, setQuery] = useState("");
   const importInputRef = useRef(null);
   const [tab, setTab] = useState("visited");
+  const mountainStamps = useMountainStamps();
 
   const visited = useMemo(
     () => spots.filter((s) => s.isVisited).sort((a, b) => new Date(b.visitedDate) - new Date(a.visitedDate)),
@@ -3315,7 +3316,7 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
         <div className="flex items-center justify-between px-5 pt-5 pb-1">
           <h2 className="font-serif text-lg text-[#2B2620] flex items-center gap-1.5"><PressingStampIcon size={18} /> STAMP TOUR</h2>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-[#6B5F4F]">{visited.length} / {spots.length}</span>
+            <span className="text-xs text-[#6B5F4F]">{tab === "mountain" ? `${Object.keys(mountainStamps).length} / 100` : `${visited.length} / ${spots.length}`}</span>
             <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
           </div>
         </div>
