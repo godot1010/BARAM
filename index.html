@@ -530,7 +530,7 @@ const BACKUP_VERSION = 1;
 const LAST_BACKUP_KEY = "baram_last_backup_at";
 
 // ⛰️ 100대 명산 도장깨기 (2026-11-05 형 결정 A안: 누르면 바로 도장, 폰 안에만 저장)
-// { 산코드: { name, date } }. 화면 여러 곳(정보 창·STAMP TOUR)이 같이 쓰도록 바뀌면 이벤트로 알린다
+// { 산 식별자(목록의 frtrlId - 산 코드는 겹치는 산이 있어 쓰지 않는다): { name, date } }. 화면 여러 곳(정보 창·STAMP TOUR)이 같이 쓰도록 바뀌면 이벤트로 알린다
 const MOUNTAIN_STAMPS_KEY = "baram_mountain_stamps";
 const MOUNTAIN_STAMP_EVENT = "baram-mountain-stamps";
 const MOUNTAIN_BADGES = [[10, "🥾", "첫걸음 10곳"], [30, "⛰️", "산꾼 30곳"], [50, "🏔️", "반을 넘어 50곳"], [100, "👑", "100대 명산 완등"]];
@@ -2366,7 +2366,7 @@ function mountainRegions(m) {
 let mountainListPromise = null;
 function loadMountains() {
   if (!mountainListPromise) {
-    mountainListPromise = tourApiProxyFetch("mountains", { v: "1" }).then((arr) => arr.map((m) => {
+    mountainListPromise = tourApiProxyFetch("mountains", { v: "2" }).then((arr) => arr.map((m) => {
       const lat = parseFloat(m.lat), lng = parseFloat(m.lng);
       return { ...m, lat, lng, regions: mountainRegions({ addr: m.addr, lat, lng }) };
     }));
@@ -2403,7 +2403,7 @@ async function fetchMountainsNearby({ lat, lng, spotName }) {
       lng: m.lng,
       image: null,
       area: own ? null : (m.regions[0] || "").replace(/-.*$/, "").replace(/^\S+ /, "") || null,
-      mountain: { code: m.code, height: m.height, sub: m.sub, reason: m.reason, course: m.course, transport: m.transport, regions: m.regions },
+      mountain: { stampKey: m.id, height: m.height, sub: m.sub, reason: m.reason, course: m.course, transport: m.transport, regions: m.regions },
       overview: [m.overview, m.details].filter(Boolean).join("<br><br>"),
     }));
   // 100대 명산과 이름이 같은 산은 빼고, 높은 산부터
@@ -2474,13 +2474,13 @@ function MountainStampList({ query }) {
   const list = state.list
     .filter((m) => q === "" || m.name.includes(q))
     .sort((a, b) =>
-      (stamps[b.code] ? 1 : 0) - (stamps[a.code] ? 1 : 0) ||
-      (stamps[a.code] && stamps[b.code] ? new Date(stamps[b.code].date) - new Date(stamps[a.code].date) : a.name.localeCompare(b.name, "ko"))
+      (stamps[b.id] ? 1 : 0) - (stamps[a.id] ? 1 : 0) ||
+      (stamps[a.id] && stamps[b.id] ? new Date(stamps[b.id].date) - new Date(stamps[a.id].date) : a.name.localeCompare(b.name, "ko"))
     );
   const toPlace = (m) => ({
     id: `mtn_${m.id}`, name: m.name, kind: m.height ? `${Number(m.height).toLocaleString()}m` : "명산", address: m.addr || "",
     distanceKm: null, lat: m.lat, lng: m.lng, image: null, area: null,
-    mountain: { code: m.code, height: m.height, sub: m.sub, reason: m.reason, course: m.course, transport: m.transport, regions: m.regions },
+    mountain: { stampKey: m.id, height: m.height, sub: m.sub, reason: m.reason, course: m.course, transport: m.transport, regions: m.regions },
     overview: [m.overview, m.details].filter(Boolean).join("<br><br>"),
   });
   return (
@@ -2506,9 +2506,9 @@ function MountainStampList({ query }) {
       {state.status === "error" && <p className="text-center text-sm text-[#A8441F] py-8">명산 목록을 불러오지 못했어요. 잠시 뒤 다시 열어 보세요.</p>}
       <ul className="divide-y divide-[#D9CBB0]">
         {list.map((m) => {
-          const mine = stamps[m.code];
+          const mine = stamps[m.id];
           return (
-            <li key={m.code} className="flex items-center gap-2 py-2.5">
+            <li key={m.id} className="flex items-center gap-2 py-2.5">
               <button onClick={() => openDetail(toPlace(m))} className="flex-1 flex items-center gap-3 text-left min-w-0">
                 <span
                   className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 ${mine ? "" : "border-dashed"}`}
@@ -2524,12 +2524,12 @@ function MountainStampList({ query }) {
                 </span>
               </button>
               {mine ? (
-                <button onClick={() => setMountainStamp(m.code, m.name, false)} className="flex items-center gap-1 text-xs text-[#C4592F] px-2 py-1 shrink-0">
+                <button onClick={() => setMountainStamp(m.id, m.name, false)} className="flex items-center gap-1 text-xs text-[#C4592F] px-2 py-1 shrink-0">
                   <RotateCcw size={12} /> 취소
                 </button>
               ) : (
                 <button
-                  onClick={() => setMountainStamp(m.code, m.name, true)}
+                  onClick={() => setMountainStamp(m.id, m.name, true)}
                   className="text-xs font-bold rounded-full border px-2.5 py-1 shrink-0"
                   style={{ color: MOUNTAIN_COLOR, borderColor: MOUNTAIN_COLOR }}
                 >
@@ -2573,7 +2573,7 @@ function MountainInfo({ place }) {
   ].filter(([, v]) => v);
   return (
     <div className="mt-3">
-      {m.code && <MountainStampButton code={m.code} name={place.name} />}
+      {m.stampKey && <MountainStampButton code={m.stampKey} name={place.name} />}
       {m.sub && <p className="text-xs font-bold mb-1.5" style={{ color: MOUNTAIN_COLOR }}>“{cleanTourText(m.sub)}”</p>}
       <div className="bg-white/50 border border-[#D9CBB0] rounded-lg divide-y divide-[#E9DFCC]">
         {rows.map(([label, value]) => (

@@ -360,7 +360,8 @@ async function mountains(serviceKey) {
   return {
     infoCount: infos.length,
     items: list.map((m) => {
-      const info = infoByCode.get(String(m.mtnCd)) || infoByName.get(m.frtrlNm) || {};
+      // 산 코드가 겹치는 산이 있어서(남산·내연산, 미륵산·민주지산, 월출산·유명산) 이름으로 먼저 맞춘다
+      const info = infoByName.get(m.frtrlNm) || infoByCode.get(String(m.mtnCd)) || {};
       return {
         id: m.frtrlId || m.mtnCd, code: m.mtnCd, name: m.frtrlNm, sido: m.ctpvNm, addr: m.addrNm,
         lat: m.lat, lng: m.lot, height: m.aslAltide,
