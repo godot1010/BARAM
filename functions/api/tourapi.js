@@ -17,6 +17,7 @@
 // - barrierFreeDetail : 장소 하나의 무장애 편의 정보 (detailWithTour2, 휠체어·화장실·유모차 등 - 비어 있지 않은 칸만)
 // - camping           : 위치 주변 캠핑장 목록 (고캠핑 GoCamping locationBasedList)
 // - mountains         : 100대 명산 전체 (위치·높이 = 한국등산트레킹지원센터 + 소개·선정 이유·교통 = 산림청 명산등산로, 산 코드로 합침)
+// - localMountains    : 한 지역(시·군·구)의 산 목록 (산림청 산정보 전국 4,705곳, 좌표는 없어 소재지 주소로 고른다)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
@@ -26,6 +27,9 @@ const CAMPING_API_BASE = "https://apis.data.go.kr/B551011/GoCamping";
 // 100대 명산 (2026-11-04 형이 둘 다 활용신청·승인). 산림청 쪽은 XML만 준다
 const MOUNTAIN_LIST_URL = "https://apis.data.go.kr/B553662/top100FamtListBasiInfoService/getTop100FamtListBasiInfoList";
 const MOUNTAIN_INFO_URL = "https://apis.data.go.kr/1400000/cultureInfoService/gdTrailInfoOpenAPI";
+// 산림청 산정보 (전국 산, 2026-11-04 형이 활용신청·승인). XML만, 좌표 없음
+const LOCAL_MOUNTAIN_URL = "https://apis.data.go.kr/1400000/service/cultureInfoService2/mntInfoOpenAPI2";
+const LOCAL_MOUNTAIN_INDEX_KEY = "https://baram-cache.internal/local-mountains-v1";
 
 function normalizeServiceKey(key) {
   try {
@@ -58,7 +62,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -367,6 +371,31 @@ async function mountains(serviceKey) {
   };
 }
 
+// 전국 산 목록(4,705곳)을 한 주에 한 번 통째로 받아 저장해 두고, 지역마다 골라 준다
+async function getLocalMountainIndex(serviceKey) {
+  const hit = await cacheGet(LOCAL_MOUNTAIN_INDEX_KEY);
+  if (hit && isFresh(hit, 7 * DAY)) return JSON.parse(hit.body);
+  try {
+    const all = [];
+    for (let pageNo = 1; pageNo <= 10; pageNo++) {
+      const text = await fetchText(`${LOCAL_MOUNTAIN_URL}?${new URLSearchParams({ ServiceKey: serviceKey, pageNo: String(pageNo), numOfRows: "1000" })}`);
+      const items = xmlItems(text);
+      items.forEach((it) => all.push({
+        id: it.mntilistno, name: it.mntiname, addr: it.mntiadd, height: it.mntihigh,
+        details: (it.mntidetails || "").replace(/&#xD;/g, "").trim(), admin: it.mntiadmin, tel: it.mntiadminnum,
+      }));
+      const total = Number((text.match(/<totalCount>(\d+)<\/totalCount>/) || [])[1]) || 0;
+      if (items.length === 0 || all.length >= total) break;
+    }
+    if (all.length === 0) throw new Error("산정보 목록이 비어 있어요.");
+    await cachePut(LOCAL_MOUNTAIN_INDEX_KEY, JSON.stringify(all));
+    return all;
+  } catch (err) {
+    if (hit) return JSON.parse(hit.body); // 새로 받기 실패하면 지난 목록이라도
+    throw err;
+  }
+}
+
 export async function onRequest(context) {
   // 지난 저장본(새로 받을 때가 됐지만 7일 안의 것). 공공데이터 서버가 실패하면 이걸 돌려준다
   let stale = null;
@@ -461,12 +490,18 @@ export async function onRequest(context) {
       };
     } else if (action === "mountains") {
       payload = await mountains(serviceKey);
-    } else if (action === "mountainProbe") {
-      // 산림청 산정보(3,368곳) 자료 모양 확인용 (임시)
-      const q = { ServiceKey: serviceKey, pageNo: url.searchParams.get("pageNo") || "1", numOfRows: url.searchParams.get("numOfRows") || "5" };
-      if (url.searchParams.get("searchWrd")) q.searchWrd = url.searchParams.get("searchWrd");
-      const text = await fetchText(`https://apis.data.go.kr/1400000/service/cultureInfoService2/mntInfoOpenAPI2?${new URLSearchParams(q)}`);
-      payload = { total: (text.match(/<totalCount>(\d+)<\/totalCount>/) || [])[1], items: xmlItems(text), head: text.slice(0, 300) };
+    } else if (action === "localMountains") {
+      // sgg: 시·군·구 이름(예: 가평군, 종로구), sido: 시·도 앞글자(예: 서울, 강원 - 광역시 구나 고성군처럼 이름이 겹칠 때)
+      const sgg = url.searchParams.get("sgg") || "";
+      const sido = url.searchParams.get("sido") || "";
+      if (!sgg && !sido) return json({ error: "BAD_REQUEST", message: "sgg 또는 sido가 필요해요." }, 400);
+      const all = await getLocalMountainIndex(serviceKey);
+      const items = all.filter((m) => {
+        const parts = (m.addr || "").split(/\s+/);
+        if (sido && !(parts[0] || "").startsWith(sido)) return false;
+        return !sgg || parts.slice(1, 3).includes(sgg);
+      });
+      payload = { items };
     } else {
       return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail, camping, mountains 중 하나여야 해요." }, 400);
     }
