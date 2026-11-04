@@ -323,7 +323,7 @@ function xmlItems(text) {
     .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&").trim();
   return [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => {
     const it = {};
-    for (const f of m[1].matchAll(/<(\w+)>([\s\S]*?)<\/>/g)) it[f[1]] = decode(f[2]);
+    for (const f of m[1].matchAll(/<(\w+)>([\s\S]*?)<\/\1>/g)) it[f[1]] = decode(f[2]);
     return it;
   });
 }
