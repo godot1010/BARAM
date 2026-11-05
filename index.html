@@ -5091,8 +5091,8 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
       </div>
 
       {cfg.theme && (
-        <div className="mt-2" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 5 }}>
-          {/* 칩이 7개라도 폰에서 두 줄로: 한 줄에 4칸씩 같은 너비 (2026-11-05 형 요청) */}
+        <div className="mt-2 flex" style={{ flexWrap: "wrap", gap: 5 }}>
+          {/* 칩이 7개라도 폰에서 두 줄로: 칩을 좁게 하고 줄 끝까지 늘려 양쪽을 맞춤 (2026-11-05 형 요청) */}
           {themeChips.map((key) => {
             const t = TAB_CONFIG[key];
             const n = themeCount(key);
@@ -5104,10 +5104,10 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
                   if (on && entry && entry.status === "error") setRetry((r) => r + 1);
                   setTab(key);
                 }}
-                className="font-bold rounded-full border whitespace-nowrap overflow-hidden"
-                style={{ padding: "5px 2px", fontSize: 11, letterSpacing: "-0.02em", textAlign: "center", color: t.color, borderColor: on ? t.color : "#D9CBB0", background: on ? `${t.color}1F` : "#FFFDF8" }}
+                className="font-bold rounded-full border whitespace-nowrap"
+                style={{ flex: "1 1 auto", padding: "5px 5px", fontSize: 11, letterSpacing: "-0.02em", textAlign: "center", color: t.color, borderColor: on ? t.color : "#D9CBB0", background: on ? `${t.color}1F` : "#FFFDF8" }}
               >
-                {t.emoji}{t.label}{n !== null ? ` ${n}${key === "barrierFree" && n >= 300 ? "+" : ""}` : ""}
+                <span style={{ marginRight: 2 }}>{t.emoji}</span>{t.label}{n !== null ? ` ${n}${key === "barrierFree" && n >= 300 ? "+" : ""}` : ""}
               </button>
             );
           })}
