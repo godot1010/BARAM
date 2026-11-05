@@ -2552,7 +2552,7 @@ function sortTourSea(list, spotName) {
   );
 }
 async function fetchFishingNearby({ lat, lng, spotName }) {
-  const [d] = await tourApiProxyFetch("fishing", { lat: String(lat), lng: String(lng), v: "1" });
+  const [d] = await tourApiProxyFetch("fishing", { lat: String(lat), lng: String(lng), v: "2" });
   if (!d) return [];
   const points = (d.points || []).filter((pt) => upcomingFc(pt.fc).length > 0).map((pt) => ({
     id: `fishpt_${pt.name}`,
@@ -2572,7 +2572,7 @@ async function fetchFishingNearby({ lat, lng, spotName }) {
 // "남항진해변(남항진해수욕장)" → "남항진" (해변·해수욕장 글자를 빼고 비교)
 const plainBeach = (s) => (s || "").replace(/\(.*?\)/g, "").replace(/\s/g, "").replace(/(해수욕장|해변|해안|비치)$/, "");
 async function fetchSeasideNearby({ lat, lng, spotName }) {
-  const [d] = await tourApiProxyFetch("seaside", { lat: String(lat), lng: String(lng), v: "1" });
+  const [d] = await tourApiProxyFetch("seaside", { lat: String(lat), lng: String(lng), v: "2" });
   if (!d) return [];
   const surf = (d.surf || []).filter((pt) => upcomingFc(pt.fc).length > 0);
   const idx = d.beachIdx || [];
