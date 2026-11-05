@@ -505,7 +505,8 @@ async function walkPhotos(base, { title, base: trailName, names, area }) {
       }).slice(0, 1).forEach((it) => add(it.firstimage, it.firstimage2, "한국관광공사", it.title, 6));
     } catch {}
   }
-  if (trailName && trailName.length >= 2) (await gallerySearch(base, trailName)).filter((g) => inArea(g) && plainName(g.title).includes(plainName(trailName))).forEach((g) => add(g.url, null, credit(g), g.title, 6));
+  // 길 이름 사진: 제목이나 검색 키워드에 길 이름이 있는 것 (예: 제주시의 '올레길' 키워드 사진)
+  if (trailName && trailName.length >= 2) (await gallerySearch(base, trailName)).filter((g) => inArea(g) && (plainName(g.title).includes(plainName(trailName)) || plainName(g.kw).includes(plainName(trailName)))).forEach((g) => add(g.url, null, credit(g), g.title, 6));
   return { items: photos };
 }
 

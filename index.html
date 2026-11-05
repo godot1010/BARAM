@@ -2689,7 +2689,7 @@ function fetchWalkPhoto(place, area) {
   if (!walkPhotoCache.has(key)) {
     const promise = !area
       ? Promise.resolve([])
-      : tourApiProxyFetch("walkPhoto", { names: names.join("|"), title, base, area, v: "4" }).catch(() => { walkPhotoCache.delete(key); return []; });
+      : tourApiProxyFetch("walkPhoto", { names: names.join("|"), title, base, area, v: "5" }).catch(() => { walkPhotoCache.delete(key); return []; });
     walkPhotoCache.set(key, promise);
   }
   return walkPhotoCache.get(key);
