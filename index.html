@@ -2513,6 +2513,8 @@ function seaDayLabel(d) {
   const dt = new Date(Number(d.slice(0, 4)), m - 1, day);
   return `${m}/${day}(${"일월화수목금토"[dt.getDay()]})`;
 }
+// [0.3, 0.3] → "0.3", [0.2, 0.4] → "0.2~0.4"
+const seaRange = ([a, c]) => (a === c || a === null ? `${c}` : `${a}~${c}`);
 const bestIndex = (list) => list.filter(Boolean).sort((a, c) => (SEA_INDEX_RANK[c] || 0) - (SEA_INDEX_RANK[a] || 0))[0] || "";
 // 바다낚시 한 칸(오전/오후)의 가장 좋은 지수와, 그 지수가 나온 어종들
 function fishSlotBest(slot) {
@@ -2582,12 +2584,29 @@ async function fetchSeasideNearby({ lat, lng, spotName }) {
     const y = plainBeach(n);
     return x.length >= 2 && y.length >= 2 && (x.includes(y) || y.includes(x));
   };
-  const match = (it, list) => list.find((pt) => sameName(it, pt.name)) || list.find((pt) => near(it, pt));
-  const usedSurf = new Set();
-  const beaches = sortTourSea(d.beaches || [], spotName).map((it) => {
-    const s = match(it, surf.filter((pt) => !usedSurf.has(pt.name)));
-    if (s) usedSurf.add(s.name);
-    const bi = match(it, idx);
+  const sorted = sortTourSea(d.beaches || [], spotName);
+  // 지수 장소 하나는 해수욕장 하나에만 붙인다: 이름이 같은 곳 먼저, 없으면 1.5km 안에서 가장 가까운 곳
+  // (예전처럼 가까운 곳마다 붙이면 경포 지수가 옆 강문해변에도 붙었다)
+  const assign = (points) => {
+    const byBeach = new Map();
+    const rest = [];
+    points.forEach((pt) => {
+      const it = sorted.find((x) => !byBeach.has(x.contentid) && sameName(x, pt.name));
+      if (it) byBeach.set(it.contentid, pt); else rest.push(pt);
+    });
+    rest.forEach((pt) => {
+      const it = sorted.filter((x) => !byBeach.has(x.contentid) && near(x, pt))
+        .sort((a, c) => haversineKm(parseFloat(a.mapy), parseFloat(a.mapx), pt.lat, pt.lng) - haversineKm(parseFloat(c.mapy), parseFloat(c.mapx), pt.lat, pt.lng))[0];
+      if (it) byBeach.set(it.contentid, pt);
+    });
+    return byBeach;
+  };
+  const surfBy = assign(surf);
+  const idxBy = assign(idx);
+  const usedSurf = new Set([...surfBy.values()].map((pt) => pt.name));
+  const beaches = sorted.map((it) => {
+    const s = surfBy.get(it.contentid);
+    const bi = idxBy.get(it.contentid);
     return tourSeaPlace(it, spotName, "해수욕장", { sea: { beach: true, surf: s ? s.fc : null, idx: bi ? bi.fc : null } });
   });
   // 관광정보 해수욕장과 맞지 않은 서핑 포인트는 따로 카드로
@@ -2613,7 +2632,7 @@ function fishingLine(f) {
   if (up.length === 0) return "";
   const s = up[0];
   const fish = [...new Set(up.filter((x) => x.d === s.d).flatMap((x) => x.fish.map((y) => y[0])).filter((n) => n && n !== "-" && n !== "기타어종"))];
-  return [fish.slice(0, 4).join("·"), s.tide, s.wv[1] !== null ? `파고 ${s.wv[0]}~${s.wv[1]}m` : "", s.wt[0] !== null ? `수온 ${s.wt[0]}℃` : ""].filter(Boolean).join(" · ");
+  return [fish.slice(0, 4).join("·"), s.tide, s.wv[1] !== null ? `파고 ${seaRange(s.wv)}m` : "", s.wt[0] !== null ? `수온 ${s.wt[0]}℃` : ""].filter(Boolean).join(" · ");
 }
 // 서핑: 카드에는 초급 기준
 function surfSummary(fc) {
@@ -3303,7 +3322,7 @@ function FishingInfo({ place }) {
           return (
             <div key={`${s.d}${s.t}`} className="px-3 py-1.5 text-[11px]">
               <p><span className="text-[#6B5F4F] inline-block w-20">{seaDayLabel(s.d)} {s.t}</span> <SeaIndexChip value={best} />{fish.length > 0 && <span className="text-[#2B2620]"> · {fish.slice(0, 4).join("·")}</span>}</p>
-              <p className="text-[10px] text-[#6B5F4F] mt-0.5">{[s.tide, s.wv[1] !== null ? `파고 ${s.wv[0]}~${s.wv[1]}m` : "", s.wt[0] !== null ? `수온 ${s.wt[0]}~${s.wt[1]}℃` : "", s.ws[1] !== null ? `바람 ${s.ws[0]}~${s.ws[1]}m/s` : ""].filter(Boolean).join(" · ")}</p>
+              <p className="text-[10px] text-[#6B5F4F] mt-0.5">{[s.tide, s.wv[1] !== null ? `파고 ${seaRange(s.wv)}m` : "", s.wt[0] !== null ? `수온 ${seaRange(s.wt)}℃` : "", s.ws[1] !== null ? `바람 ${seaRange(s.ws)}m/s` : ""].filter(Boolean).join(" · ")}</p>
             </div>
           );
         })}
