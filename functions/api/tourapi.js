@@ -730,6 +730,11 @@ export async function onRequest(context) {
       const area = url.searchParams.get("area") || "";
       if (!area) return json({ error: "BAD_REQUEST", message: "area가 필요해요." }, 400);
       payload = await walkPhotos(base, { title: url.searchParams.get("title") || "", base: url.searchParams.get("base") || "", names, area });
+    } else if (action === "lbProbe") {
+      // 임시 점검 (지울 것)
+      const q = { ...base, arrange: "E", pageNo: "1" };
+      for (const [k, v] of url.searchParams) if (!["action", "x"].includes(k)) q[k] = v;
+      try { const r = await callTourApi("locationBasedList2", q); return json({ total: r.totalCount, n: r.items.length, titles: r.items.slice(0, 40).map((it) => `${it.title}|${it.lclsSystm3}|${it.dist}`) }); } catch (err) { return json({ err: err.payload || err.message }); }
     } else if (action === "fishing") {
       // 🎣 바다낚시 지수 포인트(40km 안) + 관광정보 낚시터(민물·바다, 20km 안)
       const lat = Number(url.searchParams.get("lat"));
