@@ -593,6 +593,7 @@ export async function onRequest(context) {
       const sido = url.searchParams.get("sido") || "";
       if (!sgg && !sido) return json({ error: "BAD_REQUEST", message: "sgg 또는 sido가 필요해요." }, 400);
       const { durunubi, local } = await getTrailIndex(base, serviceKey);
+      if (url.searchParams.get("debug") === "sigun") return json({ sigun: durunubi.map((c) => c.area) }); // 확인용 (임시)
       const inArea = (addr) => addrInArea(addr, sido, sgg);
       payload = {
         items: [
