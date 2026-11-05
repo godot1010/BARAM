@@ -424,8 +424,9 @@ function buildSpots() {
 // 저장해서, 사진 한 장이 바뀔 때마다 229곳 전체를 다시 쓰지 않고 그 도시 레코드만 갱신한다.
 // ==========================================
 const IDB_NAME = "baram-db";
-const IDB_VERSION = 1;
+const IDB_VERSION = 2; // 2: 명산·걷기길 추억(memories) 저장소 추가 (2026-11-05)
 const IDB_STORE = "spots_progress";
+const IDB_MEMORY_STORE = "memories"; // { key: "mtn:산식별자" | "walk:도장열쇠", name, photos: [사진, 사진], memo }
 const LEGACY_LOCALSTORAGE_KEY = "baram_spots_progress"; // 이전 버전(localStorage)에서 쓰던 키
 
 // 앱을 껐다 켜도 "지금 이동 중인 여행지"가 사라지지 않도록 마지막 룰렛 결과/현재 위치를
@@ -458,6 +459,9 @@ function openSpotsDB() {
       const db = req.result;
       if (!db.objectStoreNames.contains(IDB_STORE)) {
         db.createObjectStore(IDB_STORE, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(IDB_MEMORY_STORE)) {
+        db.createObjectStore(IDB_MEMORY_STORE, { keyPath: "key" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -506,6 +510,91 @@ async function loadSpotsProgress() {
   } catch {
     return {};
   }
+}
+
+// ⛰️🥾 명산·걷기길 추억 (사진 2장 + 메모). 사진이 커서 localStorage 대신 IndexedDB에 둔다
+const MEMORY_EVENT = "baram-memories";
+async function loadMemory(key) {
+  try {
+    const db = await openSpotsDB();
+    return await new Promise((resolve) => {
+      const req = db.transaction(IDB_MEMORY_STORE, "readonly").objectStore(IDB_MEMORY_STORE).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+async function loadAllMemories() {
+  try {
+    const db = await openSpotsDB();
+    return await new Promise((resolve) => {
+      const req = db.transaction(IDB_MEMORY_STORE, "readonly").objectStore(IDB_MEMORY_STORE).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => resolve([]);
+    });
+  } catch {
+    return [];
+  }
+}
+function memoryHasContent(m) {
+  return !!m && ((m.memo && m.memo.trim().length > 0) || (m.photos && m.photos.some(Boolean)));
+}
+async function saveMemory(rec) {
+  try {
+    const db = await openSpotsDB();
+    await new Promise((resolve) => {
+      const tx = db.transaction(IDB_MEMORY_STORE, "readwrite");
+      const store = tx.objectStore(IDB_MEMORY_STORE);
+      if (memoryHasContent(rec)) store.put(rec); else store.delete(rec.key);
+      tx.oncomplete = resolve;
+      tx.onerror = resolve;
+    });
+  } catch {}
+  window.dispatchEvent(new Event(MEMORY_EVENT));
+}
+async function replaceAllMemories(list) {
+  const db = await openSpotsDB();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_MEMORY_STORE, "readwrite");
+    const store = tx.objectStore(IDB_MEMORY_STORE);
+    store.clear();
+    list.forEach((m) => store.put(m));
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error || new Error("추억을 저장하지 못했어요."));
+  });
+  window.dispatchEvent(new Event(MEMORY_EVENT));
+}
+// 추억이 있는 열쇠들 (STAMP TOUR 목록의 '추억 저장됨' 표시)
+function useMemoryKeys() {
+  const [keys, setKeys] = useState(() => new Set());
+  useEffect(() => {
+    let alive = true;
+    const refresh = () => loadAllMemories().then((list) => alive && setKeys(new Set(list.filter(memoryHasContent).map((m) => m.key))));
+    refresh();
+    window.addEventListener(MEMORY_EVENT, refresh);
+    return () => { alive = false; window.removeEventListener(MEMORY_EVENT, refresh); };
+  }, []);
+  return keys;
+}
+// 사진을 가로 900px JPEG로 줄인다 (지역 추억과 같은 크기)
+function compressImageFile(file, maxWidth = 900, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("이미지를 불러올 수 없어요.")); };
+    img.src = objectUrl;
+  });
 }
 
 // 백업 불러오기: 저장된 진행 기록을 전부 지우고 백업 내용으로 바꾼다
@@ -670,11 +759,19 @@ function parseBackup(text, baseSpots) {
   const mountains = Array.isArray(data.mountains)
     ? data.mountains.filter((m) => m && m.code).reduce((map, m) => ({ ...map, [m.code]: { name: m.name || "", date: m.date || null } }), {})
     : null;
+  // 명산·걷기길 추억 칸이 없는 옛 백업이면 null → 지금 폰의 추억은 그대로 둔다
+  const memories = Array.isArray(data.memories)
+    ? data.memories.filter((m) => m && typeof m.key === "string").map((m) => ({
+      key: m.key, name: m.name || "",
+      photos: Array.isArray(m.photos) && m.photos.length === 2 ? m.photos.map((p) => (typeof p === "string" ? p : null)) : [null, null],
+      memo: typeof m.memo === "string" ? m.memo : "",
+    }))
+    : null;
   // 걷기길 도장 칸이 없는 옛 백업이면 null → 지금 폰의 걷기길 도장은 그대로 둔다
   const walks = Array.isArray(data.walks)
     ? data.walks.filter((w) => w && w.key).reduce((map, w) => ({ ...map, [w.key]: { name: w.name || "", km: Number(w.km) || 0, route: w.route || "", date: w.date || null } }), {})
     : null;
-  return { records, exportedAt: data.exportedAt, mountains, walks };
+  return { records, exportedAt: data.exportedAt, mountains, walks, memories };
 }
 
 function downloadJson(filename, obj) {
@@ -2519,6 +2616,85 @@ function MountainThumb({ place, emoji }) {
   );
 }
 
+// '나의 추억' 칸: 사진 2장 + 메모 (도장 찍은 명산·걷기길의 정보 창, STAMP TOUR 추억 창에서 쓴다)
+function MemoryBox({ memKey, name, color = "#B8860B" }) {
+  const [rec, setRec] = useState(null);
+  const refs = [useRef(null), useRef(null)];
+  useEffect(() => {
+    let alive = true;
+    loadMemory(memKey).then((m) => alive && setRec(m || { key: memKey, name, photos: [null, null], memo: "" }));
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memKey]);
+  if (!rec) return null;
+  const update = (next) => { setRec(next); saveMemory(next); };
+  const photos = rec.photos && rec.photos.length === 2 ? rec.photos : [null, null];
+  return (
+    <div className="mb-3 rounded-lg border border-[#D9CBB0] bg-white/40 px-3 py-2.5">
+      <p className="text-xs font-bold mb-2" style={{ color }}>📷 나의 추억</p>
+      <div className="grid grid-cols-2 gap-2">
+        {[0, 1].map((i) => (
+          <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-dashed border-[#D9CBB0] bg-white/80 flex items-center justify-center">
+            {photos[i] ? (
+              <>
+                <img src={photos[i]} alt={`${name} 추억 사진 ${i + 1}`} className="w-full h-full object-cover" />
+                <button
+                  onClick={() => { const p = [...photos]; p[i] = null; update({ ...rec, photos: p }); }}
+                  className="absolute top-1 right-1 bg-black/40 text-white rounded-full p-1" aria-label="사진 삭제"
+                ><X size={12} /></button>
+              </>
+            ) : (
+              <button onClick={() => refs[i].current && refs[i].current.click()} className="flex flex-col items-center gap-1" style={{ color }}>
+                <Camera size={20} />
+                <span className="text-[10px]">사진 추가</span>
+              </button>
+            )}
+            <input
+              ref={refs[i]} type="file" accept="image/*" className="hidden"
+              onChange={(e) => {
+                const file = e.target.files && e.target.files[0];
+                e.target.value = "";
+                if (!file) return;
+                compressImageFile(file).then((dataUrl) => {
+                  setRec((cur) => {
+                    const p = cur.photos && cur.photos.length === 2 ? [...cur.photos] : [null, null];
+                    p[i] = dataUrl;
+                    const next = { ...cur, name, photos: p };
+                    saveMemory(next);
+                    return next;
+                  });
+                }).catch(() => {});
+              }}
+            />
+          </div>
+        ))}
+      </div>
+      <textarea
+        value={rec.memo || ""}
+        onChange={(e) => update({ ...rec, name, memo: e.target.value })}
+        placeholder="이곳에서의 추억을 남겨보세요."
+        rows={3}
+        className="w-full mt-2 bg-white/80 border border-[#D9CBB0] rounded-lg px-3 py-2 text-sm outline-none resize-none"
+      />
+    </div>
+  );
+}
+// STAMP TOUR 목록에서 여는 추억 창 (둘레길 코스·동네 걷기길처럼 정보 창이 없는 곳)
+function MemoryDialog({ memKey, name, color, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 px-4" onClick={onClose}>
+      <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-4 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-serif text-lg" style={{ color }}>{name}</h2>
+          <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
+        </div>
+        <MemoryBox memKey={memKey} name={name} color={color} />
+        <button onClick={onClose} className="w-full py-2.5 rounded-lg text-sm font-bold text-[#F6F1E7]" style={{ background: color }}>닫기</button>
+      </div>
+    </div>
+  );
+}
+
 // 명산 도장 버튼 (정보 창). 찍으면 몇 번째인지와 배지를 알려 준다
 function MountainStampButton({ code, name }) {
   const stamps = useMountainStamps();
@@ -2550,6 +2726,7 @@ function MountainStampButton({ code, name }) {
 // STAMP TOUR의 '100대 명산' 칸: 진행 상황 · 배지 · 100곳 목록
 function MountainStampList({ query }) {
   const stamps = useMountainStamps();
+  const memoryKeys = useMemoryKeys();
   const openDetail = useContext(PlaceDetailContext);
   const [state, setState] = useState({ status: "loading", list: [] });
   useEffect(() => {
@@ -2610,7 +2787,7 @@ function MountainStampList({ query }) {
                 <span className="min-w-0">
                   <p className="text-sm truncate" style={mine ? { color: MOUNTAIN_COLOR, fontWeight: 700 } : { color: "#2B2620" }}>{m.name}</p>
                   <p className="text-xs text-[#6B5F4F] mt-0.5">
-                    {mine ? `${formatDate(mine.date)} 올랐어요 · ` : ""}{m.height ? `${Number(m.height).toLocaleString()}m · ` : ""}{(m.regions[0] || m.sido || "").replace(/-.*$/, "")}
+                    {mine ? `${formatDate(mine.date)} 올랐어요 · ` : ""}{m.height ? `${Number(m.height).toLocaleString()}m · ` : ""}{(m.regions[0] || m.sido || "").replace(/-.*$/, "")}{memoryKeys.has(`mtn:${m.id}`) ? " · 추억 저장됨" : ""}
                   </p>
                 </span>
               </button>
@@ -2665,6 +2842,7 @@ function MountainInfo({ place }) {
   return (
     <div className="mt-3">
       {m.stampKey && <MountainStampButton code={m.stampKey} name={place.name} />}
+      {m.stampKey && <StampedMemory stampKey={m.stampKey} kind="mtn" name={place.name} color={MOUNTAIN_COLOR} />}
       {m.sub && <p className="text-xs font-bold mb-1.5" style={{ color: MOUNTAIN_COLOR }}>“{cleanTourText(m.sub)}”</p>}
       <div className="bg-white/50 border border-[#D9CBB0] rounded-lg divide-y divide-[#E9DFCC]">
         {rows.map(([label, value]) => (
@@ -2781,6 +2959,14 @@ function WalkThumb({ place, emoji }) {
 function walkSummary(w) {
   return [w.duru ? "코리아둘레길" : null, w.time ? `⏱ ${w.time}` : null, w.level ? `난이도 ${w.level}` : null].filter(Boolean).join(" · ");
 }
+// 도장을 찍은 뒤에만 추억 칸을 보여 준다
+function StampedMemory({ stampKey, kind, name, color }) {
+  const mountainStamps = useMountainStamps();
+  const walkStamps = useWalkStamps();
+  const stamped = kind === "mtn" ? !!mountainStamps[stampKey] : !!walkStamps[stampKey];
+  return stamped ? <MemoryBox memKey={`${kind}:${stampKey}`} name={name} color={color} /> : null;
+}
+
 // 걷기길 도장 버튼 (정보 창). 찍으면 걸은 거리 합계와 노선 진행을 알려 준다
 function WalkStampButton({ place }) {
   const stamps = useWalkStamps();
@@ -2816,6 +3002,8 @@ function WalkStampButton({ place }) {
 // STAMP TOUR의 '걷기길' 칸: 걸은 거리·거리 배지 / 코리아둘레길 노선별 진행 / 동네 걷기길 기록
 function WalkStampList({ query }) {
   const stamps = useWalkStamps();
+  const memoryKeys = useMemoryKeys();
+  const [memoryOf, setMemoryOf] = useState(null); // { key, name } 추억 창
   const [state, setState] = useState({ status: "loading", list: [] });
   const [openRoute, setOpenRoute] = useState(null);
   useEffect(() => {
@@ -2874,8 +3062,11 @@ function WalkStampList({ query }) {
                   <li key={c.id} className="flex items-center gap-2 py-1.5">
                     <span className="min-w-0 flex-1">
                       <p className="text-xs truncate" style={mine ? { color: WALK_COLOR, fontWeight: 700 } : { color: "#2B2620" }}>{mine ? "🥾 " : ""}{c.name}</p>
-                      <p className="text-[11px] text-[#6B5F4F]">{[c.km ? `${c.km}km` : null, walkMinutesText(c.minutes), c.area, mine ? `${formatDate(mine.date)} 걸음` : null].filter(Boolean).join(" · ")}</p>
+                      <p className="text-[11px] text-[#6B5F4F]">{[c.km ? `${c.km}km` : null, walkMinutesText(c.minutes), c.area, mine ? `${formatDate(mine.date)} 걸음` : null, memoryKeys.has(`walk:${key}`) ? "추억 저장됨" : null].filter(Boolean).join(" · ")}</p>
                     </span>
+                    {mine && (
+                      <button onClick={() => setMemoryOf({ key, name: c.name })} className="text-[11px] font-bold px-1.5 py-1 shrink-0" style={{ color: WALK_COLOR }} aria-label="추억 보기">📷</button>
+                    )}
                     {mine ? (
                       <button onClick={() => setWalkStamp(key, {}, false)} className="text-[11px] text-[#C4592F] px-2 py-1 shrink-0">취소</button>
                     ) : (
@@ -2889,6 +3080,7 @@ function WalkStampList({ query }) {
         </div>
       ))}
 
+      {memoryOf && <MemoryDialog memKey={`walk:${memoryOf.key}`} name={memoryOf.name} color={WALK_COLOR} onClose={() => setMemoryOf(null)} />}
       <p className="text-xs font-bold text-[#2B2620] mt-4 mb-1">동네 걷기길 <span className="font-normal text-[11px] text-[#A6987F]">(여행지 '더 알아보기 → 테마 → 걷기길'에서 찍어요)</span></p>
       {locals.length === 0 ? (
         <p className="text-[11px] text-[#A6987F] py-2">아직 걸은 동네 걷기길이 없어요.</p>
@@ -2896,10 +3088,10 @@ function WalkStampList({ query }) {
         <ul className="divide-y divide-[#D9CBB0]">
           {locals.map(([key, s]) => (
             <li key={key} className="flex items-center gap-2 py-2">
-              <span className="min-w-0 flex-1">
+              <button onClick={() => setMemoryOf({ key, name: s.name })} className="min-w-0 flex-1 text-left">
                 <p className="text-sm truncate font-bold" style={{ color: WALK_COLOR }}>🥾 {s.name}</p>
-                <p className="text-[11px] text-[#6B5F4F]">{[s.km ? `${s.km}km` : null, `${formatDate(s.date)} 걸음`].filter(Boolean).join(" · ")}</p>
-              </span>
+                <p className="text-[11px] text-[#6B5F4F]">{[s.km ? `${s.km}km` : null, `${formatDate(s.date)} 걸음`, memoryKeys.has(`walk:${key}`) ? "추억 저장됨" : "📷 추억 남기기"].filter(Boolean).join(" · ")}</p>
+              </button>
               <button onClick={() => setWalkStamp(key, {}, false)} className="flex items-center gap-1 text-xs text-[#C4592F] px-2 py-1 shrink-0"><RotateCcw size={12} /> 취소</button>
             </li>
           ))}
@@ -2928,6 +3120,7 @@ function WalkInfo({ place }) {
   return (
     <div className="mt-3">
       {w.stampKey && <WalkStampButton place={place} />}
+      {w.stampKey && <StampedMemory stampKey={w.stampKey} kind="walk" name={place.name} color={WALK_COLOR} />}
       {w.line && <p className="text-xs font-bold mb-1.5" style={{ color: WALK_COLOR }}>“{w.line}”</p>}
       <div className="bg-white/50 border border-[#D9CBB0] rounded-lg divide-y divide-[#E9DFCC]">
         {rows.map(([label, value]) => (
@@ -5070,8 +5263,10 @@ function BaramApp() {
     });
   }
 
-  function exportBackup() {
+  async function exportBackup() {
     const backup = buildBackup(spots);
+    // 명산·걷기길 추억 (사진·메모)
+    backup.memories = (await loadAllMemories()).filter(memoryHasContent).map((m) => ({ key: m.key, name: m.name || "", photos: m.photos, memo: m.memo || "" }));
     if (backup.spots.length === 0 && backup.mountains.length === 0 && backup.walks.length === 0) {
       setBackupNotice("아직 백업할 기록이 없어요.");
       return;
@@ -5104,6 +5299,7 @@ function BaramApp() {
           }
           if (parsed.mountains) writeMountainStamps(parsed.mountains);
           if (parsed.walks) writeWalkStamps(parsed.walks);
+          if (parsed.memories) { try { await replaceAllMemories(parsed.memories); } catch {} }
           const progress = {};
           parsed.records.forEach((r) => { progress[r.id] = r; });
           const base = spots.map((s) => ({ ...s, isVisited: false, visitedDate: null, stampType: null, photos: [null, null], memo: "" }));
