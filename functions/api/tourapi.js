@@ -20,7 +20,7 @@
 // - localMountains    : 한 지역(시·군·구)의 산 목록 (산림청 산정보 전국 4,705곳, 좌표는 없어 소재지 주소로 고른다)
 // - mountainPhotos    : 산 하나의 사진 (관광공사 관광지 사진 중 이름이 같은 곳 먼저 + 산림청 산 사진)
 // - trails            : 한 지역의 걷기길 (코리아둘레길 두루누비 284코스 + 전국길관광정보 표준데이터 지자체 걷기길)
-// - walkPhoto         : 걷기길 사진 하나 (길이 지나는 장소 이름들로 관광공사 사진을 같은 시·군 안에서 찾는다)
+// - walkPhoto         : 걷기길 사진 여러 장 (관광사진 포토코리아에서 코스·길 이름 → 지나는 장소, 없으면 관광지 사진. 모두 같은 시·군 안에서)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
@@ -461,6 +461,54 @@ async function getTrailIndex(base, serviceKey) {
   }
 }
 
+// 관광사진(포토코리아, 2026-11-05 형이 활용신청·승인, 개발계정 하루 1,000건). 같은 검색어는 7일 동안 다시 묻지 않는다
+const GALLERY_API_BASE = "https://apis.data.go.kr/B551011/PhotoGalleryService1";
+async function gallerySearch(base, keyword) {
+  const key = `https://baram-cache.internal/gallery-v1?k=${encodeURIComponent(keyword)}`;
+  const hit = await cacheGet(key);
+  if (hit && isFresh(hit, 7 * DAY)) return JSON.parse(hit.body);
+  try {
+    const { items } = await callTourApi("gallerySearchList1", { ...base, keyword, numOfRows: "40", pageNo: "1", arrange: "A" }, GALLERY_API_BASE);
+    const slim = items.map((g) => ({ title: g.galTitle, url: g.galWebImageUrl, loc: g.galPhotographyLocation, by: g.galPhotographer, kw: g.galSearchKeyword }));
+    await cachePut(key, JSON.stringify(slim));
+    return slim;
+  } catch (err) {
+    if (hit) return JSON.parse(hit.body);
+    return [];
+  }
+}
+async function walkPhotos(base, { title, base: trailName, names, area }) {
+  const photos = [];
+  const seen = new Set();
+  const add = (url, thumb, credit, place, max) => {
+    if (!url || seen.has(url) || photos.length >= max) return;
+    seen.add(url);
+    photos.push({ url, thumb: thumb || url, credit, place });
+  };
+  const inArea = (g) => (g.loc || "").includes(area) || (g.kw || "").includes(area);
+  const credit = (g) => `한국관광공사 포토코리아${g.by ? ` (${g.by.replace(/^한국관광공사\s*/, "")})` : ""}`;
+  // 1) 코스 사진 (예: 해파랑길11코스) 2) 길 이름 사진 중 그 시·군에서 찍은 것 3) 지나는 장소 사진
+  if (title) (await gallerySearch(base, title)).filter((g) => plainName(g.title) === plainName(title)).forEach((g) => add(g.url, null, credit(g), g.title, 4));
+  if (trailName && trailName.length >= 2) (await gallerySearch(base, trailName)).filter((g) => inArea(g) && plainName(g.title).includes(plainName(trailName))).forEach((g) => add(g.url, null, credit(g), g.title, 5));
+  for (const name of names.slice(0, 2)) {
+    if (photos.length >= 4) break;
+    (await gallerySearch(base, name)).filter((g) => inArea(g) && plainName(g.title).includes(plainName(name))).forEach((g) => add(g.url, null, credit(g), g.title, 6));
+  }
+  // 4) 그래도 적으면 관광지 사진 (같은 시·군에서 이름이 맞는 곳)
+  for (const name of names) {
+    if (photos.length >= 3) break;
+    const key = plainName(name);
+    try {
+      const { items } = await callTourApi("searchKeyword2", { ...base, keyword: key, numOfRows: "20", pageNo: "1", arrange: "O" });
+      items.filter((it) => {
+        const t = plainName(it.title);
+        return it.firstimage && (it.addr1 || "").includes(area) && (t.includes(key) || (t.length >= 3 && key.includes(t)));
+      }).slice(0, 1).forEach((it) => add(it.firstimage, it.firstimage2, "한국관광공사", it.title, 6));
+    } catch {}
+  }
+  return { items: photos };
+}
+
 // 전국 산 목록(4,705곳)을 한 주에 한 번 통째로 받아 저장해 두고, 지역마다 골라 준다
 async function getLocalMountainIndex(serviceKey) {
   const hit = await cacheGet(LOCAL_MOUNTAIN_INDEX_KEY);
@@ -588,28 +636,12 @@ export async function onRequest(context) {
       const lng = url.searchParams.get("lng");
       if (!/^\d{6,12}$/.test(no) || !name) return json({ error: "BAD_REQUEST", message: "no와 name이 필요해요." }, 400);
       payload = await mountainPhotos(base, serviceKey, no, name, lat, lng, url.searchParams.get("area") || "");
-    } else if (action === "galleryProbe") {
-      // 관광사진(포토코리아) 모양 확인용 (임시)
-      const { items, totalCount } = await callTourApi("gallerySearchList1", { ...base, keyword: url.searchParams.get("q") || "바우길", numOfRows: "10", pageNo: "1", arrange: "A" }, "https://apis.data.go.kr/B551011/PhotoGalleryService1");
-      payload = { totalCount, items };
     } else if (action === "walkPhoto") {
-      // names = 후보 장소 이름들("|"로 구분, 앞쪽이 먼저), area = 시·군·구 이름. 길 이름 자체로는 사진이 거의 없어서 지나는 곳으로 찾는다
+      // 걷기길 사진: title = 코스 사진 제목(예: 해파랑길11코스), base = 길 이름(예: 바우길), names = 지나는 장소들("|"), area = 시·군·구
       const names = (url.searchParams.get("names") || "").split("|").map((s) => s.trim()).filter((s) => s.length >= 2).slice(0, 6);
       const area = url.searchParams.get("area") || "";
-      if (names.length === 0 || !area) return json({ error: "BAD_REQUEST", message: "names와 area가 필요해요." }, 400);
-      let found = null;
-      for (const name of names) {
-        const key = plainName(name);
-        try {
-          const { items } = await callTourApi("searchKeyword2", { ...base, keyword: key, numOfRows: "20", pageNo: "1", arrange: "O" });
-          const hit = items.find((it) => {
-            const t = plainName(it.title);
-            return it.firstimage && (it.addr1 || "").includes(area) && (t.includes(key) || (t.length >= 3 && key.includes(t)));
-          });
-          if (hit) { found = { url: hit.firstimage, thumb: hit.firstimage2 || hit.firstimage, place: hit.title }; break; }
-        } catch {}
-      }
-      payload = { items: found ? [found] : [] };
+      if (!area) return json({ error: "BAD_REQUEST", message: "area가 필요해요." }, 400);
+      payload = await walkPhotos(base, { title: url.searchParams.get("title") || "", base: url.searchParams.get("base") || "", names, area });
     } else if (action === "trails") {
       // 동네 산과 같은 방식: sgg(시·군·구), sido(시·도 앞글자). 두루누비는 '지나는 시·군'(sigun), 지자체 걷기길은 시작 지점 주소로 고른다
       const sgg = url.searchParams.get("sgg") || "";

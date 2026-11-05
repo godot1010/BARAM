@@ -2670,14 +2670,26 @@ function walkPhotoNames(place) {
     .filter((s) => s.length >= 2 && !/(주차장|버스|정류장|터미널|입구|삼거리|사거리|교차로|마을회관)$/.test(s));
   return [...new Set(names)].slice(0, 6);
 }
+// 포토코리아에서 찾을 코스 사진 제목("해파랑길 37코스 …" → 해파랑길37코스)과 길 이름("바우길 14구간" → 바우길, "북촌A" → 북촌)
+function walkPhotoTitles(place) {
+  const n = place.name.replace(/\(.*?\)/g, " ");
+  const course = n.match(/(\S+길)\s*(\d+(?:-\d+)?)\s*코스/);
+  const brands = [...n.matchAll(/(\S+길)(?=\s*\d|\s|$)/g)].map((m) => m[1]);
+  const plain = n.replace(/\s*\d+(?:-\d+)?\s*(구간|코스).*$/, "").replace(/\s*[A-Z]$/, "").trim();
+  return {
+    title: course ? `${course[1]}${course[2]}코스` : "",
+    base: brands.length ? brands[brands.length - 1] : plain,
+  };
+}
 const walkPhotoCache = new Map();
 function fetchWalkPhoto(place, area) {
   const names = walkPhotoNames(place);
+  const { title, base } = walkPhotoTitles(place);
   const key = `${place.id}`;
   if (!walkPhotoCache.has(key)) {
-    const promise = names.length === 0 || !area
+    const promise = !area
       ? Promise.resolve([])
-      : tourApiProxyFetch("walkPhoto", { names: names.join("|"), area, v: "2" }).catch(() => { walkPhotoCache.delete(key); return []; });
+      : tourApiProxyFetch("walkPhoto", { names: names.join("|"), title, base, area, v: "3" }).catch(() => { walkPhotoCache.delete(key); return []; });
     walkPhotoCache.set(key, promise);
   }
   return walkPhotoCache.get(key);
@@ -3836,8 +3848,13 @@ function phoneNumber(text) {
 const placeDetailCache = new Map(); // 장소 id → Promise (같은 장소는 한 번만 받는다)
 function fetchPlaceDetail(place) {
   // 캠핑장은 목록에 이미 소개·전화·홈페이지가 있다 (관광정보 상세가 없는 다른 자료)
+  // 걷기길은 사진이 중요해서 정보 창에도 넣는다 (2026-11-05 형 요청)
   if (place.walk) {
-    return Promise.resolve({ overview: place.overview, addr1: place.address, intro: {} });
+    return fetchWalkPhoto(place, place.walk.area).then((list) => ({
+      overview: place.overview, addr1: place.address, intro: {},
+      images: list.map((p) => ({ url: p.url })),
+      photoCredit: [...new Set(list.map((p) => p.credit).filter(Boolean))].join(", "),
+    }));
   }
   // 산 사진은 카드 썸네일에만 쓴다 (정보 창에는 넣지 않음 - 2026-11-05 형 결정)
   if (place.mountain) {
@@ -3917,6 +3934,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
             <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F] shrink-0"><X size={18} /></button>
           </div>
           {photos.length > 1 && <p className="text-[11px] font-bold text-[#2F6E68] mt-1">📷 사진 {photos.length}장 · 옆으로 넘겨 보세요 →</p>}
+          {d && d.photoCredit && <p className="text-[10px] text-[#A6987F] mt-0.5">사진: {d.photoCredit}</p>}
           <p className="text-[11px] text-[#6B5F4F] mt-1.5">{(d && d.addr1) || place.address || place.location}</p>
 
           {state.status === "loading" && (
@@ -4475,7 +4493,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
         )}
         {tab === "walk" && entry && entry.status === "success" && (
           <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
-            🥾 이 지역을 지나는 코리아둘레길 코스를 먼저, 그 아래에 지자체가 소개하는 걷기길을 보여 드려요{items.length > 0 ? ` (${items.length}곳)` : ""}. 길을 누르면 경로와 소요 시간을 볼 수 있어요. 사진은 길이 지나는 곳의 관광공사 사진이에요.
+            🥾 이 지역을 지나는 코리아둘레길 코스를 먼저, 그 아래에 지자체가 소개하는 걷기길을 보여 드려요{items.length > 0 ? ` (${items.length}곳)` : ""}. 길을 누르면 경로와 소요 시간, 사진을 볼 수 있어요. 사진: 한국관광공사 포토코리아·관광정보.
           </p>
         )}
         {tab === "lodging" && overnight && (
