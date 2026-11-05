@@ -2615,7 +2615,9 @@ async function fetchSeasideNearby({ lat, lng, spotName }) {
     distanceKm: Number.isFinite(pt.km) ? pt.km.toFixed(1) : null, lat: pt.lat, lng: pt.lng,
     sea: { point: true, surf: pt.fc },
   }));
-  const shops = sortTourSea(d.shops || [], spotName).map((it) => tourSeaPlace(it, spotName, "서핑 업체", { sea: { shop: true } }));
+  // 서핑 업체는 바닷가 지역에서만 (서울 뚝섬 윈드서핑장처럼 강에 있는 곳이 바다 칩에 나오지 않게)
+  const coastal = beaches.length > 0 || surfOnly.length > 0;
+  const shops = coastal ? sortTourSea(d.shops || [], spotName).map((it) => tourSeaPlace(it, spotName, "서핑 업체", { sea: { shop: true } })) : [];
   // 우리 지역 해수욕장 중 서핑 지수가 있는 곳을 맨 앞으로
   const first = beaches.filter((p) => !p.area && p.sea.surf);
   return [...first, ...beaches.filter((p) => !first.includes(p)), ...surfOnly, ...shops];
