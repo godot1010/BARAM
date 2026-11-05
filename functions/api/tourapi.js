@@ -593,7 +593,10 @@ export async function onRequest(context) {
       const sido = url.searchParams.get("sido") || "";
       if (!sgg && !sido) return json({ error: "BAD_REQUEST", message: "sgg 또는 sido가 필요해요." }, 400);
       const { durunubi, local } = await getTrailIndex(base, serviceKey);
-      if (url.searchParams.get("debug") === "sigun") return json({ sigun: durunubi.map((c) => c.area) }); // 확인용 (임시)
+      if (url.searchParams.get("debug") === "sigun") { // 확인용 (임시)
+        const r1 = await callTourApi("courseList", { ...base, numOfRows: "100", pageNo: url.searchParams.get("p") || "1", brdDiv: "DNWW" }, "https://apis.data.go.kr/B551011/Durunubi");
+        return json({ count: durunubi.length, total: r1.totalCount, page: r1.items.length, names: r1.items.map((x) => x.crsKorNm).slice(0, 5) });
+      }
       const inArea = (addr) => addrInArea(addr, sido, sgg);
       payload = {
         items: [
