@@ -5526,7 +5526,7 @@ function BaramApp() {
             {resultTheme === "halfPrice" && halfPriceOf(result.name) && (
               <button
                 onClick={() => setBenefitOpen(true)}
-                className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mb-3"
+                className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mt-3 mb-3"
                 style={{ borderColor: THEME_ROULETTE.halfPrice.color, color: THEME_ROULETTE.halfPrice.color, letterSpacing: "0.05em" }}
               >
                 💸 반값여행 룰렛 · 혜택 설명 보기
@@ -5538,7 +5538,7 @@ function BaramApp() {
             {resultTheme && THEME_ROULETTE[resultTheme] && THEME_ROULETTE[resultTheme].tab && (
               <button
                 onClick={() => tabsTitleRef.current && tabsTitleRef.current.scrollIntoView({ behavior: "smooth", block: "start" })}
-                className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mb-3"
+                className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mt-3 mb-3"
                 style={{ borderColor: THEME_ROULETTE[resultTheme].color, color: THEME_ROULETTE[resultTheme].color, letterSpacing: "0.05em" }}
               >
                 {THEME_ROULETTE[resultTheme].emoji} {THEME_ROULETTE[resultTheme].label} 룰렛 · 장소 보기 ↓
