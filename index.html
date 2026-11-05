@@ -2519,7 +2519,7 @@ const bestIndex = (list) => list.filter(Boolean).sort((a, c) => (SEA_INDEX_RANK[
 // 바다낚시 한 칸(오전/오후)의 가장 좋은 지수와, 그 지수가 나온 어종들
 function fishSlotBest(slot) {
   const best = bestIndex(slot.fish.map((f) => f[1]));
-  const fish = slot.fish.filter((f) => f[1] === best && f[0] && f[0] !== "-").map((f) => f[0]);
+  const fish = slot.fish.filter((f) => f[1] === best && f[0] && f[0] !== "-" && f[0] !== "기타어종").map((f) => f[0]);
   return { best, fish };
 }
 // "목포북항서측(53km)" → "목포북항 서측 53km 바다" (배낚시 포인트: 항구에서 그만큼 떨어진 바다)
@@ -2561,7 +2561,7 @@ async function fetchFishingNearby({ lat, lng, spotName }) {
     name: fishingPointName(pt.name),
     searchName: pt.name.replace(/\(.*$/, ""),
     kind: /\(\d+km\)$/.test(pt.name) ? "배낚시" : "바다낚시",
-    address: "",
+    address: "국립해양조사원 바다낚시 포인트",
     distanceKm: Number.isFinite(pt.km) ? pt.km.toFixed(1) : null,
     lat: pt.lat, lng: pt.lng,
     fishing: { point: true, fc: pt.fc },
@@ -2611,7 +2611,7 @@ async function fetchSeasideNearby({ lat, lng, spotName }) {
   });
   // 관광정보 해수욕장과 맞지 않은 서핑 포인트는 따로 카드로
   const surfOnly = surf.filter((pt) => !usedSurf.has(pt.name)).map((pt) => ({
-    id: `surfpt_${pt.name}`, name: pt.name, kind: "서핑", address: "",
+    id: `surfpt_${pt.name}`, name: pt.name, kind: "서핑", address: "국립해양조사원 서핑 포인트",
     distanceKm: Number.isFinite(pt.km) ? pt.km.toFixed(1) : null, lat: pt.lat, lng: pt.lng,
     sea: { point: true, surf: pt.fc },
   }));
