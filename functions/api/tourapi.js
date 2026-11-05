@@ -20,6 +20,7 @@
 // - localMountains    : 한 지역(시·군·구)의 산 목록 (산림청 산정보 전국 4,705곳, 좌표는 없어 소재지 주소로 고른다)
 // - mountainPhotos    : 산 하나의 사진 (관광공사 관광지 사진 중 이름이 같은 곳 먼저 + 산림청 산 사진)
 // - trails            : 한 지역의 걷기길 (코리아둘레길 두루누비 284코스 + 전국길관광정보 표준데이터 지자체 걷기길)
+// - trailCourses      : 코리아둘레길 전체 코스 목록 (STAMP TOUR 걷기길 도장깨기용, 짧은 칸만)
 // - walkPhoto         : 걷기길 사진 여러 장 (관광사진 포토코리아에서 코스·길 이름 → 지나는 장소, 없으면 관광지 사진. 모두 같은 시·군 안에서)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
@@ -65,7 +66,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY, mountainPhotos: 7 * DAY, trails: 7 * DAY, walkPhoto: 7 * DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY, mountainPhotos: 7 * DAY, trails: 7 * DAY, walkPhoto: 7 * DAY, trailCourses: 7 * DAY };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -426,7 +427,7 @@ function addrInArea(addr, sido, sgg) {
 }
 
 // 걷기길 전체 목록(두루누비 284 + 표준데이터 약 1,350)을 한 주에 한 번 받아 저장해 두고 지역마다 골라 준다
-const TRAIL_INDEX_KEY = "https://baram-cache.internal/trails-v1";
+const TRAIL_INDEX_KEY = "https://baram-cache.internal/trails-v2";
 async function getTrailIndex(base, serviceKey) {
   const hit = await cacheGet(TRAIL_INDEX_KEY);
   if (hit && isFresh(hit, 7 * DAY)) return JSON.parse(hit.body);
@@ -445,7 +446,8 @@ async function getTrailIndex(base, serviceKey) {
       items.forEach((t, i) => {
         if (!t || !t.stretNm || /자전거/.test(t.stretNm)) return; // 자전거길은 뺀다
         local.push({
-          src: "local", id: `${t.insttCode || ""}-${pageNo}-${i}`, name: t.stretNm, intro: t.stretIntrcn, km: t.stretLt, time: t.reqreTime,
+          // 식별자는 기관 코드 + 길 이름 (걷기길 도장이 이 값으로 저장되므로 자료 순서가 바뀌어도 같게)
+          src: "local", id: `${t.insttCode || t.insttNm || ""}-${t.stretNm}`, name: t.stretNm, intro: t.stretIntrcn, km: t.stretLt, time: t.reqreTime,
           begin: t.beginSpotNm, beginAddr: t.beginRdnmadr || t.beginLnmadr, end: t.endSpotNm, endAddr: t.endRdnmadr || t.endLnmadr,
           course: t.coursInfo, tel: t.phoneNumber, org: t.institutionNm, inst: t.insttNm,
         });
@@ -643,6 +645,9 @@ export async function onRequest(context) {
       const area = url.searchParams.get("area") || "";
       if (!area) return json({ error: "BAD_REQUEST", message: "area가 필요해요." }, 400);
       payload = await walkPhotos(base, { title: url.searchParams.get("title") || "", base: url.searchParams.get("base") || "", names, area });
+    } else if (action === "trailCourses") {
+      const { durunubi } = await getTrailIndex(base, serviceKey);
+      payload = { items: durunubi.map((c) => ({ id: c.id, name: c.name, area: c.area, km: c.km, minutes: c.minutes, level: c.level })) };
     } else if (action === "trails") {
       // 동네 산과 같은 방식: sgg(시·군·구), sido(시·도 앞글자). 두루누비는 '지나는 시·군'(sigun), 지자체 걷기길은 시작 지점 주소로 고른다
       const sgg = url.searchParams.get("sgg") || "";
