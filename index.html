@@ -5027,6 +5027,34 @@ function weightedShuffle(list, weightOf) {
     .map((x) => x.item);
 }
 
+// 글줄 하나의 글자 크기를 다른 글자(targetRef)의 너비에 맞춘다. 폰마다 BARAM 글꼴 너비가 달라서 직접 잰다 (9~16px)
+function FitWidthText({ text, targetRef, className }) {
+  const ref = useRef(null);
+  const [size, setSize] = useState(12);
+  React.useLayoutEffect(() => {
+    const fit = () => {
+      const el = ref.current;
+      const target = targetRef.current;
+      if (!el || !target) return;
+      const prev = el.style.fontSize;
+      el.style.fontSize = "10px";
+      const natural = el.getBoundingClientRect().width;
+      el.style.fontSize = prev;
+      const want = target.getBoundingClientRect().width;
+      if (natural > 0 && want > 0) setSize(Math.min(16, Math.max(9, Math.floor((100 * want) / natural) / 10)));
+    };
+    fit();
+    // 글꼴이 늦게 내려오면 BARAM 너비가 바뀌므로 한 번 더
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
+  return (
+    <p ref={ref} className={className} style={{ fontSize: size, lineHeight: 1.25, whiteSpace: "nowrap", width: "max-content" }}>{text}</p>
+  );
+}
+
 function BaramApp() {
   const [spots, setSpots] = useState(() => buildSpots());
   const [region, setRegion] = useState("전체");
@@ -5040,6 +5068,7 @@ function BaramApp() {
   const [benefitOpen, setBenefitOpen] = useState(false); // 반값여행 룰렛 결과에서 여는 혜택 설명 창
   const [resultTheme, setResultTheme] = useState(null); // 지금 여행지를 어느 테마 룰렛으로 정했는지
   const tabsTitleRef = useRef(null);
+  const titleRef = useRef(null); // 머리의 BARAM 글자 (윗줄 글자 크기를 맞추려고)
   const [finderOpen, setFinderOpen] = useState(false);
   const [detailPlace, setDetailPlace] = useState(null); // 정보 창에 보여줄 장소
   const resultCardRef = useRef(null);
@@ -5681,10 +5710,10 @@ function BaramApp() {
         <div className="max-w-sm mx-auto flex items-center justify-between" style={{ padding: "10px 16px" }}>
           <div className="flex items-center gap-3">
             <MiniRoulette size={40} fast={phase !== "idle"} />
-            {/* '여행 룰렛 바람'을 아래 BARAM 너비에 딱 맞춰 양끝 정렬 (2026-11-05 형 요청) - 윗줄은 너비 0 + 최소 100%라 BARAM 너비를 따른다 */}
+            {/* '여행 룰렛 바람'을 띄어쓰기는 그대로 두고 글자 크기를 키워 아래 BARAM 너비에 맞춘다 (2026-11-05 형 결정 2번) */}
             <div style={{ display: "inline-flex", flexDirection: "column" }}>
-              <p className="font-bold text-[#1B4B91]" style={{ width: 0, minWidth: "100%", fontSize: 10.5, lineHeight: 1.3, whiteSpace: "nowrap", textAlign: "justify", textAlignLast: "justify" }}>여행 룰렛 바람</p>
-              <h1 className="font-serif font-bold text-[#DC2626]" style={{ fontSize: 22, lineHeight: 1.15 }}>
+              <FitWidthText text="여행 룰렛 바람" targetRef={titleRef} className="font-bold text-[#1B4B91]" />
+              <h1 ref={titleRef} className="font-serif font-bold text-[#DC2626]" style={{ fontSize: 22, lineHeight: 1.15 }}>
                 BARAM
               </h1>
             </div>
