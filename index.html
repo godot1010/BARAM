@@ -2594,7 +2594,7 @@ function MountainInfo({ place }) {
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-[#A6987F] mt-1.5">정보·사진: 산림청 산정보. 등산로·입산 통제 여부는 관리 기관에 확인하세요.</p>
+        <p className="text-[10px] text-[#A6987F] mt-1.5">정보: 산림청 산정보. 등산로·입산 통제 여부는 관리 기관에 확인하세요.</p>
       </div>
     );
   }
@@ -2617,7 +2617,7 @@ function MountainInfo({ place }) {
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-[#A6987F] mt-1.5">정보: 산림청·한국등산트레킹지원센터 100대 명산, 사진: 한국관광공사·산림청. 등산 전 날씨와 입산 통제 여부를 꼭 확인하세요.</p>
+      <p className="text-[10px] text-[#A6987F] mt-1.5">정보: 산림청·한국등산트레킹지원센터 100대 명산. 등산 전 날씨와 입산 통제 여부를 꼭 확인하세요.</p>
     </div>
   );
 }
@@ -3722,11 +3722,9 @@ function phoneNumber(text) {
 const placeDetailCache = new Map(); // 장소 id → Promise (같은 장소는 한 번만 받는다)
 function fetchPlaceDetail(place) {
   // 캠핑장은 목록에 이미 소개·전화·홈페이지가 있다 (관광정보 상세가 없는 다른 자료)
+  // 산 사진은 카드 썸네일에만 쓴다 (정보 창에는 넣지 않음 - 2026-11-05 형 결정)
   if (place.mountain) {
-    return fetchMountainPhotos(place).then((list) => ({
-      overview: place.overview, addr1: place.address, intro: {},
-      images: list.map((p) => ({ url: p.url })),
-    }));
+    return Promise.resolve({ overview: place.overview, addr1: place.address, intro: {} });
   }
   if (place.camping) {
     return Promise.resolve({ overview: place.camping.intro, tel: place.camping.tel, homepage: place.camping.homepage, addr1: place.address, intro: {} });
