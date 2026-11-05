@@ -588,6 +588,10 @@ export async function onRequest(context) {
       const lng = url.searchParams.get("lng");
       if (!/^\d{6,12}$/.test(no) || !name) return json({ error: "BAD_REQUEST", message: "no와 name이 필요해요." }, 400);
       payload = await mountainPhotos(base, serviceKey, no, name, lat, lng, url.searchParams.get("area") || "");
+    } else if (action === "galleryProbe") {
+      // 관광사진(포토코리아) 모양 확인용 (임시)
+      const { items, totalCount } = await callTourApi("gallerySearchList1", { ...base, keyword: url.searchParams.get("q") || "바우길", numOfRows: "10", pageNo: "1", arrange: "A" }, "https://apis.data.go.kr/B551011/PhotoGalleryService1");
+      payload = { totalCount, items };
     } else if (action === "walkPhoto") {
       // names = 후보 장소 이름들("|"로 구분, 앞쪽이 먼저), area = 시·군·구 이름. 길 이름 자체로는 사진이 거의 없어서 지나는 곳으로 찾는다
       const names = (url.searchParams.get("names") || "").split("|").map((s) => s.trim()).filter((s) => s.length >= 2).slice(0, 6);
