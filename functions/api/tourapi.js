@@ -765,7 +765,7 @@ export async function onRequest(context) {
         tourNearByClass(base, lat, lng, "LS020500"),
         tourNearByClass(base, lat, lng, "LS020600"),
       ]);
-      payload = { points, places: [...sea, ...fresh] };
+      payload = { items: [{ points, places: [...sea, ...fresh] }] }; // 앱은 items만 읽는다
     } else if (action === "seaside") {
       // 🌊 해수욕장(관광정보) + 서핑 지수(30km) + 해수욕 지수(30km) + 서핑 업체(관광정보 윈드서핑 분류 중 이름에 서핑/서프)
       const lat = Number(url.searchParams.get("lat"));
@@ -777,7 +777,7 @@ export async function onRequest(context) {
         seaForecastNear(serviceKey, "beach", lat, lng, 30),
         tourNearByClass(base, lat, lng, "LS020100"),
       ]);
-      payload = { beaches, surf, beachIdx, shops: shops.filter((it) => /서핑|서프|surf/i.test(it.title || "")) };
+      payload = { items: [{ beaches, surf, beachIdx, shops: shops.filter((it) => /서핑|서프|surf/i.test(it.title || "")) }] };
     } else if (action === "trailCourses") {
       const { durunubi } = await getTrailIndex(base, serviceKey);
       payload = { items: durunubi.map((c) => ({ id: c.id, name: c.name, area: c.area, km: c.km, minutes: c.minutes, level: c.level })) };
