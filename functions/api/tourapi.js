@@ -66,7 +66,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY, mountainPhotos: 7 * DAY, trails: 7 * DAY, walkPhoto: 7 * DAY, trailCourses: 7 * DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY, mountainPhotos: 7 * DAY, trails: 7 * DAY, walkPhoto: 7 * DAY, trailCourses: 7 * DAY, fishing: 3 * 60 * 60, seaside: 3 * 60 * 60 };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -512,6 +512,91 @@ async function walkPhotos(base, { title, base: trailName, names, area }) {
   return { items: photos };
 }
 
+// ------------------------------------------------------------------
+// 🎣 낚시 · 🌊 바다 (2026-11-05 형 결정, 국립해양조사원 지수 3개 활용신청·승인)
+// 전국 예보(바다낚시 49곳, 서핑 18곳, 해수욕 49곳 × 7일 × 오전/오후)를 3시간에 한 번 통째로 받아
+// 장소별로 묶어 저장해 두고, 여행지 주변 것만 골라 준다. 응답 모양: { header, body: { items: { item } } }
+// ------------------------------------------------------------------
+const KHOA_BASE = "https://apis.data.go.kr/1192136";
+const SEA_FORECASTS = {
+  fish: { path: "fcstFishingv2/GetFcstFishingApiServicev2", extra: { gubun: "갯바위" }, name: "seafsPstnNm" }, // gubun을 바꿔도 같은 자료가 와서 하나만
+  surf: { path: "fcstSurfingv2/GetFcstSurfingApiServicev2", extra: {}, name: "surfPlcNm" },
+  beach: { path: "fcstBeachv2/GetFcstBeachApiServicev2", extra: {}, name: "bbchNm" },
+};
+async function fetchKhoaPage(serviceKey, kind, pageNo) {
+  const f = SEA_FORECASTS[kind];
+  const res = await fetch(`${KHOA_BASE}/${f.path}?${new URLSearchParams({ serviceKey, type: "json", pageNo: String(pageNo), numOfRows: "300", ...f.extra })}`);
+  const text = await res.text();
+  if (!res.ok) throw new TourApiError({ error: "UPSTREAM_ERROR", status: res.status, upstreamBody: text.slice(0, 300), message: `바다 예보 응답 오류 (HTTP ${res.status})` }, 502);
+  let data;
+  try { data = JSON.parse(text); } catch { throw new TourApiError({ error: "UPSTREAM_NOT_JSON", upstreamBody: text.slice(0, 300), message: "바다 예보가 JSON이 아니에요." }, 502); }
+  const code = data?.header?.resultCode;
+  if (code === "03") return { items: [], total: 0 }; // 자료 없음
+  if (code && code !== "00") throw new TourApiError({ error: "UPSTREAM_RESULT_ERROR", resultCode: code, message: `바다 예보 오류: ${data?.header?.resultMsg || ""}` }, 502);
+  const raw = data?.body?.items?.item;
+  return { items: Array.isArray(raw) ? raw : raw ? [raw] : [], total: Number(data?.body?.totalCount) || 0 };
+}
+const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v));
+async function getSeaForecast(serviceKey, kind) {
+  const key = `https://baram-cache.internal/sea-${kind}-v1`;
+  const hit = await cacheGet(key);
+  if (hit && isFresh(hit, 3 * 60 * 60)) return JSON.parse(hit.body);
+  try {
+    const rows = [];
+    for (let pageNo = 1; pageNo <= 15; pageNo++) {
+      const { items, total } = await fetchKhoaPage(serviceKey, kind, pageNo);
+      rows.push(...items);
+      if (items.length === 0 || rows.length >= total) break;
+    }
+    // 장소 → 날짜·오전/오후별 한 칸
+    const places = new Map();
+    rows.forEach((r) => {
+      const name = r[SEA_FORECASTS[kind].name];
+      if (!name || !r.lat || !r.lot) return;
+      if (!places.has(name)) places.set(name, { name, lat: Number(r.lat), lng: Number(r.lot), fc: new Map() });
+      const fcKey = `${r.predcYmd} ${r.predcNoonSeCd}`;
+      const fc = places.get(name).fc;
+      if (kind === "fish") {
+        if (!fc.has(fcKey)) fc.set(fcKey, { d: r.predcYmd, t: r.predcNoonSeCd, tide: r.tdlvHrCn || "", wv: [num(r.minWvhgt), num(r.maxWvhgt)], wt: [num(r.minWtem), num(r.maxWtem)], ws: [num(r.minWspd), num(r.maxWspd)], fish: [] });
+        fc.get(fcKey).fish.push([r.seafsTgfshNm, r.totalIndex || ""]);
+      } else if (kind === "surf") {
+        if (!fc.has(fcKey)) fc.set(fcKey, { d: r.predcYmd, t: r.predcNoonSeCd, wv: num(r.avgWvhgt), wp: num(r.avgWvpd), ws: num(r.avgWspd), wt: num(r.avgWtem), grade: {} });
+        fc.get(fcKey).grade[r.grdCn || ""] = r.totalIndex || "";
+      } else {
+        fc.set(fcKey, { d: r.predcYmd, t: r.predcNoonSeCd, wv: num(r.maxWvhgt), wt: num(r.avgWtem), at: num(r.avgArtmp), ws: num(r.maxWspd), open: r.opnStat || "", idx: r.totalIndex || "" });
+      }
+    });
+    const list = [...places.values()].map((pl) => ({ ...pl, fc: [...pl.fc.values()].sort((a, c) => (a.d + (a.t === "오전" ? 0 : 1)).localeCompare(c.d + (c.t === "오전" ? 0 : 1))) }));
+    if (list.length === 0 && hit) return JSON.parse(hit.body);
+    await cachePut(key, JSON.stringify(list));
+    return list;
+  } catch (err) {
+    if (hit) return JSON.parse(hit.body);
+    throw err;
+  }
+}
+// 여행지 주변 예보 장소 (가까운 순)
+async function seaForecastNear(serviceKey, kind, lat, lng, km) {
+  try {
+    const list = await getSeaForecast(serviceKey, kind);
+    return list.map((pl) => ({ ...pl, km: kmBetween(lat, lng, pl.lat, pl.lng) })).filter((pl) => pl.km <= km).sort((a, c) => a.km - c.km);
+  } catch {
+    return []; // 예보가 안 와도 관광정보 장소는 보여준다
+  }
+}
+// 관광정보 새 분류(lclsSystm)로 주변 장소 찾기. 예: LS020500 민물낚시, LS020600 바다낚시, LS020100 윈드서핑, NA020900 해변·해수욕장
+async function tourNearByClass(base, lat, lng, code, contentTypeId, rows = "50") {
+  try {
+    const { items } = await callTourApi("locationBasedList2", {
+      ...base, arrange: "E", mapX: lng, mapY: lat, radius: "20000", contentTypeId, numOfRows: rows, pageNo: "1",
+      lclsSystm1: code.slice(0, 2), lclsSystm2: code.slice(0, 4), lclsSystm3: code,
+    });
+    return items.map((it) => ({ ...it, cls: code }));
+  } catch {
+    return [];
+  }
+}
+
 // 전국 산 목록(4,705곳)을 한 주에 한 번 통째로 받아 저장해 두고, 지역마다 골라 준다
 async function getLocalMountainIndex(serviceKey) {
   const hit = await cacheGet(LOCAL_MOUNTAIN_INDEX_KEY);
@@ -645,23 +730,29 @@ export async function onRequest(context) {
       const area = url.searchParams.get("area") || "";
       if (!area) return json({ error: "BAD_REQUEST", message: "area가 필요해요." }, 400);
       payload = await walkPhotos(base, { title: url.searchParams.get("title") || "", base: url.searchParams.get("base") || "", names, area });
-    } else if (action === "seaProbe") {
-      // 임시 점검용 (바다 자료 확인 후 지울 것)
-      const paths = { fish: "fcstFishingv2/GetFcstFishingApiServicev2", surf: "fcstSurfingv2/GetFcstSurfingApiServicev2", beach: "fcstBeachv2/GetFcstBeachApiServicev2", rip: "ripCurrent/GetRipCurrentApiService" };
-      if (url.searchParams.get("kind") === "tour") {
-        const op = url.searchParams.get("op");
-        if (!["categoryCode2", "areaBasedList2", "lclsSystmCode2"].includes(op)) return json({ error: "BAD_REQUEST" }, 400);
-        const q = { ...base, numOfRows: url.searchParams.get("numOfRows") || "100", pageNo: url.searchParams.get("pageNo") || "1" };
-        for (const k of ["contentTypeId", "cat1", "cat2", "cat3", "lclsSystm1", "lclsSystm2", "lclsSystm3"]) if (url.searchParams.get(k)) q[k] = url.searchParams.get(k);
-        return json(await callTourApi(op, q));
-      }
-      const path = paths[url.searchParams.get("kind")];
-      if (!path) return json({ error: "BAD_REQUEST" }, 400);
-      const q = { serviceKey, type: "json", pageNo: url.searchParams.get("pageNo") || "1", numOfRows: url.searchParams.get("numOfRows") || "300" };
-      for (const k of ["gubun", "reqDate", "beachCode", "placeCode", "placeName"]) if (url.searchParams.get(k)) q[k] = url.searchParams.get(k);
-      const res = await fetch(`https://apis.data.go.kr/1192136/${path}?${new URLSearchParams(q)}`);
-      const text = await res.text();
-      return new Response(text, { status: 200, headers: { "content-type": "text/plain; charset=utf-8", "x-upstream-status": String(res.status) } });
+    } else if (action === "fishing") {
+      // 🎣 바다낚시 지수 포인트(40km 안) + 관광정보 낚시터(민물·바다, 20km 안)
+      const lat = Number(url.searchParams.get("lat"));
+      const lng = Number(url.searchParams.get("lng"));
+      if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
+      const [points, fresh, sea] = await Promise.all([
+        seaForecastNear(serviceKey, "fish", lat, lng, 40),
+        tourNearByClass(base, lat, lng, "LS020500", "28"),
+        tourNearByClass(base, lat, lng, "LS020600", "28"),
+      ]);
+      payload = { points, places: [...sea, ...fresh] };
+    } else if (action === "seaside") {
+      // 🌊 해수욕장(관광정보) + 서핑 지수(30km) + 해수욕 지수(30km) + 서핑 업체(관광정보 윈드서핑 분류 중 이름에 서핑/서프)
+      const lat = Number(url.searchParams.get("lat"));
+      const lng = Number(url.searchParams.get("lng"));
+      if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
+      const [beaches, surf, beachIdx, shops] = await Promise.all([
+        tourNearByClass(base, lat, lng, "NA020900", "12"),
+        seaForecastNear(serviceKey, "surf", lat, lng, 30),
+        seaForecastNear(serviceKey, "beach", lat, lng, 30),
+        tourNearByClass(base, lat, lng, "LS020100", "28"),
+      ]);
+      payload = { beaches, surf, beachIdx, shops: shops.filter((it) => /서핑|서프|surf/i.test(it.title || "")) };
     } else if (action === "trailCourses") {
       const { durunubi } = await getTrailIndex(base, serviceKey);
       payload = { items: durunubi.map((c) => ({ id: c.id, name: c.name, area: c.area, km: c.km, minutes: c.minutes, level: c.level })) };
