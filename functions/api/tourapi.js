@@ -645,6 +645,16 @@ export async function onRequest(context) {
       const area = url.searchParams.get("area") || "";
       if (!area) return json({ error: "BAD_REQUEST", message: "area가 필요해요." }, 400);
       payload = await walkPhotos(base, { title: url.searchParams.get("title") || "", base: url.searchParams.get("base") || "", names, area });
+    } else if (action === "seaProbe") {
+      // 임시 점검용 (바다 자료 확인 후 지울 것)
+      const paths = { fish: "fcstFishingv2/GetFcstFishingApiServicev2", surf: "fcstSurfingv2/GetFcstSurfingApiServicev2", beach: "fcstBeachv2/GetFcstBeachApiServicev2", rip: "ripCurrent/GetRipCurrentApiService" };
+      const path = paths[url.searchParams.get("kind")];
+      if (!path) return json({ error: "BAD_REQUEST" }, 400);
+      const q = { serviceKey, type: "json", pageNo: url.searchParams.get("pageNo") || "1", numOfRows: url.searchParams.get("numOfRows") || "300" };
+      for (const k of ["gubun", "reqDate", "beachCode", "placeCode", "placeName"]) if (url.searchParams.get(k)) q[k] = url.searchParams.get(k);
+      const res = await fetch(`https://apis.data.go.kr/1192136/${path}?${new URLSearchParams(q)}`);
+      const text = await res.text();
+      return new Response(text, { status: 200, headers: { "content-type": "text/plain; charset=utf-8", "x-upstream-status": String(res.status) } });
     } else if (action === "trailCourses") {
       const { durunubi } = await getTrailIndex(base, serviceKey);
       payload = { items: durunubi.map((c) => ({ id: c.id, name: c.name, area: c.area, km: c.km, minutes: c.minutes, level: c.level })) };
