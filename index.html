@@ -2689,18 +2689,29 @@ function fetchWalkPhoto(place, area) {
   if (!walkPhotoCache.has(key)) {
     const promise = !area
       ? Promise.resolve([])
-      : tourApiProxyFetch("walkPhoto", { names: names.join("|"), title, base, area, v: "3" }).catch(() => { walkPhotoCache.delete(key); return []; });
+      : tourApiProxyFetch("walkPhoto", { names: names.join("|"), title, base, area, v: "4" }).catch(() => { walkPhotoCache.delete(key); return []; });
     walkPhotoCache.set(key, promise);
   }
   return walkPhotoCache.get(key);
 }
-// 카드의 걷기길 사진 칸 (없거나 깨지면 🥾)
+// 카드의 걷기길 사진 칸 (없거나 깨지면 🥾). 같은 지역 목록에서 앞 카드가 쓴 사진은 피해서 고른다 (구간마다 같은 사진이 반복되지 않게)
+const walkThumbUsed = new Map(); // 지역 → 이미 카드에 쓴 사진 주소들
 function WalkThumb({ place, emoji }) {
   const [src, setSrc] = useState(null);
   const [broken, setBroken] = useState(false);
   useEffect(() => {
     let alive = true;
-    fetchWalkPhoto(place, place.walk.area).then((list) => { if (alive && list[0]) setSrc(toHttps(list[0].thumb || list[0].url)); });
+    fetchWalkPhoto(place, place.walk.area).then((list) => {
+      if (!alive || !list[0]) return;
+      const used = walkThumbUsed.get(place.walk.area) || new Map();
+      walkThumbUsed.set(place.walk.area, used);
+      const mine = used.get(place.id);
+      const taken = new Set([...used.entries()].filter(([id]) => id !== place.id).map(([, u]) => u));
+      const pick = mine || (list.find((p) => !taken.has(p.thumb || p.url)) || list[0]);
+      const url = mine || pick.thumb || pick.url;
+      used.set(place.id, url);
+      setSrc(toHttps(url));
+    });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [place.id]);

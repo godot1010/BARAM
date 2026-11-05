@@ -487,16 +487,15 @@ async function walkPhotos(base, { title, base: trailName, names, area }) {
   };
   const inArea = (g) => (g.loc || "").includes(area) || (g.kw || "").includes(area);
   const credit = (g) => `한국관광공사 포토코리아${g.by ? ` (${g.by.replace(/^한국관광공사\s*/, "")})` : ""}`;
-  // 1) 코스 사진 (예: 해파랑길11코스) 2) 길 이름 사진 중 그 시·군에서 찍은 것 3) 지나는 장소 사진
+  // 순서: 1) 코스 사진(예: 해파랑길11코스) 2) 지나는 장소의 포토코리아 사진 3) 지나는 장소의 관광지 사진 4) 길 이름 사진(예: 강릉바우길)
+  // 길 이름 사진은 여러 구간이 같은 사진이 되므로 맨 뒤 (2026-11-05)
   if (title) (await gallerySearch(base, title)).filter((g) => plainName(g.title) === plainName(title)).forEach((g) => add(g.url, null, credit(g), g.title, 4));
-  if (trailName && trailName.length >= 2) (await gallerySearch(base, trailName)).filter((g) => inArea(g) && plainName(g.title).includes(plainName(trailName))).forEach((g) => add(g.url, null, credit(g), g.title, 5));
   for (const name of names.slice(0, 2)) {
     if (photos.length >= 4) break;
-    (await gallerySearch(base, name)).filter((g) => inArea(g) && plainName(g.title).includes(plainName(name))).forEach((g) => add(g.url, null, credit(g), g.title, 6));
+    (await gallerySearch(base, name)).filter((g) => inArea(g) && plainName(g.title).includes(plainName(name))).slice(0, 2).forEach((g) => add(g.url, null, credit(g), g.title, 6));
   }
-  // 4) 그래도 적으면 관광지 사진 (같은 시·군에서 이름이 맞는 곳)
   for (const name of names) {
-    if (photos.length >= 3) break;
+    if (photos.length >= 4) break;
     const key = plainName(name);
     try {
       const { items } = await callTourApi("searchKeyword2", { ...base, keyword: key, numOfRows: "20", pageNo: "1", arrange: "O" });
@@ -506,6 +505,7 @@ async function walkPhotos(base, { title, base: trailName, names, area }) {
       }).slice(0, 1).forEach((it) => add(it.firstimage, it.firstimage2, "한국관광공사", it.title, 6));
     } catch {}
   }
+  if (trailName && trailName.length >= 2) (await gallerySearch(base, trailName)).filter((g) => inArea(g) && plainName(g.title).includes(plainName(trailName))).forEach((g) => add(g.url, null, credit(g), g.title, 6));
   return { items: photos };
 }
 
