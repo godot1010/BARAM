@@ -6116,7 +6116,7 @@ function BaramApp() {
                   : { borderColor: "#D9CBB0", color: "#2B2620" }),
               }}
             >
-              테마: {rouletteTheme ? `${THEME_ROULETTE[rouletteTheme].emoji} ${THEME_ROULETTE[rouletteTheme].label}` : "일반"} {pickerOpen === "theme" ? "▴" : "▾"}
+              테마 : {rouletteTheme ? `${THEME_ROULETTE[rouletteTheme].emoji} ${THEME_ROULETTE[rouletteTheme].label}` : "일반"} {pickerOpen === "theme" ? "▴" : "▾"}
             </button>
             {pickerOpen === "theme" && !disabled && pickerMenu([
               { key: "normal", label: "일반", color: "#2B2620", note: `${spots.length}곳`, on: !rouletteTheme, pick: () => changeTheme(null) },
@@ -6138,7 +6138,7 @@ function BaramApp() {
                   : { borderColor: `${REGION_COLORS[region]}80`, ...(pickerOpen === "region" ? {} : { background: `${REGION_COLORS[region]}1F` }), color: REGION_COLORS[region] }),
               }}
             >
-              지역: {region} {pickerOpen === "region" ? "▴" : "▾"}
+              지역 : {region} {pickerOpen === "region" ? "▴" : "▾"}
             </button>
             {pickerOpen === "region" && !disabled && pickerMenu(REGION_LIST.map((r) => {
               const n = rouletteCandidates(spots, r, currentLocation, rouletteTheme).length;
