@@ -2403,7 +2403,7 @@ async function fetchMountainsNearby({ lat, lng, spotName }) {
       lng: m.lng,
       image: null,
       area: own ? null : (m.regions[0] || "").replace(/-.*$/, "").replace(/^\S+ /, "") || null,
-      mountain: { stampKey: m.id, height: m.height, sub: m.sub, reason: m.reason, course: m.course, transport: m.transport, regions: m.regions },
+      mountain: { stampKey: m.id, no: m.code, height: m.height, sub: m.sub, reason: m.reason, course: m.course, transport: m.transport, regions: m.regions },
       overview: [m.overview, m.details].filter(Boolean).join("<br><br>"),
     }));
   // 100대 명산과 이름이 같은 산은 빼고, 높은 산부터
@@ -2423,11 +2423,44 @@ async function fetchMountainsNearby({ lat, lng, spotName }) {
       lng: null,
       image: null,
       area: null,
-      mountain: { height: parseFloat(m.height) ? Math.round(parseFloat(m.height)) : null, local: true, admin: m.admin, tel: m.tel, regions: [spotName], line: m.details && m.details.length > 10 ? m.details.split(/[.\n]/)[0] : "" },
+      mountain: { no: m.id, height: parseFloat(m.height) ? Math.round(parseFloat(m.height)) : null, local: true, admin: m.admin, tel: m.tel, regions: [spotName], line: m.details && m.details.length > 10 ? m.details.split(/[.\n]/)[0] : "" },
       overview: m.details && m.details.length > 10 ? m.details : "",
     }));
   return [...famous, ...others];
 }
+// 산 사진: 서버가 관광공사 큰 사진 먼저, 그다음 산림청 사진을 준다. 같은 산은 한 번만 받는다
+const mountainPhotoCache = new Map();
+function fetchMountainPhotos(place) {
+  const m = place.mountain;
+  if (!m || !m.no) return Promise.resolve([]);
+  const key = `${m.no}:${place.name}`;
+  if (!mountainPhotoCache.has(key)) {
+    const promise = tourApiProxyFetch("mountainPhotos", {
+      no: String(m.no), name: place.name,
+      ...(m.local || !place.lat ? {} : { lat: String(place.lat), lng: String(place.lng) }),
+    }).catch(() => { mountainPhotoCache.delete(key); return []; });
+    mountainPhotoCache.set(key, promise);
+  }
+  return mountainPhotoCache.get(key);
+}
+// 카드의 산 사진 칸: 사진이 있으면 보여 주고, 없거나 깨지면 산 아이콘
+function MountainThumb({ place, emoji }) {
+  const [src, setSrc] = useState(null);
+  const [broken, setBroken] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetchMountainPhotos(place).then((list) => { if (alive && list[0]) setSrc(toHttps(list[0].thumb || list[0].url)); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [place.id]);
+  if (src && !broken) {
+    return <img src={src} alt="" loading="lazy" className="w-14 h-14 rounded-md object-cover shrink-0" onError={() => setBroken(true)} />;
+  }
+  return (
+    <span className="w-14 h-14 rounded-md shrink-0 flex items-center justify-center text-xl" style={{ background: "#F3E6C4" }}>{emoji}</span>
+  );
+}
+
 // 명산 도장 버튼 (정보 창). 찍으면 몇 번째인지와 배지를 알려 준다
 function MountainStampButton({ code, name }) {
   const stamps = useMountainStamps();
@@ -2480,7 +2513,7 @@ function MountainStampList({ query }) {
   const toPlace = (m) => ({
     id: `mtn_${m.id}`, name: m.name, kind: m.height ? `${Number(m.height).toLocaleString()}m` : "명산", address: m.addr || "",
     distanceKm: null, lat: m.lat, lng: m.lng, image: null, area: null,
-    mountain: { stampKey: m.id, height: m.height, sub: m.sub, reason: m.reason, course: m.course, transport: m.transport, regions: m.regions },
+    mountain: { stampKey: m.id, no: m.code, height: m.height, sub: m.sub, reason: m.reason, course: m.course, transport: m.transport, regions: m.regions },
     overview: [m.overview, m.details].filter(Boolean).join("<br><br>"),
   });
   return (
@@ -2560,7 +2593,7 @@ function MountainInfo({ place }) {
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-[#A6987F] mt-1.5">정보: 산림청 산정보. 등산로·입산 통제 여부는 관리 기관에 확인하세요.</p>
+        <p className="text-[10px] text-[#A6987F] mt-1.5">정보·사진: 산림청 산정보. 등산로·입산 통제 여부는 관리 기관에 확인하세요.</p>
       </div>
     );
   }
@@ -2583,7 +2616,7 @@ function MountainInfo({ place }) {
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-[#A6987F] mt-1.5">정보: 산림청·한국등산트레킹지원센터 100대 명산. 등산 전 날씨와 입산 통제 여부를 꼭 확인하세요.</p>
+      <p className="text-[10px] text-[#A6987F] mt-1.5">정보: 산림청·한국등산트레킹지원센터 100대 명산, 사진: 한국관광공사·산림청. 등산 전 날씨와 입산 통제 여부를 꼭 확인하세요.</p>
     </div>
   );
 }
@@ -3689,7 +3722,10 @@ const placeDetailCache = new Map(); // 장소 id → Promise (같은 장소는 �
 function fetchPlaceDetail(place) {
   // 캠핑장은 목록에 이미 소개·전화·홈페이지가 있다 (관광정보 상세가 없는 다른 자료)
   if (place.mountain) {
-    return Promise.resolve({ overview: place.overview, addr1: place.address, intro: {} });
+    return fetchMountainPhotos(place).then((list) => ({
+      overview: place.overview, addr1: place.address, intro: {},
+      images: list.map((p) => ({ url: p.url })),
+    }));
   }
   if (place.camping) {
     return Promise.resolve({ overview: place.camping.intro, tel: place.camping.tel, homepage: place.camping.homepage, addr1: place.address, intro: {} });
@@ -3909,7 +3945,9 @@ function PlaceCard({ place, emoji }) {
       onClick={() => openDetail(place)}
       className="cursor-pointer flex gap-3 bg-white/50 border border-[#D9CBB0] rounded-lg p-2"
     >
-      {place.image && !imageBroken ? (
+      {place.mountain && !place.image ? (
+        <MountainThumb place={place} emoji={emoji} />
+      ) : place.image && !imageBroken ? (
         <img
           src={place.image}
           alt=""

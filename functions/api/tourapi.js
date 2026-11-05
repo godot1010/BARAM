@@ -18,6 +18,7 @@
 // - camping           : 위치 주변 캠핑장 목록 (고캠핑 GoCamping locationBasedList)
 // - mountains         : 100대 명산 전체 (위치·높이 = 한국등산트레킹지원센터 + 소개·선정 이유·교통 = 산림청 명산등산로, 산 코드로 합침)
 // - localMountains    : 한 지역(시·군·구)의 산 목록 (산림청 산정보 전국 4,705곳, 좌표는 없어 소재지 주소로 고른다)
+// - mountainPhotos    : 산 하나의 사진 (관광공사 관광지 사진 중 이름이 같은 곳 먼저 + 산림청 산 사진)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
@@ -62,7 +63,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY, mountainPhotos: 7 * DAY };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -372,6 +373,33 @@ async function mountains(serviceKey) {
   };
 }
 
+// 산 사진: 관광공사 관광지 중 이름이 같은 곳(큰 사진)을 먼저, 그다음 산림청 산 사진(작고 오래된 사진)
+// 산림청 사진은 파일 이름만 주므로 산림청 누리집 주소를 붙인다. 산 코드가 겹치는 산이 있어 사진 이름(imgname)도 맞춰 본다
+const FOREST_IMAGE_BASE = "https://www.forest.go.kr/images/data/down/mountain/";
+const plainName = (s) => (s || "").replace(/\(.*?\)/g, "").replace(/\s/g, "");
+async function mountainPhotos(base, serviceKey, no, name, lat, lng) {
+  const photos = [];
+  const key = plainName(name);
+  if (lat && lng) {
+    try {
+      const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius: "10000", contentTypeId: "12", numOfRows: "50", pageNo: "1" });
+      items.forEach((it) => {
+        const t = plainName(it.title);
+        const same = t === key || new RegExp(`^${key}(국립공원|도립공원|군립공원)`).test(t);
+        if (same && it.firstimage) photos.push({ url: it.firstimage, thumb: it.firstimage2 || it.firstimage, big: true });
+      });
+    } catch {}
+  }
+  try {
+    const text = await fetchText(`https://apis.data.go.kr/1400000/service/cultureInfoService2/mntInfoImgOpenAPI2?${new URLSearchParams({ ServiceKey: serviceKey, mntiListNo: no, pageNo: "1", numOfRows: "10" })}`);
+    xmlItems(text)
+      .filter((it) => it.imgfilename && plainName(it.imgname) === key)
+      .sort((a, b) => Number(a.imgno) - Number(b.imgno))
+      .forEach((it) => photos.push({ url: FOREST_IMAGE_BASE + it.imgfilename, thumb: FOREST_IMAGE_BASE + it.imgfilename, big: false }));
+  } catch {}
+  return { items: photos.slice(0, 8) };
+}
+
 // 전국 산 목록(4,705곳)을 한 주에 한 번 통째로 받아 저장해 두고, 지역마다 골라 준다
 async function getLocalMountainIndex(serviceKey) {
   const hit = await cacheGet(LOCAL_MOUNTAIN_INDEX_KEY);
@@ -491,12 +519,14 @@ export async function onRequest(context) {
       };
     } else if (action === "mountains") {
       payload = await mountains(serviceKey);
-    } else if (action === "mountainImages") {
-      // 산 사진 (산림청 산정보 mntInfoImgOpenAPI2). no = 산정보 ID(9자리, 예: 428302602)
+    } else if (action === "mountainPhotos") {
+      // no = 산정보 ID(9자리), name = 산 이름, lat/lng = 정상 좌표(100대 명산만 있음)
       const no = url.searchParams.get("no") || "";
-      if (!/^\d{6,12}$/.test(no)) return json({ error: "BAD_REQUEST", message: "no가 필요해요." }, 400);
-      const text = await fetchText(`https://apis.data.go.kr/1400000/service/cultureInfoService2/mntInfoImgOpenAPI2?${new URLSearchParams({ ServiceKey: serviceKey, mntiListNo: no, pageNo: "1", numOfRows: "10" })}`);
-      payload = { items: xmlItems(text), head: text.slice(0, 200) };
+      const name = url.searchParams.get("name") || "";
+      const lat = url.searchParams.get("lat");
+      const lng = url.searchParams.get("lng");
+      if (!/^\d{6,12}$/.test(no) || !name) return json({ error: "BAD_REQUEST", message: "no와 name이 필요해요." }, 400);
+      payload = await mountainPhotos(base, serviceKey, no, name, lat, lng);
     } else if (action === "localMountains") {
       // sgg: 시·군·구 이름(예: 가평군, 종로구), sido: 시·도 앞글자(예: 서울, 강원 - 광역시 구나 고성군처럼 이름이 겹칠 때)
       const sgg = url.searchParams.get("sgg") || "";
