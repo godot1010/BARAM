@@ -2665,7 +2665,8 @@ function walkPhotoNames(place) {
   const base = place.name.replace(/\(.*?\)/g, "").replace(/\s*\d+(-\d+)?\s*(구간|코스)?\s*$/, "").replace(/\s+\d+(-\d+)?\s*(구간|코스).*$/, "").trim();
   const route = (w.course || "").split(/\s*(?:→|->|-|~|>|,|ㆍ|·)\s*/);
   const quoted = [...(w.tour || "").matchAll(/['‘’"“”]([^'‘’"“”]{2,20})['‘’"“”]/g)].map((m) => m[1]);
-  const names = [base, ...quoted, ...route, w.begin, w.end].map((s) => (s || "").replace(/\(.*?\)/g, "").trim())
+  // 길 이름(바우길·해파랑길 등)은 여러 구간이 같은 사진이 되므로 맨 마지막에
+  const names = [...quoted, ...route.slice(1), w.end, route[0], w.begin, base].map((s) => (s || "").replace(/\(.*?\)/g, "").trim())
     .filter((s) => s.length >= 2 && !/(주차장|버스|정류장|터미널|입구|삼거리|사거리|교차로|마을회관)$/.test(s));
   return [...new Set(names)].slice(0, 6);
 }
@@ -2676,7 +2677,7 @@ function fetchWalkPhoto(place, area) {
   if (!walkPhotoCache.has(key)) {
     const promise = names.length === 0 || !area
       ? Promise.resolve([])
-      : tourApiProxyFetch("walkPhoto", { names: names.join("|"), area, v: "1" }).catch(() => { walkPhotoCache.delete(key); return []; });
+      : tourApiProxyFetch("walkPhoto", { names: names.join("|"), area, v: "2" }).catch(() => { walkPhotoCache.delete(key); return []; });
     walkPhotoCache.set(key, promise);
   }
   return walkPhotoCache.get(key);
