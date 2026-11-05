@@ -592,8 +592,8 @@ async function tourNearByClass(base, lat, lng, code, contentTypeId, rows = "50")
       lclsSystm1: code.slice(0, 2), lclsSystm2: code.slice(0, 4), lclsSystm3: code,
     });
     return items.map((it) => ({ ...it, cls: code }));
-  } catch {
-    return [];
+  } catch (err) {
+    return [{ _err: String(err && (err.payload ? JSON.stringify(err.payload) : err.message)) }];
   }
 }
 
