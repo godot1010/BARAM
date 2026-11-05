@@ -377,19 +377,27 @@ async function mountains(serviceKey) {
 // 산림청 사진은 파일 이름만 주므로 산림청 누리집 주소를 붙인다. 산 코드가 겹치는 산이 있어 사진 이름(imgname)도 맞춰 본다
 const FOREST_IMAGE_BASE = "https://www.forest.go.kr/images/data/down/mountain/";
 const plainName = (s) => (s || "").replace(/\(.*?\)/g, "").replace(/\s/g, "");
-async function mountainPhotos(base, serviceKey, no, name, lat, lng) {
+function kmBetween(lat1, lng1, lat2, lng2) {
+  const r = Math.PI / 180;
+  const a = Math.sin(((lat2 - lat1) * r) / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(((lng2 - lng1) * r) / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(a));
+}
+// area = 동네 산의 시·군·구 이름(좌표가 없어 주소로 같은 산인지 본다). 이름이 같은 산이 전국에 많다(남산 등)
+async function mountainPhotos(base, serviceKey, no, name, lat, lng, area) {
   const photos = [];
   const key = plainName(name);
-  if (lat && lng) {
-    try {
-      const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius: "10000", contentTypeId: "12", numOfRows: "50", pageNo: "1" });
-      items.forEach((it) => {
-        const t = plainName(it.title);
-        const same = t === key || new RegExp(`^${key}(국립공원|도립공원|군립공원)`).test(t);
-        if (same && it.firstimage) photos.push({ url: it.firstimage, thumb: it.firstimage2 || it.firstimage, big: true });
-      });
-    } catch {}
-  }
+  try {
+    const { items } = await callTourApi("searchKeyword2", { ...base, keyword: key, contentTypeId: "12", numOfRows: "30", pageNo: "1", arrange: "O" });
+    items.forEach((it) => {
+      const t = plainName(it.title);
+      const same = t === key || new RegExp(`^${key}(국립공원|도립공원|군립공원)`).test(t);
+      if (!same || !it.firstimage) return;
+      const near = lat && lng
+        ? kmBetween(parseFloat(lat), parseFloat(lng), parseFloat(it.mapy), parseFloat(it.mapx)) <= 30
+        : !!area && (it.addr1 || "").includes(area);
+      if (near) photos.push({ url: it.firstimage, thumb: it.firstimage2 || it.firstimage, big: true });
+    });
+  } catch {}
   try {
     const text = await fetchText(`https://apis.data.go.kr/1400000/service/cultureInfoService2/mntInfoImgOpenAPI2?${new URLSearchParams({ ServiceKey: serviceKey, mntiListNo: no, pageNo: "1", numOfRows: "10" })}`);
     xmlItems(text)
@@ -526,7 +534,7 @@ export async function onRequest(context) {
       const lat = url.searchParams.get("lat");
       const lng = url.searchParams.get("lng");
       if (!/^\d{6,12}$/.test(no) || !name) return json({ error: "BAD_REQUEST", message: "no와 name이 필요해요." }, 400);
-      payload = await mountainPhotos(base, serviceKey, no, name, lat, lng);
+      payload = await mountainPhotos(base, serviceKey, no, name, lat, lng, url.searchParams.get("area") || "");
     } else if (action === "localMountains") {
       // sgg: 시·군·구 이름(예: 가평군, 종로구), sido: 시·도 앞글자(예: 서울, 강원 - 광역시 구나 고성군처럼 이름이 겹칠 때)
       const sgg = url.searchParams.get("sgg") || "";

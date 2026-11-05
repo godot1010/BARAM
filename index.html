@@ -2437,7 +2437,8 @@ function fetchMountainPhotos(place) {
   if (!mountainPhotoCache.has(key)) {
     const promise = tourApiProxyFetch("mountainPhotos", {
       no: String(m.no), name: place.name,
-      ...(m.local || !place.lat ? {} : { lat: String(place.lat), lng: String(place.lng) }),
+      ...(m.local || !place.lat ? { area: (m.regions[0] || "").replace(/-.*$/, "").replace(/^\S+ /, "") } : { lat: String(place.lat), lng: String(place.lng) }),
+      v: "2",
     }).catch(() => { mountainPhotoCache.delete(key); return []; });
     mountainPhotoCache.set(key, promise);
   }
