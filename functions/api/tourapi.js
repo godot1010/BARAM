@@ -585,16 +585,41 @@ async function seaForecastNear(serviceKey, kind, lat, lng, km) {
   }
 }
 // 관광정보 새 분류(lclsSystm)로 주변 장소 찾기. 예: LS020500 민물낚시, LS020600 바다낚시, LS020100 윈드서핑, NA020900 해변·해수욕장
-async function tourNearByClass(base, lat, lng, code, contentTypeId, rows = "50") {
+// 위치 기반 목록(locationBasedList2)에 분류를 붙이면 0곳이 오고, 분류 없이 받으면 해수욕장이 빠진다(2026-11-05 강릉으로 확인).
+// 그래서 분류별 전국 목록(해수욕장 약 410곳, 낚시터 약 215곳)을 한 주에 한 번 받아 두고 거리로 고른다
+async function getClassIndex(base, code) {
+  const key = `https://baram-cache.internal/class-${code}-v1`;
+  const hit = await cacheGet(key);
+  if (hit && isFresh(hit, 7 * DAY)) return JSON.parse(hit.body);
   try {
-    const { items } = await callTourApi("locationBasedList2", {
-      ...base, arrange: "E", mapX: lng, mapY: lat, radius: "20000", contentTypeId, numOfRows: rows, pageNo: "1",
-      lclsSystm1: code.slice(0, 2), lclsSystm2: code.slice(0, 4), lclsSystm3: code,
-    });
-    return items.map((it) => ({ ...it, cls: code }));
+    const all = [];
+    for (let pageNo = 1; pageNo <= 5; pageNo++) {
+      const { items, totalCount } = await callTourApi("areaBasedList2", {
+        ...base, numOfRows: "1000", pageNo: String(pageNo), arrange: "A",
+        lclsSystm1: code.slice(0, 2), lclsSystm2: code.slice(0, 4), lclsSystm3: code,
+      });
+      items.forEach((it) => all.push({
+        contentid: it.contentid, contenttypeid: it.contenttypeid, title: it.title, addr1: it.addr1, mapx: it.mapx, mapy: it.mapy,
+        firstimage: it.firstimage, firstimage2: it.firstimage2, cls: code,
+      }));
+      if (items.length === 0 || all.length >= totalCount) break;
+    }
+    if (all.length === 0 && hit) return JSON.parse(hit.body);
+    await cachePut(key, JSON.stringify(all));
+    return all;
   } catch (err) {
-    return [{ _err: String(err && (err.payload ? JSON.stringify(err.payload) : err.message)) }];
+    if (hit) return JSON.parse(hit.body);
+    return [];
   }
+}
+async function tourNearByClass(base, lat, lng, code, km = 20) {
+  const list = await getClassIndex(base, code);
+  return list
+    .map((it) => ({ ...it, km: kmBetween(lat, lng, Number(it.mapy), Number(it.mapx)) }))
+    .filter((it) => it.km <= km)
+    .sort((a, c) => a.km - c.km)
+    .slice(0, 60)
+    .map(({ km: d, ...it }) => ({ ...it, dist: String(Math.round(d * 1000)) }));
 }
 
 // 전국 산 목록(4,705곳)을 한 주에 한 번 통째로 받아 저장해 두고, 지역마다 골라 준다
@@ -730,11 +755,6 @@ export async function onRequest(context) {
       const area = url.searchParams.get("area") || "";
       if (!area) return json({ error: "BAD_REQUEST", message: "area가 필요해요." }, 400);
       payload = await walkPhotos(base, { title: url.searchParams.get("title") || "", base: url.searchParams.get("base") || "", names, area });
-    } else if (action === "lbProbe") {
-      // 임시 점검 (지울 것)
-      const q = { ...base, arrange: "E", pageNo: "1" };
-      for (const [k, v] of url.searchParams) if (!["action", "x"].includes(k)) q[k] = v;
-      try { const r = await callTourApi("locationBasedList2", q); return json({ total: r.totalCount, n: r.items.length, titles: r.items.slice(0, 40).map((it) => `${it.title}|${it.lclsSystm3}|${it.dist}`) }); } catch (err) { return json({ err: err.payload || err.message }); }
     } else if (action === "fishing") {
       // 🎣 바다낚시 지수 포인트(40km 안) + 관광정보 낚시터(민물·바다, 20km 안)
       const lat = Number(url.searchParams.get("lat"));
@@ -742,8 +762,8 @@ export async function onRequest(context) {
       if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
       const [points, fresh, sea] = await Promise.all([
         seaForecastNear(serviceKey, "fish", lat, lng, 40),
-        tourNearByClass(base, lat, lng, "LS020500", "28"),
-        tourNearByClass(base, lat, lng, "LS020600", "28"),
+        tourNearByClass(base, lat, lng, "LS020500"),
+        tourNearByClass(base, lat, lng, "LS020600"),
       ]);
       payload = { points, places: [...sea, ...fresh] };
     } else if (action === "seaside") {
@@ -752,10 +772,10 @@ export async function onRequest(context) {
       const lng = Number(url.searchParams.get("lng"));
       if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
       const [beaches, surf, beachIdx, shops] = await Promise.all([
-        tourNearByClass(base, lat, lng, "NA020900", "12"),
+        tourNearByClass(base, lat, lng, "NA020900"),
         seaForecastNear(serviceKey, "surf", lat, lng, 30),
         seaForecastNear(serviceKey, "beach", lat, lng, 30),
-        tourNearByClass(base, lat, lng, "LS020100", "28"),
+        tourNearByClass(base, lat, lng, "LS020100"),
       ]);
       payload = { beaches, surf, beachIdx, shops: shops.filter((it) => /서핑|서프|surf/i.test(it.title || "")) };
     } else if (action === "trailCourses") {
