@@ -648,6 +648,13 @@ export async function onRequest(context) {
     } else if (action === "seaProbe") {
       // 임시 점검용 (바다 자료 확인 후 지울 것)
       const paths = { fish: "fcstFishingv2/GetFcstFishingApiServicev2", surf: "fcstSurfingv2/GetFcstSurfingApiServicev2", beach: "fcstBeachv2/GetFcstBeachApiServicev2", rip: "ripCurrent/GetRipCurrentApiService" };
+      if (url.searchParams.get("kind") === "tour") {
+        const op = url.searchParams.get("op");
+        if (!["categoryCode2", "areaBasedList2", "lclsSystmCode2"].includes(op)) return json({ error: "BAD_REQUEST" }, 400);
+        const q = { ...base, numOfRows: url.searchParams.get("numOfRows") || "100", pageNo: url.searchParams.get("pageNo") || "1" };
+        for (const k of ["contentTypeId", "cat1", "cat2", "cat3", "lclsSystm1", "lclsSystm2", "lclsSystm3"]) if (url.searchParams.get(k)) q[k] = url.searchParams.get(k);
+        return json(await callTourApi(op, q));
+      }
       const path = paths[url.searchParams.get("kind")];
       if (!path) return json({ error: "BAD_REQUEST" }, 400);
       const q = { serviceKey, type: "json", pageNo: url.searchParams.get("pageNo") || "1", numOfRows: url.searchParams.get("numOfRows") || "300" };
