@@ -5029,6 +5029,7 @@ function weightedShuffle(list, weightOf) {
 
 // 글줄 하나를 다른 글자(targetRef)의 처음과 끝에 맞춘다: 글자 크기는 그대로(12.5px), 글자 사이 간격으로 너비를 맞춤
 // 폰마다 BARAM 글꼴 너비가 달라서 직접 잰다. 마지막 글자 뒤에 붙는 간격은 오른쪽 여백을 빼서 없앤다
+const SPACE_TRIM = 1; // 띄어쓰기 칸을 좁히는 정도(px)
 function FitWidthText({ text, targetRef, className, fontSize = 12.5 }) {
   const ref = useRef(null);
   const [spacing, setSpacing] = useState(0);
@@ -5039,7 +5040,8 @@ function FitWidthText({ text, targetRef, className, fontSize = 12.5 }) {
       if (!el || !target) return;
       const prev = el.style.letterSpacing;
       el.style.letterSpacing = "0px";
-      const natural = el.getBoundingClientRect().width;
+      // 띄어쓰기를 좁힌 만큼은 되돌려 계산 (좁힌 만큼 끝 글자가 안쪽으로 들어오게)
+      const natural = el.getBoundingClientRect().width + [...text].filter((ch) => ch === " ").length * SPACE_TRIM;
       el.style.letterSpacing = prev;
       const want = target.getBoundingClientRect().width;
       const gaps = Math.max(1, [...text].length - 1);
@@ -5053,7 +5055,10 @@ function FitWidthText({ text, targetRef, className, fontSize = 12.5 }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
   return (
-    <p ref={ref} className={className} style={{ fontSize, letterSpacing: spacing, marginRight: -spacing, lineHeight: 1.25, whiteSpace: "nowrap", width: "max-content" }}>{text}</p>
+    <p ref={ref} className={className} style={{ fontSize, letterSpacing: spacing, marginRight: -spacing, lineHeight: 1.25, whiteSpace: "nowrap", width: "max-content" }}>
+      {/* 띄어쓰기 칸만 1px씩 좁혀 끝 글자가 BARAM의 M 밖으로 나가지 않게 (2026-11-05 형 요청) */}
+      {[...text].map((ch, i) => ch === " " ? <span key={i} style={{ marginRight: -SPACE_TRIM }}> </span> : ch)}
+    </p>
   );
 }
 
