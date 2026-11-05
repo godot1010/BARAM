@@ -1874,8 +1874,9 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
           className="flex items-center gap-2 mb-2 rounded-lg px-3 py-2 border border-[#B8860B]"
           style={{ background: "#FFF4D6" }}
         >
-          <span className="text-[10px] text-[#B8860B] font-bold whitespace-nowrap shrink-0">🎵 {spot.name} 노래</span>
+          {/* 아이콘·'강릉시 노래'도 곡 이름과 함께 흘러간다 (형 요청), '▶ 듣기'만 오른쪽에 고정 */}
           <MarqueeText className="text-sm text-[#2B2620]">
+            <span className="text-[10px] text-[#B8860B] font-bold">🎵 {spot.name} 노래</span>{"  "}
             <span className="font-bold">{regionSong.title}</span>
             <span className="text-xs text-[#6B5F4F]"> · {regionSong.artist}</span>
           </MarqueeText>
