@@ -3975,7 +3975,10 @@ function PlaceCard({ place, emoji }) {
           <p className="text-[11px] font-bold mt-0.5 line-clamp-1" style={{ color: BARRIER_FREE_COLOR }}>♿ 무장애 정보 있음 · 눌러서 편의시설 보기</p>
         )}
         {place.mountain && !place.mountain.local && (
-          <p className="text-[11px] font-bold mt-0.5 line-clamp-1" style={{ color: MOUNTAIN_COLOR }}>⛰️ 100대 명산{place.mountain.sub ? ` · ${cleanTourText(place.mountain.sub)}` : ""}</p>
+          <p className="text-[11px] mt-0.5 line-clamp-1" style={{ color: MOUNTAIN_COLOR }}>
+            {/* '100대 명산'만 붉은색으로 눈에 띄게, 부제는 보통 굵기 (2026-11-05 형 요청) */}
+            <span className="font-bold" style={{ color: "#B3261E" }}>⛰️ 100대 명산</span>{place.mountain.sub ? ` · ${cleanTourText(place.mountain.sub)}` : ""}
+          </p>
         )}
         {place.mountain && place.mountain.local && place.mountain.line && (
           <p className="text-[11px] mt-0.5 line-clamp-1" style={{ color: MOUNTAIN_COLOR }}>{place.mountain.line}</p>
