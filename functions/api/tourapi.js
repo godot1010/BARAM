@@ -535,6 +535,16 @@ export async function onRequest(context) {
       const lng = url.searchParams.get("lng");
       if (!/^\d{6,12}$/.test(no) || !name) return json({ error: "BAD_REQUEST", message: "no와 name이 필요해요." }, 400);
       payload = await mountainPhotos(base, serviceKey, no, name, lat, lng, url.searchParams.get("area") || "");
+    } else if (action === "trailProbe") {
+      // 걷기길 자료 모양 확인용 (임시)
+      const which = url.searchParams.get("which");
+      const pageNo = url.searchParams.get("pageNo") || "1";
+      const rows = url.searchParams.get("rows") || "5";
+      const target = which === "std"
+        ? `https://api.data.go.kr/openapi/tn_pubr_public_stret_tursm_info_api?${new URLSearchParams({ serviceKey, pageNo, numOfRows: rows, type: "json" })}`
+        : `https://apis.data.go.kr/B551011/Durunubi/courseList?${new URLSearchParams({ serviceKey, pageNo, numOfRows: rows, MobileOS: "ETC", MobileApp: "BARAM", _type: "json" })}`;
+      const text = await fetchText(target);
+      payload = { head: text.slice(0, 3000), length: text.length };
     } else if (action === "localMountains") {
       // sgg: 시·군·구 이름(예: 가평군, 종로구), sido: 시·도 앞글자(예: 서울, 강원 - 광역시 구나 고성군처럼 이름이 겹칠 때)
       const sgg = url.searchParams.get("sgg") || "";
