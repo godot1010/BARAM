@@ -1884,15 +1884,15 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
         </a>
       )}
       {/* 곡 카드를 누르면 유튜브에서 그 곡을 검색한다 (폰에서는 유튜브 앱으로 열림) */}
-      {/* 가요·팝송도 한 줄씩: '가요'·'▶ 듣기'는 고정, 곡 이름·가수만 흘러간다 (2026-11-05 형 요청) */}
-      <div className="space-y-2">
+      {/* 가요·팝송은 한 줄에 반씩: '가요'·'▶ 듣기'는 고정, 곡 이름·가수만 흘러간다 (2026-11-05 형 요청) */}
+      <div className="grid grid-cols-2 gap-2">
         {[...gayoSongs.map((s) => ["가요", s]), ...popSongs.map((s) => ["팝송", s])].map(([kind, s], i) => (
           <a
             key={`${kind}${i}`}
             href={youtubeSearchUrl(s)}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2 min-w-0"
+            className="flex items-center gap-1.5 bg-white/50 border border-[#D9CBB0] rounded-lg px-2.5 py-2 min-w-0"
           >
             <span className="text-[10px] text-[#A6987F] font-bold whitespace-nowrap shrink-0">{kind}</span>
             <MarqueeText className="text-sm text-[#2B2620]">
