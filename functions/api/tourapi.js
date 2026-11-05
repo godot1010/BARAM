@@ -491,6 +491,12 @@ export async function onRequest(context) {
       };
     } else if (action === "mountains") {
       payload = await mountains(serviceKey);
+    } else if (action === "mountainImages") {
+      // 산 사진 (산림청 산정보 mntInfoImgOpenAPI2). no = 산정보 ID(9자리, 예: 428302602)
+      const no = url.searchParams.get("no") || "";
+      if (!/^\d{6,12}$/.test(no)) return json({ error: "BAD_REQUEST", message: "no가 필요해요." }, 400);
+      const text = await fetchText(`https://apis.data.go.kr/1400000/service/cultureInfoService2/mntInfoImgOpenAPI2?${new URLSearchParams({ ServiceKey: serviceKey, mntiListNo: no, pageNo: "1", numOfRows: "10" })}`);
+      payload = { items: xmlItems(text), head: text.slice(0, 200) };
     } else if (action === "localMountains") {
       // sgg: 시·군·구 이름(예: 가평군, 종로구), sido: 시·도 앞글자(예: 서울, 강원 - 광역시 구나 고성군처럼 이름이 겹칠 때)
       const sgg = url.searchParams.get("sgg") || "";
