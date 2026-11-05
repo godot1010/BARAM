@@ -3655,7 +3655,8 @@ function PlaceFinderDialog({ spots, currentId, onSelect, onClose }) {
 function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, onImportBackup, lastBackupAt, backupNotice, onClose }) {
   const [query, setQuery] = useState("");
   const importInputRef = useRef(null);
-  const [tab, setTab] = useState("visited");
+  // 칸: 전국(229개 지역 - 찍은 곳이 맨 위) / 100대 명산 / 걷기길. 예전의 'STAMP'(찍은 곳만) 칸은 전국에 합침 (2026-11-05 형 요청)
+  const [tab, setTab] = useState("all");
   const mountainStamps = useMountainStamps();
   const walkStamps = useWalkStamps();
 
@@ -3663,7 +3664,8 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
     () => spots.filter((s) => s.isVisited).sort((a, b) => new Date(b.visitedDate) - new Date(a.visitedDate)),
     [spots]
   );
-  const source = tab === "visited" ? visited : spots;
+  // 전국: 찍은 곳(최근 순)을 먼저, 그다음 아직 안 간 곳(지역 목록 순)
+  const source = useMemo(() => [...visited, ...spots.filter((s) => !s.isVisited)], [visited, spots]);
   const q = query.replace(/\s/g, "");
   const filtered = q === "" ? source : source.filter((s) => s.name.replace(/\s/g, "").includes(q));
 
@@ -3689,16 +3691,10 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
           </div>
           <div className="flex gap-1.5 mt-3" style={{ flexWrap: "wrap" }}>
             <button
-              onClick={() => setTab("visited")}
-              className={`text-xs px-2.5 py-1.5 rounded-full border font-medium whitespace-nowrap ${tab === "visited" ? "bg-[#B8860B] text-[#2B2620] border-[#B8860B]" : "border-[#D9CBB0] text-[#6B5F4F]"}`}
-            >
-              STAMP
-            </button>
-            <button
               onClick={() => setTab("all")}
               className={`text-xs px-2.5 py-1.5 rounded-full border font-medium whitespace-nowrap ${tab === "all" ? "bg-[#B8860B] text-[#2B2620] border-[#B8860B]" : "border-[#D9CBB0] text-[#6B5F4F]"}`}
             >
-              전체 도시
+              전국
             </button>
             <button
               onClick={() => setTab("mountain")}
