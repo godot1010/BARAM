@@ -5027,21 +5027,23 @@ function weightedShuffle(list, weightOf) {
     .map((x) => x.item);
 }
 
-// 글줄 하나의 글자 크기를 다른 글자(targetRef)의 너비에 맞춘다. 폰마다 BARAM 글꼴 너비가 달라서 직접 잰다 (9~16px)
-function FitWidthText({ text, targetRef, className }) {
+// 글줄 하나를 다른 글자(targetRef)의 처음과 끝에 맞춘다: 글자 크기는 그대로(12.5px), 글자 사이 간격으로 너비를 맞춤
+// 폰마다 BARAM 글꼴 너비가 달라서 직접 잰다. 마지막 글자 뒤에 붙는 간격은 오른쪽 여백을 빼서 없앤다
+function FitWidthText({ text, targetRef, className, fontSize = 12.5 }) {
   const ref = useRef(null);
-  const [size, setSize] = useState(12);
+  const [spacing, setSpacing] = useState(0);
   React.useLayoutEffect(() => {
     const fit = () => {
       const el = ref.current;
       const target = targetRef.current;
       if (!el || !target) return;
-      const prev = el.style.fontSize;
-      el.style.fontSize = "10px";
+      const prev = el.style.letterSpacing;
+      el.style.letterSpacing = "0px";
       const natural = el.getBoundingClientRect().width;
-      el.style.fontSize = prev;
+      el.style.letterSpacing = prev;
       const want = target.getBoundingClientRect().width;
-      if (natural > 0 && want > 0) setSize(Math.min(16, Math.max(9, Math.floor((100 * want) / natural) / 10)));
+      const gaps = Math.max(1, [...text].length - 1);
+      if (natural > 0 && want > 0) setSpacing(Math.round(((want - natural) / gaps) * 100) / 100);
     };
     fit();
     // 글꼴이 늦게 내려오면 BARAM 너비가 바뀌므로 한 번 더
@@ -5051,7 +5053,7 @@ function FitWidthText({ text, targetRef, className }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
   return (
-    <p ref={ref} className={className} style={{ fontSize: size, lineHeight: 1.25, whiteSpace: "nowrap", width: "max-content" }}>{text}</p>
+    <p ref={ref} className={className} style={{ fontSize, letterSpacing: spacing, marginRight: -spacing, lineHeight: 1.25, whiteSpace: "nowrap", width: "max-content" }}>{text}</p>
   );
 }
 
@@ -5710,7 +5712,7 @@ function BaramApp() {
         <div className="max-w-sm mx-auto flex items-center justify-between" style={{ padding: "10px 16px" }}>
           <div className="flex items-center gap-3">
             <MiniRoulette size={40} fast={phase !== "idle"} />
-            {/* '여행 룰렛 바람'을 띄어쓰기는 그대로 두고 글자 크기를 키워 아래 BARAM 너비에 맞춘다 (2026-11-05 형 결정 2번) */}
+            {/* '여행 룰렛 바람' 12.5px, 글자 간격으로 아래 BARAM의 처음과 끝에 맞춘다 (2026-11-05 형 결정) */}
             <div style={{ display: "inline-flex", flexDirection: "column" }}>
               <FitWidthText text="여행 룰렛 바람" targetRef={titleRef} className="font-bold text-[#1B4B91]" />
               <h1 ref={titleRef} className="font-serif font-bold text-[#DC2626]" style={{ fontSize: 22, lineHeight: 1.15 }}>
