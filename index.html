@@ -2638,7 +2638,7 @@ async function fetchWalksNearby({ spotName }) {
     if (t.src === "duru") {
       const start = (cleanTourText(t.traveler).match(/시점\s*:\s*([^\n(]+)/) || [])[1];
       return {
-        id: `walk_${t.id || i}`, name: t.name, kind: t.km ? `${t.km}km` : "코스", address: start ? `시작: ${start.trim()}` : "",
+        id: `walk_${t.id || i}`, name: t.name, kind: t.km ? `${t.km}km` : "코스", address: start ? `시작: ${start.trim()}` : `${t.area || ""} 구간`,
         distanceKm: null, lat: null, lng: null, image: null, area: null,
         searchName: start ? start.trim() : t.name,
         walk: {
@@ -3940,7 +3940,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
               네이버 지도 <ExternalLink size={12} className="text-[#2F6E68]" />
             </a>
           </div>
-          {!place.mountain && !(place.walk && !place.walk.duru) && <p className="text-[10px] text-[#A6987F] mt-2">정보 출처: 한국관광공사. 이용 시간과 요금은 바뀔 수 있으니 방문 전에 확인하세요.</p>}
+          {!place.mountain && !place.walk && <p className="text-[10px] text-[#A6987F] mt-2">정보 출처: 한국관광공사. 이용 시간과 요금은 바뀔 수 있으니 방문 전에 확인하세요.</p>}
         </div>
       </div>
     </div>
