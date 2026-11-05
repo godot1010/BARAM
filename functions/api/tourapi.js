@@ -20,6 +20,7 @@
 // - localMountains    : 한 지역(시·군·구)의 산 목록 (산림청 산정보 전국 4,705곳, 좌표는 없어 소재지 주소로 고른다)
 // - mountainPhotos    : 산 하나의 사진 (관광공사 관광지 사진 중 이름이 같은 곳 먼저 + 산림청 산 사진)
 // - trails            : 한 지역의 걷기길 (코리아둘레길 두루누비 284코스 + 전국길관광정보 표준데이터 지자체 걷기길)
+// - walkPhoto         : 걷기길 사진 하나 (길이 지나는 장소 이름들로 관광공사 사진을 같은 시·군 안에서 찾는다)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
@@ -64,7 +65,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY, mountainPhotos: 7 * DAY, trails: 7 * DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY, mountainPhotos: 7 * DAY, trails: 7 * DAY, walkPhoto: 7 * DAY };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -587,6 +588,24 @@ export async function onRequest(context) {
       const lng = url.searchParams.get("lng");
       if (!/^\d{6,12}$/.test(no) || !name) return json({ error: "BAD_REQUEST", message: "no와 name이 필요해요." }, 400);
       payload = await mountainPhotos(base, serviceKey, no, name, lat, lng, url.searchParams.get("area") || "");
+    } else if (action === "walkPhoto") {
+      // names = 후보 장소 이름들("|"로 구분, 앞쪽이 먼저), area = 시·군·구 이름. 길 이름 자체로는 사진이 거의 없어서 지나는 곳으로 찾는다
+      const names = (url.searchParams.get("names") || "").split("|").map((s) => s.trim()).filter((s) => s.length >= 2).slice(0, 6);
+      const area = url.searchParams.get("area") || "";
+      if (names.length === 0 || !area) return json({ error: "BAD_REQUEST", message: "names와 area가 필요해요." }, 400);
+      let found = null;
+      for (const name of names) {
+        const key = plainName(name);
+        try {
+          const { items } = await callTourApi("searchKeyword2", { ...base, keyword: key, numOfRows: "20", pageNo: "1", arrange: "O" });
+          const hit = items.find((it) => {
+            const t = plainName(it.title);
+            return it.firstimage && (it.addr1 || "").includes(area) && (t.includes(key) || (t.length >= 3 && key.includes(t)));
+          });
+          if (hit) { found = { url: hit.firstimage, thumb: hit.firstimage2 || hit.firstimage, place: hit.title }; break; }
+        } catch {}
+      }
+      payload = { items: found ? [found] : [] };
     } else if (action === "trails") {
       // 동네 산과 같은 방식: sgg(시·군·구), sido(시·도 앞글자). 두루누비는 '지나는 시·군'(sigun), 지자체 걷기길은 시작 지점 주소로 고른다
       const sgg = url.searchParams.get("sgg") || "";
