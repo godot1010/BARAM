@@ -19,6 +19,7 @@
 // - mountains         : 100대 명산 전체 (위치·높이 = 한국등산트레킹지원센터 + 소개·선정 이유·교통 = 산림청 명산등산로, 산 코드로 합침)
 // - localMountains    : 한 지역(시·군·구)의 산 목록 (산림청 산정보 전국 4,705곳, 좌표는 없어 소재지 주소로 고른다)
 // - mountainPhotos    : 산 하나의 사진 (관광공사 관광지 사진 중 이름이 같은 곳 먼저 + 산림청 산 사진)
+// - trails            : 한 지역의 걷기길 (코리아둘레길 두루누비 284코스 + 전국길관광정보 표준데이터 지자체 걷기길)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
@@ -63,7 +64,7 @@ function json(obj, status = 200, extraHeaders = {}) {
 // - 응답 헤더 x-baram-cache 로 HIT-MEMORY / HIT-EDGE / MISS / STALE(지난 저장본) 을 알 수 있다.
 // ------------------------------------------------------------------
 const DAY = 24 * 60 * 60;
-const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY, mountainPhotos: 7 * DAY };
+const CACHE_SECONDS = { nearby: DAY, festival: 6 * 60 * 60, pet: DAY, petNearby: DAY, detail: 7 * DAY, barrierFree: DAY, barrierFreeDetail: 7 * DAY, camping: DAY, mountains: 7 * DAY, localMountains: 7 * DAY, mountainPhotos: 7 * DAY, trails: 7 * DAY };
 const STALE_SECONDS = 7 * DAY;
 const MEMORY_CACHE_MAX = 300;
 const memoryCache = new Map(); // key -> { savedAt, body }
@@ -408,6 +409,57 @@ async function mountainPhotos(base, serviceKey, no, name, lat, lng, area) {
   return { items: photos.slice(0, 8) };
 }
 
+// 시·도 이름을 하나로 맞춘다 ("경상남도"·"경남"·"경상남" → 경남, "광주광역시"·"광주" → 광주)
+const SIDO_KEYS = [["서울", "서울"], ["부산", "부산"], ["대구", "대구"], ["인천", "인천"], ["광주", "광주"], ["대전", "대전"], ["울산", "울산"], ["세종", "세종"],
+  ["경기", "경기"], ["강원", "강원"], ["충청북", "충북"], ["충북", "충북"], ["충청남", "충남"], ["충남", "충남"], ["전라북", "전북"], ["전북", "전북"],
+  ["전라남", "전남"], ["전남", "전남"], ["경상북", "경북"], ["경북", "경북"], ["경상남", "경남"], ["경남", "경남"], ["제주", "제주"]];
+function sidoKey(s) {
+  const hit = SIDO_KEYS.find(([p]) => (s || "").startsWith(p));
+  return hit ? hit[1] : "";
+}
+// 주소 앞부분이 그 지역인지: sido(앞글자)·sgg(시·군·구)
+function addrInArea(addr, sido, sgg) {
+  const parts = (addr || "").trim().split(/\s+/);
+  if (sido && sidoKey(parts[0]) !== sidoKey(sido)) return false;
+  return !sgg || parts.slice(1, 3).includes(sgg);
+}
+
+// 걷기길 전체 목록(두루누비 284 + 표준데이터 약 1,350)을 한 주에 한 번 받아 저장해 두고 지역마다 골라 준다
+const TRAIL_INDEX_KEY = "https://baram-cache.internal/trails-v1";
+async function getTrailIndex(base, serviceKey) {
+  const hit = await cacheGet(TRAIL_INDEX_KEY);
+  if (hit && isFresh(hit, 7 * DAY)) return JSON.parse(hit.body);
+  try {
+    const { items: courses } = await callTourApi("courseList", { ...base, numOfRows: "400", pageNo: "1", brdDiv: "DNWW" }, "https://apis.data.go.kr/B551011/Durunubi");
+    const durunubi = courses.map((c) => ({
+      src: "duru", id: c.crsIdx, name: c.crsKorNm, area: c.sigun, km: c.crsDstnc, minutes: c.crsTotlRqrmHour, level: c.crsLevel,
+      cycle: c.crsCycle, summary: c.crsSummary, contents: c.crsContents, tour: c.crsTourInfo, traveler: c.travelerinfo,
+    }));
+    const local = [];
+    for (let pageNo = 1; pageNo <= 5; pageNo++) {
+      const text = await fetchText(`https://api.data.go.kr/openapi/tn_pubr_public_stret_tursm_info_api?${new URLSearchParams({ serviceKey, pageNo: String(pageNo), numOfRows: "1000", type: "json" })}`);
+      const body = JSON.parse(text)?.response?.body || JSON.parse(text)?.body || {};
+      const raw = body?.items?.item || body?.items || [];
+      const items = Array.isArray(raw) ? raw : [raw];
+      items.forEach((t, i) => {
+        if (!t || !t.stretNm || /자전거/.test(t.stretNm)) return; // 자전거길은 뺀다
+        local.push({
+          src: "local", id: `${t.insttCode || ""}-${pageNo}-${i}`, name: t.stretNm, intro: t.stretIntrcn, km: t.stretLt, time: t.reqreTime,
+          begin: t.beginSpotNm, beginAddr: t.beginRdnmadr || t.beginLnmadr, end: t.endSpotNm, endAddr: t.endRdnmadr || t.endLnmadr,
+          course: t.coursInfo, tel: t.phoneNumber, org: t.institutionNm, inst: t.insttNm,
+        });
+      });
+      if (items.length < 1000 || local.length >= (Number(body.totalCount) || 0)) break;
+    }
+    const all = { durunubi, local };
+    await cachePut(TRAIL_INDEX_KEY, JSON.stringify(all));
+    return all;
+  } catch (err) {
+    if (hit) return JSON.parse(hit.body);
+    throw err;
+  }
+}
+
 // 전국 산 목록(4,705곳)을 한 주에 한 번 통째로 받아 저장해 두고, 지역마다 골라 준다
 async function getLocalMountainIndex(serviceKey) {
   const hit = await cacheGet(LOCAL_MOUNTAIN_INDEX_KEY);
@@ -535,16 +587,24 @@ export async function onRequest(context) {
       const lng = url.searchParams.get("lng");
       if (!/^\d{6,12}$/.test(no) || !name) return json({ error: "BAD_REQUEST", message: "no와 name이 필요해요." }, 400);
       payload = await mountainPhotos(base, serviceKey, no, name, lat, lng, url.searchParams.get("area") || "");
-    } else if (action === "trailProbe") {
-      // 걷기길 자료 모양 확인용 (임시)
-      const which = url.searchParams.get("which");
-      const pageNo = url.searchParams.get("pageNo") || "1";
-      const rows = url.searchParams.get("rows") || "5";
-      const target = which === "std"
-        ? `https://api.data.go.kr/openapi/tn_pubr_public_stret_tursm_info_api?${new URLSearchParams({ serviceKey, pageNo, numOfRows: rows, type: "json" })}`
-        : `https://apis.data.go.kr/B551011/Durunubi/courseList?${new URLSearchParams({ serviceKey, pageNo, numOfRows: rows, MobileOS: "ETC", MobileApp: "BARAM", _type: "json" })}`;
-      const text = await fetchText(target);
-      payload = { head: text.slice(0, 3000), length: text.length };
+    } else if (action === "trails") {
+      // 동네 산과 같은 방식: sgg(시·군·구), sido(시·도 앞글자). 두루누비는 '지나는 시·군'(sigun), 지자체 걷기길은 시작 지점 주소로 고른다
+      const sgg = url.searchParams.get("sgg") || "";
+      const sido = url.searchParams.get("sido") || "";
+      if (!sgg && !sido) return json({ error: "BAD_REQUEST", message: "sgg 또는 sido가 필요해요." }, 400);
+      const { durunubi, local } = await getTrailIndex(base, serviceKey);
+      const inArea = (addr) => addrInArea(addr, sido, sgg);
+      payload = {
+        items: [
+          ...durunubi.filter((c) => {
+            const parts = (c.area || "").trim().split(/\s+/);
+            // "부산 남구"처럼 시·도가 붙은 것과 "고성군"처럼 시·군만 있는 것이 섞여 있다
+            if (parts.length >= 2) return inArea(c.area);
+            return !!sgg && parts[0] === sgg && (!sido || sgg !== "고성군");
+          }),
+          ...local.filter((t) => inArea(t.beginAddr) || (!t.beginAddr && inArea(t.inst))),
+        ],
+      };
     } else if (action === "localMountains") {
       // sgg: 시·군·구 이름(예: 가평군, 종로구), sido: 시·도 앞글자(예: 서울, 강원 - 광역시 구나 고성군처럼 이름이 겹칠 때)
       const sgg = url.searchParams.get("sgg") || "";
