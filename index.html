@@ -2795,7 +2795,7 @@ function WalkStampButton({ place }) {
       <div className="mb-2 rounded-lg border px-3 py-2 flex items-center justify-between gap-2" style={{ borderColor: WALK_COLOR, background: `${WALK_COLOR}14` }}>
         <span className="text-xs font-bold min-w-0" style={{ color: WALK_COLOR }}>
           🥾 {justStamped
-            ? `도장 쾅! 지금까지 ${total}km 걸었어요${w.route ? ` · ${w.route} ${routeDone}코스` : ""}${badge ? ` · ${badge[1]} ${badge[2]} 달성!` : ""}`
+            ? `도장 쾅! 지금까지 ${total}km 걸었어요${w.route ? ` · ${w.route} ${routeDone}번째 코스` : ""}${badge ? ` · ${badge[1]} ${badge[2]} 달성!` : ""}`
             : `${formatDate(mine.date)}에 걸었어요`}
         </span>
         <button onClick={() => { setWalkStamp(w.stampKey, {}, false); setJustStamped(false); }} className="text-[11px] text-[#C4592F] shrink-0">도장 취소</button>
@@ -3687,29 +3687,29 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
               className="flex-1 bg-transparent outline-none text-sm text-[#2B2620] placeholder:text-[#A6987F]"
             />
           </div>
-          <div className="flex gap-2 mt-3" style={{ flexWrap: "wrap" }}>
+          <div className="flex gap-1.5 mt-3" style={{ flexWrap: "wrap" }}>
             <button
               onClick={() => setTab("visited")}
-              className={`text-xs px-3 py-1.5 rounded-full border font-medium ${tab === "visited" ? "bg-[#B8860B] text-[#2B2620] border-[#B8860B]" : "border-[#D9CBB0] text-[#6B5F4F]"}`}
+              className={`text-xs px-2.5 py-1.5 rounded-full border font-medium whitespace-nowrap ${tab === "visited" ? "bg-[#B8860B] text-[#2B2620] border-[#B8860B]" : "border-[#D9CBB0] text-[#6B5F4F]"}`}
             >
               STAMP
             </button>
             <button
               onClick={() => setTab("all")}
-              className={`text-xs px-3 py-1.5 rounded-full border font-medium ${tab === "all" ? "bg-[#B8860B] text-[#2B2620] border-[#B8860B]" : "border-[#D9CBB0] text-[#6B5F4F]"}`}
+              className={`text-xs px-2.5 py-1.5 rounded-full border font-medium whitespace-nowrap ${tab === "all" ? "bg-[#B8860B] text-[#2B2620] border-[#B8860B]" : "border-[#D9CBB0] text-[#6B5F4F]"}`}
             >
               전체 도시
             </button>
             <button
               onClick={() => setTab("mountain")}
-              className="text-xs px-3 py-1.5 rounded-full border font-medium"
+              className="text-xs px-2.5 py-1.5 rounded-full border font-medium whitespace-nowrap"
               style={tab === "mountain" ? { background: MOUNTAIN_COLOR, color: "#F6F1E7", borderColor: MOUNTAIN_COLOR } : { borderColor: "#D9CBB0", color: "#6B5F4F" }}
             >
               ⛰️ 100대 명산
             </button>
             <button
               onClick={() => setTab("walk")}
-              className="text-xs px-3 py-1.5 rounded-full border font-medium"
+              className="text-xs px-2.5 py-1.5 rounded-full border font-medium whitespace-nowrap"
               style={tab === "walk" ? { background: WALK_COLOR, color: "#F6F1E7", borderColor: WALK_COLOR } : { borderColor: "#D9CBB0", color: "#6B5F4F" }}
             >
               🥾 걷기길
