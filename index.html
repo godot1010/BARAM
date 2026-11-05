@@ -1884,21 +1884,22 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
         </a>
       )}
       {/* 곡 카드를 누르면 유튜브에서 그 곡을 검색한다 (폰에서는 유튜브 앱으로 열림) */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* 가요·팝송도 한 줄씩: '가요'·'▶ 듣기'는 고정, 곡 이름·가수만 흘러간다 (2026-11-05 형 요청) */}
+      <div className="space-y-2">
         {[...gayoSongs.map((s) => ["가요", s]), ...popSongs.map((s) => ["팝송", s])].map(([kind, s], i) => (
           <a
             key={`${kind}${i}`}
             href={youtubeSearchUrl(s)}
             target="_blank"
             rel="noreferrer"
-            className="block bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2 min-w-0"
+            className="flex items-center gap-2 bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2 min-w-0"
           >
-            <p className="text-[10px] text-[#A6987F] flex items-center justify-between">
-              {kind}
-              <span className="flex items-center gap-0.5 text-[#C4592F]">▶ 듣기</span>
-            </p>
-            <p className="text-sm text-[#2B2620] truncate">{s.title}</p>
-            <p className="text-xs text-[#6B5F4F] truncate">{s.artist}</p>
+            <span className="text-[10px] text-[#A6987F] font-bold whitespace-nowrap shrink-0">{kind}</span>
+            <MarqueeText className="text-sm text-[#2B2620]">
+              <span>{s.title}</span>
+              <span className="text-xs text-[#6B5F4F]"> · {s.artist}</span>
+            </MarqueeText>
+            <span className="text-[10px] font-bold text-[#C4592F] whitespace-nowrap shrink-0">▶ 듣기</span>
           </a>
         ))}
       </div>
