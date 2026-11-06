@@ -6590,7 +6590,7 @@ function BaramApp() {
 
         {/* 결과 카드 */}
         {result && route && (
-          <div ref={resultCardRef} className="mt-6 bg-white/60 border border-dashed border-[#B8860B] rounded-xl p-5" style={{ scrollMarginTop: 80 }}>
+          <div ref={resultCardRef} className={`mt-6 border border-dashed rounded-xl p-5 ${resultTheme === "star" ? "" : "bg-white/60 border-[#B8860B]"}`} style={{ scrollMarginTop: 80, ...(resultTheme === "star" ? { borderColor: STAR_COLOR, borderWidth: 1.5, background: `${STAR_COLOR}0F` } : {}) }}>{/* STAR 룰렛 결과는 보라색 칸 (2026-11-07 형 요청) */}
             {resultSource === PICKED_STAMP && (
               <p className="inline-flex items-center gap-1 mb-2 text-[10px] font-bold rounded-full px-2 py-0.5" style={{ background: "#ECE8E1", color: "#6B6457" }}>
                 <Search size={10} /> 내가 선택한 여행지
