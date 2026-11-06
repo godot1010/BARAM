@@ -5320,7 +5320,7 @@ const TAB_CONFIG = {
   },
 };
 // 칩 순서는 테마 룰렛 목록과 같게: 자연 → 바다 → 함께 (2026-11-06 형 결정 C안)
-const THEME_TAB_KEYS = ["star", "mountain", "walk", "bike", "camping", "sea", "fishing", "pet", "barrierFree"].filter((key) => TAB_CONFIG[key] && TAB_CONFIG[key].theme);
+const THEME_TAB_KEYS = ["star", "mountain", "walk", "camping", "sea", "fishing", "pet", "barrierFree"] // 🚴 자전거(bike)는 형 결정으로 실제 사이트에서는 숨김(2026-11-07) — 미리보기에는 있음.filter((key) => TAB_CONFIG[key] && TAB_CONFIG[key].theme);
 
 const SOURCE_FETCHERS = {
   ct12: (spot) => fetchNearbyTourSpots({ lat: spot.lat, lng: spot.lng, spotName: spot.name, contentTypeId: 12, num: 30, preferImages: true }),
