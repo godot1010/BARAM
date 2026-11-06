@@ -755,32 +755,6 @@ export async function onRequest(context) {
       const area = url.searchParams.get("area") || "";
       if (!area) return json({ error: "BAD_REQUEST", message: "area가 필요해요." }, 400);
       payload = await walkPhotos(base, { title: url.searchParams.get("title") || "", base: url.searchParams.get("base") || "", names, area });
-    } else if (action === "bikeProbe") {
-      // 임시 점검 (자전거길 자료 세기, 확인 후 지울 것)
-      const out = {};
-      if (url.searchParams.get("lane")) {
-        const res = await fetch(`https://api.data.go.kr/openapi/tn_pubr_public_bike_road_api?${new URLSearchParams({ serviceKey, pageNo: "1", numOfRows: "3", type: "json" })}`);
-        return new Response(await res.text(), { headers: { "content-type": "text/plain; charset=utf-8", "x-up": String(res.status) } });
-      }
-      try {
-        const r = await callTourApi("courseList", { ...base, numOfRows: "500", pageNo: "1", brdDiv: "DNBW" }, "https://apis.data.go.kr/B551011/Durunubi");
-        out.duru = { total: r.totalCount, items: r.items.map((c) => [c.crsKorNm, c.sigun, c.crsDstnc, c.crsTotlRqrmHour, c.crsLevel, c.brdDiv, (c.crsSummary || "").slice(0, 40)]) };
-      } catch (err) { out.duruErr = String(err.message); }
-      const bikes = [];
-      let total = 0, kinds = {};
-      for (let pageNo = 1; pageNo <= 5; pageNo++) {
-        const text = await fetchText(`https://api.data.go.kr/openapi/tn_pubr_public_stret_tursm_info_api?${new URLSearchParams({ serviceKey, pageNo: String(pageNo), numOfRows: "1000", type: "json" })}`);
-        const body = JSON.parse(text)?.response?.body || JSON.parse(text)?.body || {};
-        const raw = body?.items?.item || body?.items || [];
-        const items = Array.isArray(raw) ? raw : [raw];
-        total += items.length;
-        items.forEach((t) => {
-          if (t && t.stretNm && /자전거/.test(t.stretNm + (t.stretIntrcn || ""))) bikes.push([t.stretNm, t.insttNm, t.stretLt, t.beginRdnmadr || t.beginLnmadr, /자전거/.test(t.stretNm)]);
-        });
-        if (items.length < 1000) break;
-      }
-      out.local = { total, bikeCount: bikes.length, nameBike: bikes.filter((x) => x[4]).length, items: bikes.slice(0, 400) };
-      return json(out);
     } else if (action === "fishing") {
       // 🎣 바다낚시 지수 포인트(40km 안) + 관광정보 낚시터(민물·바다, 20km 안)
       const lat = Number(url.searchParams.get("lat"));
