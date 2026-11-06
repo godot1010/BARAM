@@ -1545,6 +1545,38 @@ function pickSongsForTrip(arr, mood, n, key) {
   return Array.from({ length: Math.min(n, list.length) }, (_, i) => list[(start + i) % list.length]);
 }
 
+// 나이대별 추천곡 (2026-11-06 형 결정): 4묶음 × 가요 100 + 팝송 100(각 감성 50·활기 50) = 800곡, /songs-by-age.json
+// 나이는 '오늘의 여행운' 생년월일로 폰 안에서만 계산한다(서버로 안 보냄). 추천 음악 옆 칸에서 다른 묶음을 골라 들을 수도 있다
+const AGE_GROUPS = [
+  { key: "1", label: "30대 이하" },
+  { key: "2", label: "40대" },
+  { key: "3", label: "50~60대" },
+  { key: "4", label: "70대 이상" },
+];
+function ageGroupOf(birthDate) {
+  if (!birthDate) return "";
+  const [y, m, d] = birthDate.split("-").map(Number);
+  const now = new Date();
+  const age = now.getFullYear() - y - ((now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d)) ? 1 : 0);
+  if (!Number.isFinite(age)) return "";
+  return age < 40 ? "1" : age < 50 ? "2" : age < 70 ? "3" : "4";
+}
+let songsByAgePromise = null;
+function loadSongsByAge() {
+  if (!songsByAgePromise) {
+    songsByAgePromise = fetch("/songs-by-age.json?v=1")
+      .then((r) => { if (!r.ok) throw new Error("songs"); return r.json(); })
+      .then((d) => {
+        const toSong = ([title, artist, m]) => ({ title, artist, mood: m === "e" ? "emotional" : "energetic" });
+        const out = {};
+        Object.entries(d.groups || {}).forEach(([k, g]) => { out[k] = { gayo: g.gayo.map(toSong), pop: g.pop.map(toSong) }; });
+        return out;
+      })
+      .catch((e) => { songsByAgePromise = null; throw e; });
+  }
+  return songsByAgePromise;
+}
+
 function youtubeSearchUrl(song) {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.title} ${song.artist}`)}`;
 }
@@ -1761,7 +1793,8 @@ function SharePlanButton({ spot, from, travel, plan }) {
   );
 }
 
-function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPlanPlaces, onRetry, petById }) {
+function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPlanPlaces, onRetry, petById, musicAge }) {
+  const [ageOpen, setAgeOpen] = useState(false);
   const openDetail = useContext(PlaceDetailContext); // 사진을 누르면 장소 정보 창
   // 장소마다 '다른 곳 보기'를 누른 횟수 (부모에서 key={spot.id}로 여행지가 바뀌면 초기화)
   const [offsets, setOffsets] = useState({});
@@ -1944,9 +1977,41 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
 
       {!isLoading && <SharePlanButton spot={spot} from={from} travel={travel} plan={plan} />}
 
-      <p className="text-xs font-medium text-[#2B2620] mt-4 mb-2 flex items-center gap-1">
-        <Music size={12} /> 오늘의 추천 음악
-      </p>
+      <div className="mt-4 mb-2 flex items-center justify-between relative">
+        <p className="text-xs font-medium text-[#2B2620] flex items-center gap-1">
+          <Music size={12} /> 오늘의 추천 음악
+        </p>
+        {/* 나이대 칸: 처음엔 생년월일로 정한 내 나이대, 눌러서 다른 나이대 노래도 들을 수 있다 (2026-11-06 형 요청). STAR 룰렛 여행지는 BTS 노래라 안 보임 */}
+        {musicAge && (
+          <div className="relative">
+            <button
+              onClick={() => setAgeOpen((v) => !v)}
+              className="text-[11px] font-bold rounded-full border px-2.5 py-0.5 whitespace-nowrap"
+              style={{ color: "#B8860B", borderColor: "#B8860B", background: "#FFFDF8" }}
+            >
+              🎚 {musicAge.label} {ageOpen ? "▴" : "▾"}
+            </button>
+            {ageOpen && (
+              <div className="absolute right-0 mt-1 rounded-xl border border-[#D9CBB0] overflow-hidden" style={{ zIndex: 20, background: "#FFFDF8", boxShadow: "0 8px 16px rgba(0,0,0,0.15)", minWidth: 150 }}>
+                {AGE_GROUPS.map((g, i) => {
+                  const on = g.key === musicAge.key;
+                  return (
+                    <button
+                      key={g.key}
+                      onClick={() => { setAgeOpen(false); musicAge.onChange(g.key); }}
+                      className="w-full flex items-center justify-between text-left text-xs font-bold px-3 py-2"
+                      style={{ color: on ? "#B8860B" : "#2B2620", background: on ? "#B8860B1F" : "transparent", borderTop: i === 0 ? "none" : "1px solid #E6DCC8" }}
+                    >
+                      {g.label}
+                      <span className="text-[10px] font-normal text-[#A6987F] ml-2">{g.key === musicAge.mine ? "내 나이" : ""}{on ? " ✓" : ""}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       {/* 그 지역을 노래한 곡: 한 줄로, 곡 이름·가수가 천천히 흘러간다 (2026-11-05 형 요청 - 세 줄이라 칸을 너무 차지했음) */}
       {regionSong && (
         <a
@@ -6261,8 +6326,28 @@ function BaramApp() {
   // 결과가 바뀔 때만 새로 뽑히도록 useMemo로 고정 (탭 전환 등 다른 리렌더에는 곡이 안 바뀜)
   const songKey = result ? `${result.id}:${toDateInputValue()}` : "";
   const starTrip = resultTheme === "star";
-  const gayoSongs = useMemo(() => (result ? pickSongsForTrip(starTrip ? BTS_GAYO_SONGS : GAYO_SONGS, result.mood, 1, `${songKey}:gayo`) : []), [songKey, starTrip]);
-  const popSongs = useMemo(() => (result ? pickSongsForTrip(starTrip ? BTS_POP_SONGS : POP_SONGS, result.mood, 1, `${songKey}:pop`) : []), [songKey, starTrip]);
+  // 나이대: 사용자가 칸에서 고른 것 > 생년월일로 정한 것. 둘 다 없으면 예전 목록(가요 100·팝송 100)
+  const [musicAgePick, setMusicAgePick] = usePersistentState("baram_music_age", "");
+  const myAgeGroup = birthInfo ? ageGroupOf(birthInfo.date) : "";
+  const ageKey = musicAgePick || myAgeGroup;
+  const [ageSongs, setAgeSongs] = useState(null);
+  useEffect(() => {
+    if (!ageKey) { setAgeSongs(null); return; }
+    let alive = true;
+    loadSongsByAge().then((all) => { if (alive) setAgeSongs(all[ageKey] || null); }).catch(() => { if (alive) setAgeSongs(null); });
+    return () => { alive = false; };
+  }, [ageKey]);
+  const gayoPool = starTrip ? BTS_GAYO_SONGS : ageSongs ? ageSongs.gayo : GAYO_SONGS;
+  const popPool = starTrip ? BTS_POP_SONGS : ageSongs ? ageSongs.pop : POP_SONGS;
+  const gayoSongs = useMemo(() => (result ? pickSongsForTrip(gayoPool, result.mood, 1, `${songKey}:gayo`) : []), [songKey, gayoPool]);
+  const popSongs = useMemo(() => (result ? pickSongsForTrip(popPool, result.mood, 1, `${songKey}:pop`) : []), [songKey, popPool]);
+  // 칸에 보일 이름: 고른 나이대(없으면 내 나이대, 그것도 없으면 '30대 이하'를 고를 수 있게 '나이대 고르기')
+  const musicAge = starTrip ? null : {
+    key: ageKey,
+    mine: myAgeGroup,
+    label: ageKey ? AGE_GROUPS.find((g) => g.key === ageKey).label : "나이대 고르기",
+    onChange: (k) => setMusicAgePick(k === myAgeGroup ? "" : k),
+  };
   const [starSongs, setStarSongs] = useState([]); // 이 지역 STAR 장소에서 찍은 BTS 노래
   useEffect(() => {
     if (!starTrip || !result) { setStarSongs([]); return; }
@@ -6592,7 +6677,7 @@ function BaramApp() {
               </button>
             )}
 
-            <DayItinerary key={`${result.id}:plan`} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} onPlanPlaces={setPlanPlaceIdsKey} onRetry={retryItinerary} petById={petById} />
+            <DayItinerary key={`${result.id}:plan`} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} musicAge={musicAge} onPlanPlaces={setPlanPlaceIdsKey} onRetry={retryItinerary} petById={petById} />
 
             <div className="border-t border-[#D9CBB0] my-4" />
             <p ref={tabsTitleRef} className="text-xs font-medium text-[#2B2620] mb-1" style={{ scrollMarginTop: 80 }}>더 알아보기</p>
