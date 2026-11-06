@@ -758,7 +758,7 @@ export async function onRequest(context) {
     } else if (action === "kwProbe") {
       // 임시 점검 (자전거길 위치 찾기, 확인 후 지울 것)
       const r = await callTourApi("searchKeyword2", { ...base, keyword: url.searchParams.get("k") || "", numOfRows: "20", pageNo: "1", arrange: "O" });
-      return json({ items: r.items.map((it) => [it.title, it.addr1, it.mapy, it.mapx]) });
+      return json({ items: r.items.map((it) => [it.title, it.addr1, it.mapy, it.mapx, it.contenttypeid]) });
     } else if (action === "fishing") {
       // 🎣 바다낚시 지수 포인트(40km 안) + 관광정보 낚시터(민물·바다, 20km 안)
       const lat = Number(url.searchParams.get("lat"));
