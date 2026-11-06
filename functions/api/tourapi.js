@@ -759,7 +759,7 @@ export async function onRequest(context) {
       // 임시 점검 (자전거길 자료 세기, 확인 후 지울 것)
       const out = {};
       if (url.searchParams.get("lane")) {
-        const res = await fetch(`https://api.data.go.kr/openapi/tn_pubr_public_bcycl_lane_api?${new URLSearchParams({ serviceKey, pageNo: "1", numOfRows: "3", type: "json" })}`);
+        const res = await fetch(`https://api.data.go.kr/openapi/tn_pubr_public_bike_road_api?${new URLSearchParams({ serviceKey, pageNo: "1", numOfRows: "3", type: "json" })}`);
         return new Response(await res.text(), { headers: { "content-type": "text/plain; charset=utf-8", "x-up": String(res.status) } });
       }
       try {
