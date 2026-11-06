@@ -3168,7 +3168,7 @@ const BIKE_COLOR = "#B83280";
 let bikeRoutesPromise = null;
 function loadBikeRoutes() {
   if (!bikeRoutesPromise) {
-    bikeRoutesPromise = fetch("/bike-routes.json?v=2")
+    bikeRoutesPromise = fetch("/bike-routes.json?v=3")
       .then((r) => { if (!r.ok) throw new Error("자전거길 정보를 불러오지 못했어요."); return r.json(); })
       .then((d) => d.routes || [])
       .catch((e) => { bikeRoutesPromise = null; throw e; });
@@ -3185,8 +3185,9 @@ async function fetchBikesNearby({ spotName }) {
     .map((r) => ({
       id: `bike_${r.id}`, name: r.name, kind: "자전거길", address: r.addr || `${r.sido} ${r.sgg}`,
       distanceKm: null, lat: r.lat, lng: r.lng, image: null, area: null,
-      searchName: `${r.name} ${r.sgg}`,
-      bike: { nat: r.nat, km: r.km, type: r.kind, stops: r.stops || [], segs: r.n, area, sido: r.sido, sgg: r.sgg },
+      // 시·군을 붙이면 카카오맵이 못 찾아서 길 이름만 (예: '새재자전거길 충주시' 0건, '새재자전거길' 찾음)
+      searchName: r.near || r.name,
+      bike: { near: r.near || "", nat: r.nat, km: r.km, type: r.kind, stops: r.stops || [], segs: r.n, area, sido: r.sido, sgg: r.sgg },
       overview: "",
     }));
 }
@@ -3252,6 +3253,7 @@ function BikeInfo({ place }) {
           </div>
         ))}
       </div>
+      {k.near && <p className="text-[11px] text-[#6B5F4F] mt-1.5">📍 이 길은 위치 정보가 없어서 길찾기는 가까운 '{k.near}'(으)로 안내해요.</p>}
       <p className="text-[10px] text-[#A6987F] mt-1.5">정보: 전국자전거도로표준데이터(지방자치단체). 길 상태·공사·통제 여부는 타기 전에 확인하세요.{!place.lat ? " 지도는 길 이름으로 찾아요." : ""}</p>
     </div>
   );
@@ -4896,10 +4898,22 @@ function PlaceCard({ place, emoji }) {
           <p className="text-[11px] mt-0.5 line-clamp-1" style={{ color: MOUNTAIN_COLOR }}>{place.mountain.line}</p>
         )}
         {place.bike && (
-          <p className="text-[11px] mt-0.5 line-clamp-1" style={{ color: BIKE_COLOR }}>
-            {/* 국토종주 구간만 붉은 글자로 (100대 명산처럼) */}
-            {place.bike.nat && <span className="font-bold" style={{ color: "#B3261E" }}>🚴 국토종주 · </span>}
-            <span className="font-bold">{place.bike.nat ? "" : "🚴 "}{place.bike.km}km</span>{place.bike.type ? ` · ${place.bike.type}` : ""}
+          // 자전거길 카드는 낮게: 주소·거리 줄 없이 길이 줄 오른쪽에 길찾기 (2026-11-06 형: 길찾기가 한 줄을 다 차지했음)
+          <p className="text-[11px] mt-0.5 flex items-center justify-between" style={{ color: BIKE_COLOR }}>
+            <span className="truncate min-w-0">
+              {/* 국토종주 구간만 붉은 글자로 (100대 명산처럼) */}
+              {place.bike.nat && <span className="font-bold" style={{ color: "#B3261E" }}>🚴 국토종주 · </span>}
+              <span className="font-bold">{place.bike.nat ? "" : "🚴 "}{place.bike.km}km</span>{place.bike.type ? ` · ${place.bike.type}` : ""}
+            </span>
+            <a
+              href={kakaoDirectionsUrl(place.searchName || place.name, place.lat, place.lng)}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-[#2F6E68] whitespace-nowrap shrink-0 ml-2"
+            >
+              {place.lat ? "길찾기 ↗" : "지도 ↗"}
+            </a>
           </p>
         )}
         {place.bike && place.bike.stops.length > 0 && (
@@ -4929,8 +4943,8 @@ function PlaceCard({ place, emoji }) {
         {place.pet && (place.pet.animals || place.pet.etc) && (
           <p className="text-[10px] text-[#6B5F4F] line-clamp-1">{[place.pet.animals, place.pet.etc.replace(/\s*\n\s*/g, " ")].filter(Boolean).join(" · ")}</p>
         )}
-        <p className="text-[11px] text-[#A6987F] truncate mt-0.5">{place.address || "주소 정보 없음"}</p>
-        <p className="text-[11px] mt-0.5 flex items-center justify-between">
+        {!place.bike && <p className="text-[11px] text-[#A6987F] truncate mt-0.5">{place.address || "주소 정보 없음"}</p>}
+        {!place.bike && <p className="text-[11px] mt-0.5 flex items-center justify-between">
           <span className="text-[#6B5F4F] flex items-center gap-1.5 min-w-0">
             <span className="whitespace-nowrap">{place.distanceKm ? `시내에서 ${place.distanceKm}km` : ""}</span>
             {place.area && <NeighborBadge area={place.area} />}
@@ -4944,7 +4958,7 @@ function PlaceCard({ place, emoji }) {
           >
             길찾기 ↗
           </a>
-        </p>
+        </p>}
       </div>
     </div>
   );
