@@ -3168,7 +3168,7 @@ const BIKE_COLOR = "#B83280";
 let bikeRoutesPromise = null;
 function loadBikeRoutes() {
   if (!bikeRoutesPromise) {
-    bikeRoutesPromise = fetch("/bike-routes.json?v=1")
+    bikeRoutesPromise = fetch("/bike-routes.json?v=2")
       .then((r) => { if (!r.ok) throw new Error("자전거길 정보를 불러오지 못했어요."); return r.json(); })
       .then((d) => d.routes || [])
       .catch((e) => { bikeRoutesPromise = null; throw e; });
