@@ -5044,7 +5044,7 @@ function PlaceCard({ place, emoji }) {
       onClick={() => openDetail(place)}
       className="cursor-pointer flex gap-3 bg-white/50 border border-[#D9CBB0] rounded-lg p-2"
       // 100대 명산은 테두리를 등산 색으로 (동네 산과 구분 - 2026-11-05 형 요청)
-      style={place.mountain && !place.mountain.local ? { borderColor: MOUNTAIN_COLOR, borderWidth: 1.5 } : undefined}
+      style={place.mountain && !place.mountain.local ? { borderColor: MOUNTAIN_COLOR, borderWidth: 1.5 } : place.star ? { borderColor: STAR_COLOR, borderWidth: 1.5 } : undefined /* STAR 장소 카드는 보라 테두리 (2026-11-07 형 요청) */}
     >
       {place.mountain && !place.image ? (
         <MountainThumb place={place} emoji={emoji} />
