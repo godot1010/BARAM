@@ -3303,7 +3303,7 @@ async function fetchStarNearby({ lat, lng, spotName }) {
     .filter((s) => s.region === spotName)
     .map((s) => ({
       // 관광정보에 있는 곳은 그 번호로 정보 창(소개·사진)을 받는다
-      id: s.contentId || s.id, name: s.name, kind: "STAR", address: s.addr || "",
+      id: s.contentId || s.id, name: s.name, kind: "STAR", address: s.addr || s.region,
       distanceKm: s.lat && lat ? haversineKm(lat, lng, s.lat, s.lng).toFixed(1) : null,
       lat: s.lat || null, lng: s.lng || null,
       image: toHttps(s.image) || null, imageLarge: toHttps(s.image) || null,
