@@ -1992,7 +1992,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
               🎚 {musicAge.label} {ageOpen ? "▴" : "▾"}
             </button>
             {ageOpen && (
-              <div className="absolute right-0 mt-1 rounded-xl border border-[#D9CBB0] overflow-hidden" style={{ zIndex: 20, background: "#FFFDF8", boxShadow: "0 8px 16px rgba(0,0,0,0.15)", minWidth: 150 }}>
+              <div className="absolute mt-1 rounded-xl border border-[#D9CBB0] overflow-hidden" style={{ right: 0, zIndex: 20, background: "#FFFDF8", boxShadow: "0 8px 16px rgba(0,0,0,0.15)", minWidth: 140 }}>
                 {AGE_GROUPS.map((g, i) => {
                   const on = g.key === musicAge.key;
                   return (
