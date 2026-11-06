@@ -1284,6 +1284,31 @@ const GAYO_SONGS = [
 ];
 
 // 팝송 100곡 - 마찬가지로 감성/활기 테마 태그를 붙였다
+// ★ STAR 룰렛 여행지의 추천 음악 (2026-11-06 형 요청: 모두 BTS 노래 — 가요 칸은 한국어 곡, 팝송 칸은 영어 곡)
+const BTS_GAYO_SONGS = [
+  { title: "봄날", artist: "BTS", mood: "emotional" },
+  { title: "FAKE LOVE", artist: "BTS", mood: "emotional" },
+  { title: "Life Goes On", artist: "BTS", mood: "emotional" },
+  { title: "소우주 (Mikrokosmos)", artist: "BTS", mood: "emotional" },
+  { title: "I NEED U", artist: "BTS", mood: "emotional" },
+  { title: "피 땀 눈물", artist: "BTS", mood: "emotional" },
+  { title: "Yet To Come", artist: "BTS", mood: "emotional" },
+  { title: "작은 것들을 위한 시 (Boy With Luv)", artist: "BTS", mood: "energetic" },
+  { title: "DNA", artist: "BTS", mood: "energetic" },
+  { title: "IDOL", artist: "BTS", mood: "energetic" },
+  { title: "ON", artist: "BTS", mood: "energetic" },
+  { title: "불타오르네 (FIRE)", artist: "BTS", mood: "energetic" },
+  { title: "쩔어 (Dope)", artist: "BTS", mood: "energetic" },
+  { title: "RUN", artist: "BTS", mood: "energetic" },
+];
+const BTS_POP_SONGS = [
+  { title: "My Universe", artist: "Coldplay X BTS", mood: "emotional" },
+  { title: "Waste It On Me", artist: "Steve Aoki feat. BTS", mood: "emotional" },
+  { title: "Dynamite", artist: "BTS", mood: "energetic" },
+  { title: "Butter", artist: "BTS", mood: "energetic" },
+  { title: "Permission to Dance", artist: "BTS", mood: "energetic" },
+];
+
 const POP_SONGS = [
   // 감성 (50)
   { title: "Perfect", artist: "Ed Sheeran", mood: "emotional" },
@@ -1876,7 +1901,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
           style={{ background: "#FFF4D6" }}
         >
           {/* '🎵 ○○ 노래'와 '▶ 듣기'는 고정, 곡 이름·가수만 흘러간다 (2026-11-05 형 결정) */}
-          <span className="text-[10px] text-[#B8860B] font-bold whitespace-nowrap shrink-0">🎵 {spot.name} 노래</span>
+          <span className="text-[10px] font-bold whitespace-nowrap shrink-0" style={{ color: regionSong.label ? STAR_COLOR : "#B8860B" }}>{regionSong.label || `🎵 ${spot.name} 노래`}</span>
           <MarqueeText className="text-sm text-[#2B2620]">
             <span className="font-bold">{regionSong.title}</span>
             <span className="text-xs text-[#6B5F4F]"> · {regionSong.artist}</span>
@@ -3265,7 +3290,7 @@ const STAR_COLOR = "#8E44AD";
 let starPlacesPromise = null;
 function loadStarPlaces() {
   if (!starPlacesPromise) {
-    starPlacesPromise = fetch("/star-places.json?v=1")
+    starPlacesPromise = fetch("/star-places.json?v=2")
       .then((r) => { if (!r.ok) throw new Error("STAR 장소 정보를 불러오지 못했어요."); return r.json(); })
       .then((d) => d.places || [])
       .catch((e) => { starPlacesPromise = null; throw e; });
@@ -5499,9 +5524,12 @@ function usePersistentState(key, initialValue) {
 const CURRENT_RESULT_THEME_KEY = "baram_current_result_theme";
 const THEME_ROULETTE = {
   // 목록 순서(2026-11-06 형 결정 C안): 자연(등산·걷기길·캠핑) / 바다(바다·낚시) / 함께(반려견·무장애) / 혜택(반값여행), 묶음 첫 줄은 group: true
+  // ★ STAR 룰렛 (2026-11-06 형 요청): STAR 장소가 있는 22개 지역(31곳), 맨 위. 이 룰렛으로 정한 여행지는 추천 음악이 모두 BTS 노래
+  star: { label: "STAR", emoji: "★", color: STAR_COLOR, tab: "star",
+    counts: { "서울 종로구": 2, "서울 중구": 2, "서울 용산구": 2, "서울 영등포구": 1, "서울 마포구": 2, "서울 광진구": 1, "서울 송파구": 1, "서울 강남구": 1, "서울 성동구": 2, "서울 중랑구": 1, "양주시": 1, "용인시": 1, "양평군": 1, "강릉시": 2, "삼척시": 1, "평창군": 1, "제천시": 1, "부안군": 3, "완주군": 2, "광주 동구": 1, "부산 사하구": 1, "부산 연제구": 1 } },
   // ⛰️ 등산 룰렛 (2026-11-06 형 결정 B안): 100대 명산 + 동네 산이 있는 220개 지역. 무게 = 그 지역 100대 명산 수 × 10 + 동네 산 수
   // (100대 명산이 있는 지역이 더 자주 나오게). 목록 숫자는 명산 100 + 동네 산 4,611 = 4,711곳
-  mountain: { label: "등산", emoji: "⛰️", color: MOUNTAIN_COLOR, tab: "mountain", total: 4711,
+  mountain: { group: true, label: "등산", emoji: "⛰️", color: MOUNTAIN_COLOR, tab: "mountain", total: 4711,
     counts: { "서울 종로구": 11, "서울 중구": 1, "서울 용산구": 1, "서울 성동구": 1, "서울 광진구": 1, "서울 동대문구": 1, "서울 중랑구": 5, "서울 성북구": 11, "서울 강북구": 11, "서울 도봉구": 11, "서울 노원구": 3, "서울 은평구": 14, "서울 서대문구": 7, "서울 마포구": 2, "서울 강서구": 7, "서울 구로구": 1, "서울 금천구": 1, "서울 관악구": 12, "서울 서초구": 4, "서울 강남구": 1, "서울 강동구": 3, "수원시": 8, "성남시": 3, "의정부시": 12, "안양시": 13, "부천시": 3, "광명시": 4, "평택시": 19, "동두천시": 13, "안산시": 3, "고양시": 26, "과천시": 13, "구리시": 2, "남양주시": 38, "오산시": 6, "시흥시": 5, "의왕시": 6, "하남시": 3, "용인시": 50, "파주시": 36, "이천시": 32, "안성시": 25, "김포시": 14, "화성시": 37, "광주시": 24, "양주시": 46, "포천시": 73, "여주시": 34, "연천군": 18, "가평군": 87, "양평군": 66, "인천 중구": 7, "인천 미추홀구": 2, "인천 연수구": 2, "인천 남동구": 11, "인천 부평구": 6, "인천 계양구": 3, "인천 서구": 11, "강화군": 29, "옹진군": 16, "제주시": 29, "서귀포시": 34, "춘천시": 84, "원주시": 39, "강릉시": 61, "동해시": 22, "태백시": 44, "속초시": 13, "삼척시": 74, "홍천군": 114, "횡성군": 53, "영월군": 75, "평창군": 93, "정선군": 89, "철원군": 25, "화천군": 64, "양구군": 19, "인제군": 71, "고성군-강원": 17, "양양군": 50, "청주시": 50, "충주시": 49, "제천시": 66, "보은군": 44, "옥천군": 40, "영동군": 52, "증평군": 3, "진천군": 15, "괴산군": 54, "음성군": 29, "단양군": 66, "천안시": 42, "공주시": 82, "보령시": 33, "아산시": 27, "서산시": 25, "논산시": 56, "계룡시": 15, "당진시": 14, "금산군": 64, "부여군": 43, "서천군": 25, "청양군": 32, "홍성군": 24, "예산군": 35, "태안군": 23, "대전 동구": 26, "대전 중구": 7, "대전 서구": 6, "대전 유성구": 16, "대전 대덕구": 8, "세종시": 30, "포항시": 57, "경주시": 52, "김천시": 64, "안동시": 63, "구미시": 42, "영주시": 30, "영천시": 33, "상주시": 51, "문경시": 81, "경산시": 12, "의성군": 28, "청송군": 32, "영양군": 15, "영덕군": 53, "청도군": 59, "고령군": 19, "성주군": 34, "칠곡군": 34, "예천군": 18, "봉화군": 65, "울진군": 33, "울릉군": 25, "대구 동구": 25, "대구 남구": 4, "대구 북구": 8, "대구 수성구": 11, "대구 달서구": 7, "달성군": 47, "군위군": 24, "부산 중구": 3, "부산 서구": 9, "부산 동구": 1, "부산 영도구": 2, "부산 부산진구": 3, "부산 동래구": 5, "부산 남구": 7, "부산 북구": 10, "부산 해운대구": 5, "부산 사하구": 4, "부산 금정구": 11, "부산 강서구": 1, "부산 수영구": 2, "부산 사상구": 1, "기장군": 15, "울산 중구": 2, "울산 남구": 7, "울산 동구": 4, "울산 북구": 10, "울주군": 62, "창원시": 63, "진주시": 26, "통영시": 42, "사천시": 16, "김해시": 31, "밀양시": 75, "거제시": 53, "양산시": 32, "의령군": 46, "함안군": 17, "창녕군": 39, "고성군-경남": 74, "남해군": 41, "하동군": 20, "산청군": 65, "함양군": 52, "거창군": 67, "합천군": 71, "전주시": 28, "군산시": 43, "익산시": 8, "정읍시": 52, "남원시": 42, "김제시": 26, "완주군": 70, "진안군": 47, "무주군": 48, "장수군": 47, "임실군": 25, "순창군": 63, "고창군": 45, "부안군": 27, "목포시": 11, "여수시": 36, "순천시": 58, "나주시": 29, "광양시": 28, "담양군": 55, "곡성군": 26, "구례군": 38, "고흥군": 45, "보성군": 26, "화순군": 54, "장흥군": 27, "강진군": 36, "해남군": 46, "영암군": 36, "무안군": 32, "함평군": 16, "영광군": 26, "장성군": 51, "완도군": 20, "진도군": 22, "신안군": 58, "광주 동구": 29, "광주 서구": 5, "광주 남구": 13, "광주 북구": 13, "광주 광산구": 8 } },
   // 🥾 걷기길 룰렛 (2026-11-05 형 결정 A안): 코리아둘레길 코스 + 지자체 걷기길 수 (229개 지역 점검, 203개 지역·1492곳)
   walk: { label: "걷기길", emoji: "🥾", color: WALK_COLOR, tab: "walk",
@@ -6176,12 +6204,31 @@ function BaramApp() {
   }, [petEntry]);
   // 결과가 바뀔 때만 새로 뽑히도록 useMemo로 고정 (탭 전환 등 다른 리렌더에는 곡이 안 바뀜)
   const songKey = result ? `${result.id}:${toDateInputValue()}` : "";
-  const gayoSongs = useMemo(() => (result ? pickSongsForTrip(GAYO_SONGS, result.mood, 1, `${songKey}:gayo`) : []), [songKey]);
-  const popSongs = useMemo(() => (result ? pickSongsForTrip(POP_SONGS, result.mood, 1, `${songKey}:pop`) : []), [songKey]);
+  const starTrip = resultTheme === "star";
+  const gayoSongs = useMemo(() => (result ? pickSongsForTrip(starTrip ? BTS_GAYO_SONGS : GAYO_SONGS, result.mood, 1, `${songKey}:gayo`) : []), [songKey, starTrip]);
+  const popSongs = useMemo(() => (result ? pickSongsForTrip(starTrip ? BTS_POP_SONGS : POP_SONGS, result.mood, 1, `${songKey}:pop`) : []), [songKey, starTrip]);
+  const [starSongs, setStarSongs] = useState([]); // 이 지역 STAR 장소에서 찍은 BTS 노래
+  useEffect(() => {
+    if (!starTrip || !result) { setStarSongs([]); return; }
+    let alive = true;
+    loadStarPlaces().then((list) => {
+      if (!alive) return;
+      const songs = list.filter((s) => s.region === result.name && s.song).map((s) => ({ title: s.song, artist: s.songArtist || "BTS", place: s.name }));
+      setStarSongs(songs);
+    }).catch(() => {});
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [songKey, starTrip]);
   const regionSong = useMemo(() => {
+    if (starTrip) {
+      // 이 지역에서 찍은 노래가 있으면 그 노래, 없으면 가요·팝송 칸과 다른 BTS 노래
+      if (starSongs.length) return { ...starSongs[hashString(`${songKey}:star`) % starSongs.length], label: "★ 여기서 찍은 BTS 노래" };
+      const rest = BTS_GAYO_SONGS.filter((s) => !gayoSongs.includes(s));
+      return { ...rest[hashString(`${songKey}:star`) % rest.length], label: "★ BTS 노래" };
+    }
     const list = result ? lookupRegion(REGION_SONGS, result.name) : null;
     return list ? list[hashString(`${songKey}:region`) % list.length] : null;
-  }, [songKey]);
+  }, [songKey, starTrip, starSongs]);
   const regionFoods = result ? lookupRegion(REGION_FOODS, result.name) : null;
 
   const resultSpot = result ? spots.find((s) => s.id === result.id) : null; // STAMP 여부는 최신 기록으로
