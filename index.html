@@ -3186,7 +3186,7 @@ async function fetchBikesNearby({ spotName }) {
       id: `bike_${r.id}`, name: r.name, kind: "자전거길", address: r.addr || `${r.sido} ${r.sgg}`,
       distanceKm: null, lat: r.lat, lng: r.lng, image: null, area: null,
       // 시·군을 붙이면 카카오맵이 못 찾아서 길 이름만 (예: '새재자전거길 충주시' 0건, '새재자전거길' 찾음)
-      searchName: r.near || r.name,
+      searchName: r.near || (r.nat ? r.name : `${/구$/.test(r.sgg) ? `${r.sido.slice(0, 2)} ${r.sgg}` : r.sgg.replace(/(시|군)$/, "")} ${r.name}`), // 국토종주는 이름만, 나머지는 '충주 천변로'처럼 지역을 앞에 짧게
       bike: { near: r.near || "", nat: r.nat, km: r.km, type: r.kind, stops: r.stops || [], segs: r.n, area, sido: r.sido, sgg: r.sgg },
       overview: "",
     }));
