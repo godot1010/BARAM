@@ -755,19 +755,6 @@ export async function onRequest(context) {
       const area = url.searchParams.get("area") || "";
       if (!area) return json({ error: "BAD_REQUEST", message: "area가 필요해요." }, 400);
       payload = await walkPhotos(base, { title: url.searchParams.get("title") || "", base: url.searchParams.get("base") || "", names, area });
-    } else if (action === "bikeProbe") {
-      // 임시 점검 (자전거도로 표준데이터 세기, 확인 후 지울 것)
-      const res = await fetch(`https://api.data.go.kr/openapi/tn_pubr_public_bike_road_api?${new URLSearchParams({ serviceKey, pageNo: url.searchParams.get("pageNo") || "1", numOfRows: "1000", type: "json" })}`);
-      const text = await res.text();
-      let out;
-      try {
-        const d = JSON.parse(text);
-        const body = d?.response?.body || d?.body || {};
-        const raw = body?.items?.item || body?.items || [];
-        const items = Array.isArray(raw) ? raw : [raw];
-        out = { total: body.totalCount, items: items.map((t) => [t.rteNm, t.ctpvNm, t.sggNm, t.totalLength, t.bikeRoadType, t.majorStopover, t.roadStPointLat, t.roadStPointLon, t.roadEdPointLat, t.roadEdPointLon, t.roadStPointRoadNmAddr]) };
-      } catch { out = { raw: text.slice(0, 500) }; }
-      return json(out);
     } else if (action === "fishing") {
       // 🎣 바다낚시 지수 포인트(40km 안) + 관광정보 낚시터(민물·바다, 20km 안)
       const lat = Number(url.searchParams.get("lat"));
