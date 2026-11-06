@@ -762,10 +762,10 @@ export async function onRequest(context) {
       let out;
       try {
         const d = JSON.parse(text);
-        const body = d?.response?.body || {};
+        const body = d?.response?.body || d?.body || {};
         const raw = body?.items?.item || body?.items || [];
         const items = Array.isArray(raw) ? raw : [raw];
-        out = { total: body.totalCount, head: d?.response?.header, items: items.map((t) => [t.bcyclRoadNm || t.routeNm || t.roadNm, t.ctprvnNm, t.signguNm, t.totLt || t.totalLt, t.bcyclRoadTy || t.bcyclRoadKnd, t.mainStpgSpot || t.mainViaSpot, t.beginLat || t.bgngLatitude, t.beginLng || t.bgngLongitude, t.endLat || t.endLatitude, t.endLng || t.endLongitude]), keys: items[0] ? Object.keys(items[0]) : [], raw: items.length ? undefined : text.slice(0, 600) };
+        out = { total: body.totalCount, items: items.map((t) => [t.rteNm, t.ctpvNm, t.sggNm, t.totalLength, t.bikeRoadType, t.majorStopover, t.roadStPointLat, t.roadStPointLon, t.roadEdPointLat, t.roadEdPointLon, t.roadStPointRoadNmAddr]) };
       } catch { out = { raw: text.slice(0, 500) }; }
       return json(out);
     } else if (action === "fishing") {
