@@ -93,6 +93,7 @@ const MountainIcon = (p) => (<Icon {...p}><path d="m8 3 4 8 5-5 5 15H2L8 3z" /><
 const Footprints = (p) => (<Icon {...p}><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z" /><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z" /><path d="M16 17h4" /><path d="M4 13h4" /></Icon>);
 const Fish = (p) => (<Icon {...p}><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z" /><path d="M18 12v.5" /><path d="M16 17.93a9.77 9.77 0 0 1 0-11.86" /><path d="M7 10.67C7 8 5.58 5.97 2.73 5.5c-1 1.5-1 5 .23 6.5-1.24 1.5-1.24 5-.23 6.5C5.58 18.03 7 16 7 13.33" /></Icon>);
 const Waves = (p) => (<Icon {...p}><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" /><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" /><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" /></Icon>);
+const Bike = (p) => (<Icon {...p}><circle cx="18.5" cy="17.5" r="3.5" /><circle cx="5.5" cy="17.5" r="3.5" /><circle cx="15" cy="5" r="1" /><path d="M12 17.5V14l-3-3 4-3 2 3h2" /></Icon>);
 const Tent = (p) => (<Icon {...p}><path d="M3.5 21 14 3" /><path d="M20.5 21 10 3" /><path d="M15.5 21 12 15l-3.5 6" /><path d="M2 21h20" /></Icon>);
 const Paw = (p) => (<Icon {...p}><circle cx="11" cy="4" r="2" /><circle cx="18" cy="8" r="2" /><circle cx="20" cy="16" r="2" /><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.05Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z" /></Icon>);
 
@@ -3160,6 +3161,102 @@ function WalkThumb({ place, emoji }) {
 function walkSummary(w) {
   return [w.duru ? "코리아둘레길" : null, w.time ? `⏱ ${w.time}` : null, w.level ? `난이도 ${w.level}` : null].filter(Boolean).join(" · ");
 }
+// 🚴 자전거길 (2026-11-06 형 결정): 전국자전거도로표준데이터 24,522구간을 미리 정리한 파일(/bike-routes.json, 359개 길·119개 지역)
+// 같은 시·군·구의 같은 길 조각을 합치고, 강·천·해안·자전거길 등 이름만, 일반 도로(…로) 빼고, 합친 길이 3km 이상.
+// 자료가 1년에 한 번 바뀌어 서버가 매번 받지 않고 파일로 둔다 (다시 만들 땐 scratchpad의 bike_build.py 방식)
+const BIKE_COLOR = "#B83280";
+let bikeRoutesPromise = null;
+function loadBikeRoutes() {
+  if (!bikeRoutesPromise) {
+    bikeRoutesPromise = fetch("/bike-routes.json?v=1")
+      .then((r) => { if (!r.ok) throw new Error("자전거길 정보를 불러오지 못했어요."); return r.json(); })
+      .then((d) => d.routes || [])
+      .catch((e) => { bikeRoutesPromise = null; throw e; });
+  }
+  return bikeRoutesPromise;
+}
+async function fetchBikesNearby({ spotName }) {
+  const routes = await loadBikeRoutes();
+  const area = spotName.replace(/-.*$/, "").replace(/^\S+ /, "");
+  return routes
+    .filter((r) => { const reg = regionOfAddress(`${r.sido} ${r.sgg}`); return reg && reg.name === spotName; })
+    // 국토종주·4대강 노선 먼저, 그다음 긴 길
+    .sort((a, c) => (c.nat ? 1 : 0) - (a.nat ? 1 : 0) || c.km - a.km)
+    .map((r) => ({
+      id: `bike_${r.id}`, name: r.name, kind: `${r.km}km`, address: r.addr || `${r.sido} ${r.sgg}`,
+      distanceKm: null, lat: r.lat, lng: r.lng, image: null, area: null,
+      searchName: `${r.name} ${r.sgg}`,
+      bike: { nat: r.nat, km: r.km, type: r.kind, stops: r.stops || [], segs: r.n, area, sido: r.sido, sgg: r.sgg },
+      overview: "",
+    }));
+}
+const bikePhotoCache = new Map();
+function fetchBikePhoto(place) {
+  const k = place.bike;
+  const key = place.id;
+  if (!bikePhotoCache.has(key)) {
+    // 지나는 곳 이름들로 먼저 찾고, 길 이름은 맨 뒤 (걷기길 사진과 같은 서버 기능)
+    const base = place.name.replace(/\s*(자전거\s*(길|도로)|종주|길)$/, "").trim();
+    const names = [...k.stops, place.name, base].map((s) => s.trim()).filter((s) => s.length >= 2);
+    const promise = tourApiProxyFetch("walkPhoto", { names: [...new Set(names)].slice(0, 6).join("|"), title: "", base: place.name, area: k.area, v: "5" })
+      .catch(() => { bikePhotoCache.delete(key); return []; });
+    bikePhotoCache.set(key, promise);
+  }
+  return bikePhotoCache.get(key);
+}
+function BikeThumb({ place, emoji }) {
+  const [src, setSrc] = useState(null);
+  const [broken, setBroken] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetchBikePhoto(place).then((list) => {
+      if (!alive || !list[0]) return;
+      // 같은 지역 목록에서 앞 카드가 쓴 사진은 피한다 (걷기길과 같은 표 사용)
+      const areaKey = `bike:${place.bike.area}`;
+      const used = walkThumbUsed.get(areaKey) || new Map();
+      walkThumbUsed.set(areaKey, used);
+      const mine = used.get(place.id);
+      const taken = new Set([...used.entries()].filter(([id]) => id !== place.id).map(([, u]) => u));
+      const pick = list.find((p) => !taken.has(p.thumb || p.url)) || list[0];
+      const url = mine || pick.thumb || pick.url;
+      used.set(place.id, url);
+      setSrc(toHttps(url));
+    });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [place.id]);
+  if (src && !broken) {
+    return <img src={src} alt="" loading="lazy" className="w-14 h-14 rounded-md object-cover shrink-0" onError={() => setBroken(true)} />;
+  }
+  return (
+    <span className="w-14 h-14 rounded-md shrink-0 flex items-center justify-center text-xl" style={{ background: "#F3E6C4" }}>{emoji}</span>
+  );
+}
+// 장소 정보 창의 자전거길 정보
+function BikeInfo({ place }) {
+  const k = place.bike;
+  const rows = [
+    ["🚴 총길이", `${k.km}km${k.segs > 1 ? ` (구간 ${k.segs}개를 합친 길이)` : ""}`],
+    ["🛣️ 종류", k.type],
+    ["📍 지나는 곳", k.stops.join(", ")],
+    ["🏁 시작", place.address],
+  ].filter(([, v]) => v);
+  return (
+    <div className="mt-3">
+      {k.nat && <p className="text-xs font-bold mb-1.5" style={{ color: "#B3261E" }}>🚴 국토종주·4대강 자전거길 구간이에요</p>}
+      <div className="bg-white/50 border border-[#D9CBB0] rounded-lg divide-y divide-[#E9DFCC]">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex gap-2 px-3 py-1.5 text-[11px]">
+            <span className="shrink-0 text-[#6B5F4F] w-24">{label}</span>
+            <span className="text-[#2B2620] min-w-0" style={{ wordBreak: "keep-all" }}>{value}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-[#A6987F] mt-1.5">정보: 전국자전거도로표준데이터(지방자치단체). 길 상태·공사·통제 여부는 타기 전에 확인하세요.{!place.lat ? " 지도는 길 이름으로 찾아요." : ""}</p>
+    </div>
+  );
+}
+
 // 도장을 찍은 뒤에만 추억 칸을 보여 준다
 function StampedMemory({ stampKey, kind, name, color }) {
   const mountainStamps = useMountainStamps();
@@ -4508,6 +4605,14 @@ function phoneNumber(text) {
 const placeDetailCache = new Map(); // 장소 id → Promise (같은 장소는 한 번만 받는다)
 function fetchPlaceDetail(place) {
   // 캠핑장은 목록에 이미 소개·전화·홈페이지가 있다 (관광정보 상세가 없는 다른 자료)
+  // 자전거길도 걷기길처럼 정보 창에 사진
+  if (place.bike) {
+    return fetchBikePhoto(place).then((list) => ({
+      overview: "", addr1: place.address, intro: {},
+      images: list.map((p) => ({ url: p.url })),
+      photoCredit: [...new Set(list.map((p) => p.credit).filter(Boolean))].join(", "),
+    }));
+  }
   // 걷기길은 사진이 중요해서 정보 창에도 넣는다 (2026-11-05 형 요청)
   if (place.walk) {
     return fetchWalkPhoto(place, place.walk.area).then((list) => ({
@@ -4615,6 +4720,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
           {place.sea && <SeaInfo place={place} />}
           {place.mountain && <MountainInfo place={place} />}
           {place.walk && <WalkInfo place={place} />}
+          {place.bike && <BikeInfo place={place} />}
 
           {overview && (
             <div className="mt-3">
@@ -4752,6 +4858,8 @@ function PlaceCard({ place, emoji }) {
         <MountainThumb place={place} emoji={emoji} />
       ) : place.walk && !place.image ? (
         <WalkThumb place={place} emoji={emoji} />
+      ) : place.bike && !place.image ? (
+        <BikeThumb place={place} emoji={emoji} />
       ) : place.image && !imageBroken ? (
         <img
           src={place.image}
@@ -4786,6 +4894,16 @@ function PlaceCard({ place, emoji }) {
         )}
         {place.mountain && place.mountain.local && place.mountain.line && (
           <p className="text-[11px] mt-0.5 line-clamp-1" style={{ color: MOUNTAIN_COLOR }}>{place.mountain.line}</p>
+        )}
+        {place.bike && (
+          <p className="text-[11px] mt-0.5 line-clamp-1" style={{ color: BIKE_COLOR }}>
+            {/* 국토종주 구간만 붉은 글자로 (100대 명산처럼) */}
+            {place.bike.nat && <span className="font-bold" style={{ color: "#B3261E" }}>🚴 국토종주 · </span>}
+            <span className="font-bold">{place.bike.nat ? "" : "🚴 "}{place.bike.km}km</span>{place.bike.type ? ` · ${place.bike.type}` : ""}
+          </p>
+        )}
+        {place.bike && place.bike.stops.length > 0 && (
+          <p className="text-[11px] text-[#6B5F4F] mt-0.5 line-clamp-1">지나는 곳: {place.bike.stops.join(" · ")}</p>
         )}
         {place.walk && walkSummary(place.walk) && (
           <p className="text-[11px] font-bold mt-0.5 line-clamp-1" style={{ color: WALK_COLOR }}>🥾 {walkSummary(place.walk)}</p>
@@ -4964,6 +5082,11 @@ const TAB_CONFIG = {
     label: "캠핑", icon: Tent, color: CAMPING_COLOR, emoji: "🏕️", source: "camping", theme: true,
     pick: (list) => list,
   },
+  // 🚴 자전거길 (2026-11-06)
+  bike: {
+    label: "자전거", icon: Bike, color: BIKE_COLOR, emoji: "🚴", source: "bike", theme: true,
+    pick: (list) => list,
+  },
   // 🥾 걷기길 (2026-11-05)
   walk: {
     label: "걷기길", icon: Footprints, color: WALK_COLOR, emoji: "🥾", source: "walk", theme: true,
@@ -4985,7 +5108,7 @@ const TAB_CONFIG = {
   },
 };
 // 칩 순서는 테마 룰렛 목록과 같게: 자연 → 바다 → 함께 (2026-11-06 형 결정 C안)
-const THEME_TAB_KEYS = ["mountain", "walk", "camping", "sea", "fishing", "pet", "barrierFree"].filter((key) => TAB_CONFIG[key] && TAB_CONFIG[key].theme);
+const THEME_TAB_KEYS = ["mountain", "walk", "bike", "camping", "sea", "fishing", "pet", "barrierFree"].filter((key) => TAB_CONFIG[key] && TAB_CONFIG[key].theme);
 
 const SOURCE_FETCHERS = {
   ct12: (spot) => fetchNearbyTourSpots({ lat: spot.lat, lng: spot.lng, spotName: spot.name, contentTypeId: 12, num: 30, preferImages: true }),
@@ -4998,6 +5121,7 @@ const SOURCE_FETCHERS = {
   camping: (spot) => fetchCampingNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
   mountain: (spot) => fetchMountainsNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
   walk: (spot) => fetchWalksNearby({ spotName: spot.name }),
+  bike: (spot) => fetchBikesNearby({ spotName: spot.name }),
   fishing: (spot) => fetchFishingNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
   sea: (spot) => fetchSeasideNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
 };
@@ -5187,6 +5311,11 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
             🥾 이 지역을 지나는 코리아둘레길 코스를 먼저, 그 아래에 지자체가 소개하는 걷기길을 보여 드려요{items.length > 0 ? ` (${items.length}곳)` : ""}. 길을 누르면 경로와 소요 시간, 사진을 볼 수 있어요. 사진: 한국관광공사 포토코리아·관광정보.
           </p>
         )}
+        {tab === "bike" && entry && entry.status === "success" && (
+          <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
+            🚴 이 지역의 강변·천변·해안 자전거길이에요{items.length > 0 ? ` (${items.length}곳)` : ""}. 국토종주·4대강 구간을 먼저, 그다음 긴 길 순서로 보여 드려요. 3km 이상인 길만 골랐어요. 사진: 한국관광공사 포토코리아·관광정보.
+          </p>
+        )}
         {tab === "fishing" && entry && entry.status === "success" && (
           <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
             🎣 주변 바다낚시 포인트(40km 안)의 오늘 낚시지수를 먼저, 그 아래에 낚시터(바다·민물, 20km 안)를 보여 드려요{items.length > 0 ? ` (${items.length}곳)` : ""}. 포인트를 누르면 3일 동안의 지수와 물때·파고를 볼 수 있어요.
@@ -5216,7 +5345,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
           tab === "cafe" ? (
             <MapLinkList links={buildMapSearchLinks(spot, "카페")} />
           ) : (
-            <StatusBlock status="empty" emptyText={tab === "festival" ? "가까운 곳에 열리는 축제가 없어요." : tab === "pet" ? "이 지역은 반려동물 동반 정보가 아직 없어요." : tab === "barrierFree" ? "이 지역 주변에는 무장애 여행 정보가 아직 없어요." : tab === "camping" ? "이 지역 주변 20km 안에는 등록된 캠핑장이 없어요." : tab === "mountain" ? "이 지역의 산 정보가 아직 없어요." : tab === "walk" ? "이 지역의 걷기길 정보가 아직 없어요." : tab === "fishing" ? "이 지역 주변에는 낚시 정보가 아직 없어요." : tab === "sea" ? "이 지역 주변 20km 안에는 해변 정보가 없어요." : "검색된 정보가 없어요."} />
+            <StatusBlock status="empty" emptyText={tab === "festival" ? "가까운 곳에 열리는 축제가 없어요." : tab === "pet" ? "이 지역은 반려동물 동반 정보가 아직 없어요." : tab === "barrierFree" ? "이 지역 주변에는 무장애 여행 정보가 아직 없어요." : tab === "camping" ? "이 지역 주변 20km 안에는 등록된 캠핑장이 없어요." : tab === "mountain" ? "이 지역의 산 정보가 아직 없어요." : tab === "walk" ? "이 지역의 걷기길 정보가 아직 없어요." : tab === "bike" ? "이 지역에는 등록된 자전거길이 아직 없어요." : tab === "fishing" ? "이 지역 주변에는 낚시 정보가 아직 없어요." : tab === "sea" ? "이 지역 주변 20km 안에는 해변 정보가 없어요." : "검색된 정보가 없어요."} />
           )
         ) : (
           <>
