@@ -3183,7 +3183,7 @@ async function fetchBikesNearby({ spotName }) {
     // 국토종주·4대강 노선 먼저, 그다음 긴 길
     .sort((a, c) => (c.nat ? 1 : 0) - (a.nat ? 1 : 0) || c.km - a.km)
     .map((r) => ({
-      id: `bike_${r.id}`, name: r.name, kind: `${r.km}km`, address: r.addr || `${r.sido} ${r.sgg}`,
+      id: `bike_${r.id}`, name: r.name, kind: "자전거길", address: r.addr || `${r.sido} ${r.sgg}`,
       distanceKm: null, lat: r.lat, lng: r.lng, image: null, area: null,
       searchName: `${r.name} ${r.sgg}`,
       bike: { nat: r.nat, km: r.km, type: r.kind, stops: r.stops || [], segs: r.n, area, sido: r.sido, sgg: r.sgg },
