@@ -72,6 +72,20 @@ const Compass = (p) => (<Icon {...p}><circle cx="12" cy="12" r="10" /><polygon p
 const Utensils = (p) => (<Icon {...p}><path d="M6 2v7a2 2 0 0 0 2 2 2 2 0 0 0 2-2V2" /><path d="M8 11v11" /><path d="M18 2c-1.5 2-2 4-2 6 0 2 .8 3 2 3s2-1 2-3c0-2-.5-4-2-6Z" /><path d="M18 11v11" /></Icon>);
 const BookOpen = (p) => (<Icon {...p}><path d="M12 7v14" /><path d="M3 5a2 2 0 0 1 2-2h4a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H3Z" /><path d="M21 5a2 2 0 0 0-2-2h-4a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7Z" /></Icon>);
 const Music = (p) => (<Icon {...p}><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></Icon>);
+const CalendarDays = (p) => (<Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></Icon>);
+// 결과 화면 구역 제목 (2026-11-07 형 결정 B안): 금색 동그라미 아이콘 + 15px 굵은 제목 + 오른쪽으로 이어지는 선
+function SectionTitle({ icon: IconComp, children, extra, className = "", style, titleRef }) {
+  return (
+    <div ref={titleRef} className={`flex items-center ${className}`} style={{ gap: 8, ...style }}>
+      <span className="shrink-0 flex items-center justify-center rounded-full" style={{ width: 24, height: 24, background: "#B8860B", color: "#FFFDF8" }}>
+        <IconComp size={14} />
+      </span>
+      <span className="font-bold text-[#2B2620] whitespace-nowrap" style={{ fontSize: 15 }}>{children}</span>
+      {extra}
+      <span style={{ flex: 1, height: 1, background: "#D9CBB0", minWidth: 12 }} />
+    </div>
+  );
+}
 const PartyPopper = (p) => (<Icon {...p}><path d="M4 20 9 9l7 7-11 4Z" /><path d="M9 9 20 4" /><circle cx="19" cy="9" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="21" cy="14" r="1" /></Icon>);
 const Loader2 = ({ size = 20, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${className} animate-spin`}>
@@ -407,10 +421,11 @@ function buildSpots() {
       lat: loc.lat,
       lng: loc.lng,
       mood,
+      // 2026-11-07 형 요청: 위에 지역 이름이 있으니 이름을 빼고 한 줄로 ('부지런히', '고요한' 뺌)
       description:
         mood === "emotional"
-          ? `고요한 ${loc.name}의 골목과 풍경을 여유롭게 걸어보는 감성 코스예요.`
-          : `${loc.name}에서 액티비티와 로컬 명소를 부지런히 둘러보는 활기찬 코스예요.`,
+          ? "골목과 풍경을 여유롭게 걸어보는 감성 코스예요."
+          : "액티비티와 로컬 명소를 둘러보는 활기찬 코스예요.",
       isVisited: false,
       visitedDate: null,
       stampType: null,
@@ -1547,11 +1562,12 @@ function pickSongsForTrip(arr, mood, n, key) {
 
 // 나이대별 추천곡 (2026-11-06 형 결정): 4묶음 × 가요 100 + 팝송 100(각 감성 50·활기 50) = 800곡, /songs-by-age.json
 // 나이는 '오늘의 여행운' 생년월일로 폰 안에서만 계산한다(서버로 안 보냄). 추천 음악 옆 칸에서 다른 묶음을 골라 들을 수도 있다
+// 2026-11-07 형 요청: 칸·목록 이름을 나이대 대신 연도로 ('나이대 고르기'가 이상함). 곡 묶음은 그대로(나이대 기준이라 시대가 조금 겹침)
 const AGE_GROUPS = [
-  { key: "1", label: "30대 이하" },
-  { key: "2", label: "40대" },
-  { key: "3", label: "50~60대" },
-  { key: "4", label: "70대 이상" },
+  { key: "1", label: "2010년~지금" },   // 30대 이하
+  { key: "2", label: "90~2000년대" },   // 40대
+  { key: "3", label: "80~90년대" },     // 50~60대
+  { key: "4", label: "60~70년대" },     // 70대 이상
 ];
 function ageGroupOf(birthDate) {
   if (!birthDate) return "";
@@ -1594,6 +1610,8 @@ function fmtClock(min) {
   const m = ((Math.round(min) % 1440) + 1440) % 1440;
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
+// 시간 앞 0을 뺀 모양 (07:10 → 7:10), 출발 안내 박스에서 씀 (2026-11-07 형 요청)
+function shortClock(min) { return fmtClock(min).replace(/^0(?=\d:)/, ""); }
 
 function fmtDuration(min) {
   const h = Math.floor(min / 60);
@@ -1828,13 +1846,15 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
   };
 
   return (
-    <div className="mt-4">
-      <p className="text-xs font-medium text-[#2B2620] mb-2">
-        오늘의 일정 · {spot.mood === "emotional" ? "🌙" : "⚡"} {rule.label}
-      </p>
+    <div style={{ marginTop: 28 }}>{/* 구역 제목 위 28 (2026-11-07 간격 정리, 테마 버튼이 없어도 같게) */}
+      <SectionTitle icon={CalendarDays} style={{ marginBottom: 10 }} extra={
+        <span className="font-bold whitespace-nowrap" style={{ fontSize: 12, color: spot.mood === "emotional" ? "#1B4B91" : "#B3261E" }}>
+          {spot.mood === "emotional" ? "🌙" : "⚡"} {rule.label}
+        </span>
+      }>오늘의 일정</SectionTitle>
 
-      {/* 출발 시간 추천 */}
-      <div className="bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2 mb-3">
+      {/* 출발 시간 추천 — 일정표와 같이 양옆 12px씩 넓히고 위아래 여백을 줄임 (2026-11-07 형 요청: 글자를 한 줄로 올려 높이 줄이기) */}
+      <div className="bg-white/50 border border-[#D9CBB0] rounded-lg mb-3" style={{ margin: "0 -12px 12px", padding: "6px 10px" }}>
         {travel.mode === "island" ? (
           <>
             <p className="text-sm font-bold text-[#2B2620]">⛴️✈️ 배·비행기 시간을 먼저 확인하세요</p>
@@ -1842,26 +1862,19 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
           </>
         ) : (
           <>
-            <p className="text-sm font-bold text-[#2B2620]">
-              🚗 {fmtClock(travel.departure)} 출발{travel.chosen ? "" : " 추천"} → {fmtClock(travel.arrival)} 도착
+            {/* 2026-11-07 형 요청: 두 줄로 — 시간 앞 0 빼기, '○○에서 차로…' 줄 삭제(걸리는 시간은 첫 줄 괄호로), 두 줄 글자 크기 같게 13px */}
+            <p className="font-bold text-[#2B2620]" style={{ fontSize: 13 }}>
+              🚗 {shortClock(travel.departure)} 출발{travel.chosen ? "" : " 추천"} → {shortClock(travel.arrival)} 도착 <span className="font-normal text-[#6B5F4F]" style={{ fontSize: 11 }}>(약 {fmtDuration(travel.travel)} 소요)</span>
             </p>
-            <p className="text-[11px] text-[#6B5F4F] mt-0.5">
-              {from.name}에서 자동차로 약 {fmtDuration(travel.travel)} ·{" "}
-              {travel.chosen
-                ? "고른 출발 시간에 맞춰 일정을 짰어요"
-                : travel.arrival > rule.targetArrival
-                ? `너무 이른 출발이 되지 않게 ${fmtClock(EARLIEST_DEPARTURE)} 출발로 맞췄어요`
-                : `${rule.label}는 ${fmtClock(rule.targetArrival)} 도착 기준`}
-            </p>
-            <p className="text-[11px] text-[#6B5F4F]">
+            <p className="text-[#2B2620] mt-0.5" style={{ fontSize: 13 }}>
               {overnight
-                ? `🏠 당일로 돌아오면 ${homeArrival >= 1440 ? "다음 날 " : ""}${fmtClock(homeArrival)}쯤 도착해요. 하룻밤 묵어가는 걸 추천해요.`
-                : `🏠 ${fmtClock(plan.end)}에 출발하면 ${fmtClock(homeArrival)}쯤 도착`}
+                ? `🏠 당일로 돌아오면 ${homeArrival >= 1440 ? "다음 날 " : ""}${shortClock(homeArrival)}쯤 도착해요. 하룻밤 묵어가는 걸 추천해요.`
+                : `🏠 ${shortClock(plan.end)}에 출발하면 ${shortClock(homeArrival)}쯤 도착`}
             </p>
           </>
         )}
         {travel.mode === "car" && (
-          <div className="flex flex-wrap items-center gap-1 mt-2">
+          <div className="flex flex-wrap items-center gap-1 mt-1">
             <span className="text-[11px] text-[#6B5F4F] mr-0.5">출발 시간</span>
             {[null, ...DEPART_OPTIONS].map((min) => {
               const active = (departChoice || null) === min;
@@ -1905,13 +1918,16 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
         </div>
       )}
 
-      <ul className="space-y-2">
+      {/* 결과 카드 안쪽 여백(20px)보다 양옆으로 12px씩 넓힘: 시간은 왼쪽으로, 칸 끝은 오른쪽으로 (2026-11-07 형 요청) */}
+      <ul className="space-y-2" style={{ margin: "0 -12px" }}>
         {plan.steps.map((s, i) => (
-          <li key={i} className="flex gap-3">
-            <span className="text-xs font-bold text-[#B8860B] w-11 shrink-0 pt-2">{fmtClock(s.time)}</span>
+          // 2026-11-07 형 의견: 시간과 칸 사이가 멀고 칸이 답답함 → 시간 칸 44→36px·사이 12→6px, 사진 48→64px,
+          // 칸 안 여백을 줄여 높이는 거의 그대로(형: 아래로 더 길어지면 안 됨), 길찾기·다른 곳은 오른쪽 정렬
+          <li key={i} className="flex" style={{ gap: 6 }}>
+            <span className="text-xs font-bold text-[#B8860B] shrink-0 pt-2" style={{ width: 36 }}>{fmtClock(s.time)}</span>
             <div
-              className="flex-1 border rounded-lg px-3 py-2 min-w-0 flex gap-2"
-              style={{ background: s.highlight ? "#FFF4D6" : "rgba(255,255,255,.5)", borderColor: s.highlight ? "#B8860B" : "#D9CBB0" }}
+              className="flex-1 border rounded-lg min-w-0 flex items-center"
+              style={{ padding: s.place?.image ? "5px 10px 5px 5px" : "8px 10px", gap: 10, background: s.highlight ? "#FFF4D6" : "rgba(255,255,255,.5)", borderColor: s.highlight ? "#B8860B" : "#D9CBB0" }}
             >
               {s.place?.image && (
                 <img
@@ -1919,12 +1935,13 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                   alt=""
                   loading="lazy"
                   onClick={() => openDetail(s.place)}
-                  className="w-12 h-12 rounded-md object-cover shrink-0 cursor-pointer"
+                  className="rounded-md object-cover shrink-0 cursor-pointer"
+                  style={{ width: 56, height: 56 }}
                   onError={(e) => retryLargeImage(e, s.place.imageLarge, (img) => { img.style.display = "none"; })}
                 />
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-[#2B2620]">{s.icon} {s.title}</p>
+                <p className="text-sm font-medium text-[#2B2620] truncate">{s.icon} {s.title}</p>
                 {s.place ? (
                   <p className="text-xs text-[#2B2620] truncate">
                     <span className="font-bold">{s.place.name}</span>
@@ -1934,31 +1951,36 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                 ) : (
                   <p className="text-xs text-[#6B5F4F] line-clamp-1">{s.fallback}</p>
                 )}
-                {s.note && <p className="text-[11px] font-bold text-[#C4592F]">{s.note}</p>}
+                {s.note && <p className="text-[11px] font-bold text-[#C4592F] truncate">{s.note}</p>}
                 {s.place && petById && petById.has(String(s.place.id)) && (
                   <p className="text-[11px] font-bold text-[#C2410C] line-clamp-1">🐶 반려동물 동반 · {petSummary(petById.get(String(s.place.id)))}</p>
                 )}
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                  {s.place && (
-                    <a href={kakaoDirectionsUrl(s.place.name, s.place.lat, s.place.lng)} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-[#2F6E68]">
-                      길찾기 ↗
-                    </a>
-                  )}
-                  {s.slot && s.place && candidateCount(s.slot) > 1 && (
+                {s.links && s.links.length > 0 && (
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5" style={{ justifyContent: "flex-end" }}>
+                    {s.links.map((l) => (
+                      <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="text-[11px] text-[#2F6E68]">
+                        {l.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* D안(2026-11-07 형): 길찾기·다른 곳을 칸 오른쪽에 위아래로 쌓아 버튼 줄을 없앰 → 칸이 낮아짐 */}
+              {s.place && (
+                <div className="shrink-0 flex flex-col items-end justify-center" style={{ gap: 6 }}>
+                  <a href={kakaoDirectionsUrl(s.place.name, s.place.lat, s.place.lng)} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-[#2F6E68] whitespace-nowrap">
+                    길찾기 ↗
+                  </a>
+                  {s.slot && candidateCount(s.slot) > 1 && (
                     <button
                       onClick={() => setOffsets((prev) => ({ ...prev, [s.slot]: (prev[s.slot] || 0) + 1 }))}
-                      className="text-[11px] text-[#6B5F4F]"
+                      className="text-[11px] text-[#6B5F4F] whitespace-nowrap"
                     >
                       ↻ 다른 곳
                     </button>
                   )}
-                  {s.links && s.links.map((l) => (
-                    <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="text-[11px] text-[#2F6E68]">
-                      {l.label}
-                    </a>
-                  ))}
                 </div>
-              </div>
+              )}
             </div>
           </li>
         ))}
@@ -1977,11 +1999,15 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
 
       {!isLoading && <SharePlanButton spot={spot} from={from} travel={travel} plan={plan} />}
 
-      <div className="mt-4 mb-2 flex items-center justify-between relative">
-        <p className="text-xs font-medium text-[#2B2620] flex items-center gap-1">
-          <Music size={12} /> 오늘의 추천 음악
-        </p>
+      <div className="flex items-center justify-between relative" style={{ marginTop: 28, marginBottom: 10 }}>{/* 구역 제목 위 28·아래 10 (2026-11-07 간격 정리) */}
+        <SectionTitle icon={Music} className="flex-1 min-w-0" style={{ marginRight: 8 }}>오늘의 추천 음악</SectionTitle>
         {/* 나이대 칸: 처음엔 생년월일로 정한 내 나이대, 눌러서 다른 나이대 노래도 들을 수 있다 (2026-11-06 형 요청). STAR 룰렛 여행지는 BTS 노래라 안 보임 */}
+        {/* STAR 룰렛 여행지(musicAge 없음)는 BTS 노래만이라 연도 칸 대신 표시만 (2026-11-07 형 결정) */}
+        {!musicAge && (
+          <span className="text-[11px] font-bold rounded-full border px-2.5 py-0.5 whitespace-nowrap" style={{ color: STAR_COLOR, borderColor: STAR_COLOR, background: "#FFFDF8" }}>
+            ★ BTS 노래
+          </span>
+        )}
         {musicAge && (
           <div className="relative">
             <button
@@ -2003,7 +2029,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                       style={{ color: on ? "#B8860B" : "#2B2620", background: on ? "#B8860B1F" : "transparent", borderTop: i === 0 ? "none" : "1px solid #E6DCC8" }}
                     >
                       {g.label}
-                      <span className="text-[10px] font-normal text-[#A6987F] ml-2">{g.key === musicAge.mine ? "내 나이" : ""}{on ? " ✓" : ""}</span>
+                      <span className="text-[10px] font-normal text-[#A6987F] ml-2">{g.key === musicAge.mine ? "내 시절" : ""}{on ? " ✓" : ""}</span>
                     </button>
                   );
                 })}
@@ -5421,7 +5447,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
   const hiddenCount = picked.length - items.length;
 
   return (
-    <div className="mt-4">
+    <div>{/* 위 여백은 '더 알아보기' 제목 아래 10px로 (2026-11-07 간격 정리) */}
       <div className="flex gap-1 bg-white/40 rounded-lg p-1 overflow-x-auto">
         {Object.entries(TAB_CONFIG).filter(([, t]) => !t.theme).map(([key, t]) => {
           const Icon = t.icon;
@@ -5655,6 +5681,10 @@ const THEME_ROULETTE = {
   // 🥾 걷기길 룰렛 (2026-11-05 형 결정 A안): 코리아둘레길 코스 + 지자체 걷기길 수 (229개 지역 점검, 203개 지역·1492곳)
   walk: { label: "걷기길", emoji: "🥾", color: WALK_COLOR, tab: "walk",
     counts: { "서울 종로구": 30, "서울 중구": 11, "서울 용산구": 18, "서울 성동구": 2, "서울 광진구": 16, "서울 중랑구": 8, "서울 성북구": 4, "서울 강북구": 6, "서울 도봉구": 7, "서울 노원구": 1, "서울 은평구": 1, "서울 서대문구": 7, "서울 마포구": 10, "서울 양천구": 11, "서울 강서구": 6, "서울 구로구": 9, "서울 금천구": 3, "서울 영등포구": 1, "서울 동작구": 7, "서울 관악구": 8, "서울 서초구": 3, "서울 강남구": 2, "서울 송파구": 11, "서울 강동구": 1, "수원시": 8, "성남시": 11, "의정부시": 1, "안양시": 1, "부천시": 8, "광명시": 6, "평택시": 20, "안산시": 17, "고양시": 18, "구리시": 4, "남양주시": 1, "오산시": 1, "시흥시": 9, "군포시": 13, "의왕시": 2, "하남시": 4, "용인시": 1, "파주시": 13, "이천시": 19, "안성시": 6, "김포시": 16, "화성시": 7, "광주시": 2, "양주시": 1, "포천시": 15, "여주시": 20, "연천군": 17, "가평군": 16, "양평군": 15, "인천 미추홀구": 1, "인천 연수구": 2, "인천 남동구": 5, "인천 부평구": 4, "인천 계양구": 1, "인천 서구": 2, "강화군": 22, "제주시": 17, "서귀포시": 26, "춘천시": 9, "원주시": 30, "강릉시": 26, "동해시": 9, "태백시": 3, "속초시": 12, "삼척시": 8, "횡성군": 7, "평창군": 8, "정선군": 1, "철원군": 3, "화천군": 6, "양구군": 4, "인제군": 5, "고성군-강원": 20, "양양군": 8, "청주시": 1, "충주시": 9, "제천시": 7, "보은군": 5, "옥천군": 1, "영동군": 2, "증평군": 1, "진천군": 1, "괴산군": 2, "음성군": 5, "단양군": 13, "천안시": 1, "공주시": 2, "보령시": 7, "아산시": 3, "서산시": 9, "논산시": 5, "당진시": 3, "금산군": 1, "부여군": 4, "서천군": 19, "청양군": 4, "홍성군": 2, "예산군": 3, "태안군": 15, "대전 동구": 9, "대전 중구": 7, "대전 서구": 3, "대전 유성구": 9, "대전 대덕구": 5, "세종시": 18, "포항시": 9, "경주시": 2, "김천시": 4, "안동시": 5, "구미시": 34, "영주시": 1, "영천시": 15, "상주시": 4, "문경시": 2, "청송군": 2, "영양군": 4, "영덕군": 5, "청도군": 7, "성주군": 6, "칠곡군": 6, "봉화군": 9, "울진군": 18, "대구 중구": 7, "대구 동구": 29, "대구 서구": 1, "대구 남구": 1, "대구 수성구": 4, "대구 달서구": 6, "달성군": 11, "군위군": 3, "부산 서구": 2, "부산 동구": 5, "부산 영도구": 3, "부산 부산진구": 4, "부산 동래구": 4, "부산 남구": 4, "부산 북구": 2, "부산 해운대구": 5, "부산 사하구": 13, "부산 금정구": 3, "부산 강서구": 2, "부산 연제구": 5, "부산 수영구": 3, "부산 사상구": 2, "기장군": 5, "울산 중구": 10, "울산 남구": 7, "울산 동구": 8, "울산 북구": 3, "울주군": 4, "창원시": 10, "진주시": 5, "통영시": 5, "사천시": 7, "김해시": 1, "거제시": 27, "양산시": 1, "의령군": 2, "창녕군": 10, "남해군": 6, "하동군": 6, "산청군": 1, "함양군": 1, "거창군": 10, "합천군": 8, "전주시": 13, "군산시": 10, "익산시": 6, "정읍시": 7, "남원시": 4, "김제시": 4, "완주군": 16, "진안군": 16, "무주군": 1, "장수군": 3, "고창군": 19, "부안군": 13, "목포시": 2, "여수시": 15, "순천시": 12, "광양시": 19, "담양군": 5, "곡성군": 2, "구례군": 10, "고흥군": 5, "보성군": 1, "화순군": 2, "강진군": 7, "해남군": 11, "영암군": 1, "무안군": 4, "함평군": 2, "영광군": 4, "장성군": 1, "완도군": 5, "진도군": 3, "신안군": 3, "광주 남구": 5, "광주 북구": 2 } },
+  // 🚴 자전거 룰렛 (2026-11-07 형 결정): /bike-routes.json의 자전거길 수 = 그 지역 칩에 나오는 길 수 (119개 지역·355개 길), 수에 비례
+  // 자료 파일을 다시 만들면 이 숫자도 다시 셀 것 (많은 곳 경주 19, 달성 10, 성남·용인·울주 9)
+  bike: { label: "자전거", emoji: "🚴", color: BIKE_COLOR, tab: "bike",
+    counts: {"서울 성동구":1,"서울 중랑구":1,"서울 강북구":1,"서울 은평구":1,"서울 양천구":1,"서울 구로구":1,"서울 관악구":1,"성남시":9,"안양시":2,"광명시":2,"평택시":6,"동두천시":2,"안산시":5,"과천시":1,"구리시":3,"남양주시":8,"오산시":1,"시흥시":8,"하남시":1,"용인시":9,"파주시":4,"이천시":4,"안성시":2,"김포시":1,"화성시":1,"광주시":4,"양주시":5,"여주시":3,"연천군":2,"가평군":4,"양평군":2,"인천 연수구":6,"인천 남동구":1,"인천 계양구":1,"서귀포시":6,"춘천시":4,"원주시":5,"강릉시":5,"동해시":2,"홍천군":1,"평창군":1,"인제군":1,"고성군-강원":5,"청주시":5,"충주시":4,"옥천군":5,"영동군":1,"증평군":2,"진천군":2,"괴산군":2,"단양군":2,"천안시":5,"보령시":2,"아산시":1,"논산시":5,"당진시":1,"금산군":3,"예산군":3,"대전 동구":5,"대전 중구":1,"대전 서구":1,"대전 유성구":7,"대전 대덕구":1,"포항시":5,"경주시":19,"김천시":3,"안동시":4,"구미시":3,"영천시":1,"상주시":4,"문경시":4,"경산시":3,"의성군":1,"청도군":1,"고령군":1,"성주군":1,"대구 동구":4,"대구 북구":2,"대구 달서구":1,"달성군":10,"부산 북구":1,"부산 해운대구":1,"부산 강서구":1,"부산 수영구":1,"기장군":1,"울산 중구":2,"울산 남구":3,"울산 동구":2,"울산 북구":4,"울주군":9,"진주시":3,"통영시":3,"김해시":5,"양산시":6,"의령군":3,"창녕군":4,"하동군":1,"거창군":2,"군산시":3,"익산시":1,"남원시":2,"완주군":2,"무주군":2,"임실군":1,"고창군":1,"목포시":1,"여수시":2,"나주시":5,"담양군":2,"곡성군":3,"구례군":3,"보성군":1,"장성군":1,"진도군":1,"광주 동구":1,"광주 서구":2,"광주 남구":4,"광주 북구":2,"광주 광산구":4} },
   // 🏕️ 캠핑 룰렛 (2026-11-04): 고캠핑 주변 20km 중 주소가 그 지역인 운영 중 캠핑장 수 (229개 지역 점검, 188곳 지역·2,198곳)
   camping: { label: "캠핑", emoji: "🏕️", color: CAMPING_COLOR, tab: "camping",
     counts: { "서울 종로구": 1, "서울 중랑구": 1, "서울 은평구": 4, "서울 마포구": 1, "서울 구로구": 2, "서울 관악구": 1, "서울 서초구": 2, "서울 강동구": 1, "수원시": 2, "성남시": 1, "의정부시": 1, "안양시": 2, "광명시": 1, "평택시": 10, "동두천시": 5, "안산시": 3, "고양시": 4, "과천시": 1, "구리시": 2, "남양주시": 17, "오산시": 2, "시흥시": 5, "군포시": 1, "의왕시": 5, "하남시": 5, "용인시": 28, "파주시": 34, "이천시": 9, "안성시": 25, "김포시": 8, "화성시": 23, "광주시": 5, "양주시": 29, "포천시": 43, "여주시": 20, "연천군": 35, "가평군": 74, "양평군": 43, "인천 중구": 2, "인천 남동구": 2, "인천 서구": 2, "강화군": 39, "제주시": 16, "서귀포시": 12, "춘천시": 37, "원주시": 16, "강릉시": 24, "동해시": 7, "태백시": 3, "속초시": 4, "삼척시": 12, "홍천군": 29, "횡성군": 25, "영월군": 35, "평창군": 13, "정선군": 12, "철원군": 15, "화천군": 10, "양구군": 4, "인제군": 18, "고성군-강원": 18, "양양군": 41, "청주시": 16, "충주시": 33, "제천시": 46, "보은군": 13, "옥천군": 7, "영동군": 9, "증평군": 1, "진천군": 11, "괴산군": 29, "음성군": 4, "단양군": 22, "천안시": 26, "공주시": 21, "보령시": 15, "아산시": 22, "서산시": 9, "논산시": 14, "계룡시": 1, "당진시": 11, "금산군": 19, "부여군": 9, "서천군": 17, "청양군": 3, "홍성군": 10, "예산군": 7, "태안군": 57, "대전 동구": 4, "대전 중구": 1, "대전 서구": 6, "대전 유성구": 3, "대전 대덕구": 1, "세종시": 6, "포항시": 14, "경주시": 39, "김천시": 8, "안동시": 3, "구미시": 8, "영주시": 7, "영천시": 13, "상주시": 7, "문경시": 12, "경산시": 6, "의성군": 2, "청송군": 1, "영양군": 1, "영덕군": 8, "청도군": 28, "고령군": 15, "성주군": 14, "칠곡군": 23, "예천군": 2, "봉화군": 4, "울진군": 8, "울릉군": 3, "대구 동구": 5, "대구 수성구": 1, "대구 달서구": 1, "달성군": 6, "군위군": 5, "부산 영도구": 1, "부산 북구": 1, "부산 강서구": 1, "부산 사상구": 1, "기장군": 1, "울산 중구": 4, "울산 북구": 2, "울주군": 14, "창원시": 6, "진주시": 9, "통영시": 17, "사천시": 25, "김해시": 11, "밀양시": 35, "거제시": 17, "양산시": 8, "의령군": 8, "함안군": 10, "창녕군": 8, "고성군-경남": 18, "남해군": 27, "하동군": 12, "산청군": 29, "함양군": 11, "거창군": 17, "합천군": 24, "전주시": 3, "군산시": 3, "익산시": 5, "정읍시": 9, "남원시": 9, "김제시": 2, "완주군": 8, "진안군": 8, "무주군": 20, "장수군": 3, "임실군": 7, "순창군": 7, "고창군": 4, "부안군": 5, "목포시": 1, "여수시": 20, "순천시": 9, "나주시": 7, "광양시": 13, "담양군": 20, "곡성군": 18, "구례군": 8, "고흥군": 16, "보성군": 9, "화순군": 14, "장흥군": 9, "강진군": 8, "해남군": 4, "영암군": 8, "무안군": 7, "함평군": 8, "영광군": 6, "장성군": 28, "완도군": 9, "진도군": 2, "신안군": 7, "광주 동구": 1, "광주 서구": 1, "광주 남구": 2, "광주 북구": 2, "광주 광산구": 2 } },
@@ -6345,7 +6375,7 @@ function BaramApp() {
   const musicAge = starTrip ? null : {
     key: ageKey,
     mine: myAgeGroup,
-    label: ageKey ? AGE_GROUPS.find((g) => g.key === ageKey).label : "나이대 고르기",
+    label: ageKey ? AGE_GROUPS.find((g) => g.key === ageKey).label : "연도별 음악",
     onChange: (k) => setMusicAgePick(k === myAgeGroup ? "" : k),
   };
   const [starSongs, setStarSongs] = useState([]); // 이 지역 STAR 장소에서 찍은 BTS 노래
@@ -6387,7 +6417,7 @@ function BaramApp() {
             onClick={o.pick}
             className="w-full flex items-center text-left text-xs font-bold whitespace-nowrap"
             style={{
-              padding: "10px 12px",
+              padding: "7px 12px", // 10px → 7px: 테마가 12줄이 되어 폰에서 맨 아래 반값여행이 잘려서 (2026-11-07 형 의견)
               color: o.off ? "#A6987F" : o.color,
               background: o.on ? `${o.color}1F` : "transparent",
               borderTop: i === 0 ? "none" : o.group ? "2px solid #D9CBB0" : "1px solid #E6DCC8", // 묶음 사이는 조금 굵게
@@ -6616,7 +6646,7 @@ function BaramApp() {
                 {result.mood === "emotional" ? "감성 코스" : "활기 코스"}
               </span>
             </div>
-            <p className="text-sm text-[#6B5F4F] mt-1">{result.description}</p>
+            <p className="text-[#6B5F4F] mt-1" style={{ fontSize: 13 }}>{result.description}</p>{/* 14→13px: 한 줄에 들어가게 (2026-11-07 형 요청) */}
             {regionFoods && (
               <p className="inline-block mt-2 text-xs font-bold text-[#2B2620] border border-[#B8860B] rounded-full px-2.5 py-1" style={{ background: "#FFF4D6" }}>
                 🍜 {result.name} 별미: {regionFoods.join(" · ")}
@@ -6625,40 +6655,53 @@ function BaramApp() {
             <BenefitBadges spot={result} />
             <WeatherLine spot={result} />
 
-            <div className="border-t border-[#D9CBB0] my-3" />
-            {needsFerryOrFlight(currentLocation.name, result.name) ? (
-              <div className="text-sm font-medium text-[#2B2620]">
-                ⛴️✈️ 배나 비행기로 가야 하는 곳이에요
-                <p className="text-xs font-normal text-[#6B5F4F] mt-0.5">
-                  {currentLocation.name}에서 직선거리 약 {Math.round(haversineKm(currentLocation.lat, currentLocation.lng, result.lat, result.lng))}km · 배편/항공편을 먼저 확인하세요.
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 text-sm font-medium text-[#2B2620]">
-                <Car size={14} /> 예상 소요: {route.duration} ({route.distance})
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              <a
-                href={`https://map.kakao.com/link/to/${encodeURIComponent(result.name)},${result.lat},${result.lng}`}
-                target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-1 bg-white/50 border border-[#D9CBB0] rounded-lg px-2 py-2 text-xs font-bold text-[#2B2620]"
-              >
-                카카오맵 길찾기 <ExternalLink size={12} className="text-[#2F6E68]" />
-              </a>
-              <a
-                href={`https://map.naver.com/p/search/${encodeURIComponent(result.name)}`}
-                target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-1 bg-white/50 border border-[#D9CBB0] rounded-lg px-2 py-2 text-xs font-bold text-[#2B2620]"
-              >
-                네이버 지도 <ExternalLink size={12} className="text-[#2F6E68]" />
-              </a>
-            </div>
+            <div style={{ height: 12 }} />{/* 날씨 아래 가로줄은 뺌 (2026-11-07 형 요청) */}
+            {/* 길찾기 A안(2026-11-07 형 결정): 걸리는 시간 왼쪽 + 작은 지도 버튼 오른쪽, 한 줄 */}
+            {(() => {
+              const mapLinks = (
+                <div className="flex items-center shrink-0" style={{ gap: 6 }}>
+                  <a
+                    href={`https://map.kakao.com/link/to/${encodeURIComponent(result.name)},${result.lat},${result.lng}`}
+                    target="_blank" rel="noreferrer"
+                    className="text-[11px] font-bold rounded-full border px-2 py-1 whitespace-nowrap"
+                    style={{ color: "#2F6E68", borderColor: "#2F6E68", background: "#FFFDF8" }}
+                  >
+                    카카오맵 ↗
+                  </a>
+                  <a
+                    href={`https://map.naver.com/p/search/${encodeURIComponent(result.name)}`}
+                    target="_blank" rel="noreferrer"
+                    className="text-[11px] font-bold rounded-full border px-2 py-1 whitespace-nowrap"
+                    style={{ color: "#2B2620", borderColor: "#D9CBB0", background: "#FFFDF8" }}
+                  >
+                    네이버 ↗
+                  </a>
+                </div>
+              );
+              return needsFerryOrFlight(currentLocation.name, result.name) ? (
+                <div>
+                  <div className="text-sm font-medium text-[#2B2620]">
+                    ⛴️✈️ 배나 비행기로 가야 하는 곳이에요
+                    <p className="text-xs font-normal text-[#6B5F4F] mt-0.5">
+                      {currentLocation.name}에서 직선거리 약 {Math.round(haversineKm(currentLocation.lat, currentLocation.lng, result.lat, result.lng))}km · 배편/항공편을 먼저 확인하세요.
+                    </p>
+                  </div>
+                  <div className="flex justify-end mt-2">{mapLinks}</div>
+                </div>
+              ) : (
+                <div className="flex items-center" style={{ gap: 6 }}>
+                  <span className="flex items-center gap-1.5 font-bold text-[#2B2620] whitespace-nowrap" style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden" }}>
+                    <Car size={14} className="shrink-0" /> {route.duration} <span className="font-normal text-[#8C7A5E]">· {Math.round(parseFloat(route.distance))}km</span>
+                  </span>
+                  {mapLinks}
+                </div>
+              );
+            })()}
 
             {resultTheme === "halfPrice" && halfPriceOf(result.name) && (
               <button
                 onClick={() => setBenefitOpen(true)}
-                className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mt-3 mb-3"
+                className="w-full text-xs font-bold rounded-full border px-3 py-1 mt-3"
                 style={{ borderColor: THEME_ROULETTE.halfPrice.color, color: THEME_ROULETTE.halfPrice.color, letterSpacing: "0.05em" }}
               >
                 💸 반값여행 룰렛 · 혜택 설명 보기
@@ -6670,7 +6713,7 @@ function BaramApp() {
             {resultTheme && THEME_ROULETTE[resultTheme] && THEME_ROULETTE[resultTheme].tab && (
               <button
                 onClick={() => tabsTitleRef.current && tabsTitleRef.current.scrollIntoView({ behavior: "smooth", block: "start" })}
-                className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mt-3 mb-3"
+                className="w-full text-xs font-bold rounded-full border px-3 py-1 mt-3"
                 style={{ borderColor: THEME_ROULETTE[resultTheme].color, color: THEME_ROULETTE[resultTheme].color, letterSpacing: "0.05em" }}
               >
                 {THEME_ROULETTE[resultTheme].emoji} {THEME_ROULETTE[resultTheme].label} 룰렛 · 장소 보기 ↓
@@ -6679,8 +6722,8 @@ function BaramApp() {
 
             <DayItinerary key={`${result.id}:plan`} spot={result} from={currentLocation} entry={itineraryEntry} gayoSongs={gayoSongs} popSongs={popSongs} regionSong={regionSong} musicAge={musicAge} onPlanPlaces={setPlanPlaceIdsKey} onRetry={retryItinerary} petById={petById} />
 
-            <div className="border-t border-[#D9CBB0] my-4" />
-            <p ref={tabsTitleRef} className="text-xs font-medium text-[#2B2620] mb-1" style={{ scrollMarginTop: 80 }}>더 알아보기</p>
+            <div style={{ height: 28 }} />{/* 가로줄은 제목 선과 겹쳐 빼고 간격만, 구역 제목 위 28 (2026-11-07) */}
+            <SectionTitle icon={Search} titleRef={tabsTitleRef} style={{ scrollMarginTop: 80, marginBottom: 10 }}>더 알아보기</SectionTitle>
             <ResultDetailTabs
               key={`${result.id}:${resultTheme || "all"}:tabs`}
               initialTab={resultTheme && THEME_ROULETTE[resultTheme] ? THEME_ROULETTE[resultTheme].tab || undefined : undefined}
@@ -6691,7 +6734,7 @@ function BaramApp() {
               setCache={setDetailCache}
             />
             {/* 공공데이터 출처 표시 (날씨 줄에서 '기상청'을 빼고 여기로 옮김, 2026-10-21) */}
-            <p className="text-[10px] text-[#A6987F] mt-2 text-center">정보 출처: 한국관광공사(관광정보), 기상청(날씨)</p>
+            <p className="text-[10px] text-[#A6987F] text-center" style={{ marginTop: 20 }}>정보 출처: 한국관광공사(관광정보), 기상청(날씨)</p>
 
             {resultSpot && resultSpot.isVisited ? (
               <button
