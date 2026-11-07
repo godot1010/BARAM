@@ -1562,11 +1562,12 @@ function pickSongsForTrip(arr, mood, n, key) {
 
 // 나이대별 추천곡 (2026-11-06 형 결정): 4묶음 × 가요 100 + 팝송 100(각 감성 50·활기 50) = 800곡, /songs-by-age.json
 // 나이는 '오늘의 여행운' 생년월일로 폰 안에서만 계산한다(서버로 안 보냄). 추천 음악 옆 칸에서 다른 묶음을 골라 들을 수도 있다
+// 2026-11-07 형 요청: 칸·목록 이름을 나이대 대신 연도로 ('나이대 고르기'가 이상함). 곡 묶음은 그대로(나이대 기준이라 시대가 조금 겹침)
 const AGE_GROUPS = [
-  { key: "1", label: "30대 이하" },
-  { key: "2", label: "40대" },
-  { key: "3", label: "50~60대" },
-  { key: "4", label: "70대 이상" },
+  { key: "1", label: "2010년~지금" },   // 30대 이하
+  { key: "2", label: "90~2000년대" },   // 40대
+  { key: "3", label: "80~90년대" },     // 50~60대
+  { key: "4", label: "60~70년대" },     // 70대 이상
 ];
 function ageGroupOf(birthDate) {
   if (!birthDate) return "";
@@ -2022,7 +2023,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                       style={{ color: on ? "#B8860B" : "#2B2620", background: on ? "#B8860B1F" : "transparent", borderTop: i === 0 ? "none" : "1px solid #E6DCC8" }}
                     >
                       {g.label}
-                      <span className="text-[10px] font-normal text-[#A6987F] ml-2">{g.key === musicAge.mine ? "내 나이" : ""}{on ? " ✓" : ""}</span>
+                      <span className="text-[10px] font-normal text-[#A6987F] ml-2">{g.key === musicAge.mine ? "내 시절" : ""}{on ? " ✓" : ""}</span>
                     </button>
                   );
                 })}
@@ -6368,7 +6369,7 @@ function BaramApp() {
   const musicAge = starTrip ? null : {
     key: ageKey,
     mine: myAgeGroup,
-    label: ageKey ? AGE_GROUPS.find((g) => g.key === ageKey).label : "나이대 고르기",
+    label: ageKey ? AGE_GROUPS.find((g) => g.key === ageKey).label : "연도별 음악",
     onChange: (k) => setMusicAgePick(k === myAgeGroup ? "" : k),
   };
   const [starSongs, setStarSongs] = useState([]); // 이 지역 STAR 장소에서 찍은 BTS 노래
