@@ -1,0 +1,7 @@
+{
+  "name": "baram-tools",
+  "private": true,
+  "description": "BARAM 만들기 도구: src/index.html(원본) → index.html(사이트용, 미리 번역)",
+  "scripts": { "build": "node build.mjs" },
+  "devDependencies": { "esbuild": "0.24.2" }
+}
