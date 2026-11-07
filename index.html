@@ -2002,6 +2002,12 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
       <div className="flex items-center justify-between relative" style={{ marginTop: 28, marginBottom: 10 }}>{/* 구역 제목 위 28·아래 10 (2026-11-07 간격 정리) */}
         <SectionTitle icon={Music} className="flex-1 min-w-0" style={{ marginRight: 8 }}>오늘의 추천 음악</SectionTitle>
         {/* 나이대 칸: 처음엔 생년월일로 정한 내 나이대, 눌러서 다른 나이대 노래도 들을 수 있다 (2026-11-06 형 요청). STAR 룰렛 여행지는 BTS 노래라 안 보임 */}
+        {/* STAR 룰렛 여행지(musicAge 없음)는 BTS 노래만이라 연도 칸 대신 표시만 (2026-11-07 형 결정) */}
+        {!musicAge && (
+          <span className="text-[11px] font-bold rounded-full border px-2.5 py-0.5 whitespace-nowrap" style={{ color: STAR_COLOR, borderColor: STAR_COLOR, background: "#FFFDF8" }}>
+            ★ BTS 노래
+          </span>
+        )}
         {musicAge && (
           <div className="relative">
             <button
