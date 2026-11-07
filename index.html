@@ -6649,40 +6649,53 @@ function BaramApp() {
             <BenefitBadges spot={result} />
             <WeatherLine spot={result} />
 
-            <div className="border-t border-[#D9CBB0] my-3" />
-            {needsFerryOrFlight(currentLocation.name, result.name) ? (
-              <div className="text-sm font-medium text-[#2B2620]">
-                ⛴️✈️ 배나 비행기로 가야 하는 곳이에요
-                <p className="text-xs font-normal text-[#6B5F4F] mt-0.5">
-                  {currentLocation.name}에서 직선거리 약 {Math.round(haversineKm(currentLocation.lat, currentLocation.lng, result.lat, result.lng))}km · 배편/항공편을 먼저 확인하세요.
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 text-sm font-medium text-[#2B2620]">
-                <Car size={14} /> 예상 소요: {route.duration} ({route.distance})
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              <a
-                href={`https://map.kakao.com/link/to/${encodeURIComponent(result.name)},${result.lat},${result.lng}`}
-                target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-1 bg-white/50 border border-[#D9CBB0] rounded-lg px-2 py-2 text-xs font-bold text-[#2B2620]"
-              >
-                카카오맵 길찾기 <ExternalLink size={12} className="text-[#2F6E68]" />
-              </a>
-              <a
-                href={`https://map.naver.com/p/search/${encodeURIComponent(result.name)}`}
-                target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-1 bg-white/50 border border-[#D9CBB0] rounded-lg px-2 py-2 text-xs font-bold text-[#2B2620]"
-              >
-                네이버 지도 <ExternalLink size={12} className="text-[#2F6E68]" />
-              </a>
-            </div>
+            <div style={{ height: 12 }} />{/* 날씨 아래 가로줄은 뺌 (2026-11-07 형 요청) */}
+            {/* 길찾기 A안(2026-11-07 형 결정): 걸리는 시간 왼쪽 + 작은 지도 버튼 오른쪽, 한 줄 */}
+            {(() => {
+              const mapLinks = (
+                <div className="flex items-center shrink-0" style={{ gap: 6 }}>
+                  <a
+                    href={`https://map.kakao.com/link/to/${encodeURIComponent(result.name)},${result.lat},${result.lng}`}
+                    target="_blank" rel="noreferrer"
+                    className="text-[11px] font-bold rounded-full border px-2 py-1 whitespace-nowrap"
+                    style={{ color: "#2F6E68", borderColor: "#2F6E68", background: "#FFFDF8" }}
+                  >
+                    카카오맵 ↗
+                  </a>
+                  <a
+                    href={`https://map.naver.com/p/search/${encodeURIComponent(result.name)}`}
+                    target="_blank" rel="noreferrer"
+                    className="text-[11px] font-bold rounded-full border px-2 py-1 whitespace-nowrap"
+                    style={{ color: "#2B2620", borderColor: "#D9CBB0", background: "#FFFDF8" }}
+                  >
+                    네이버 ↗
+                  </a>
+                </div>
+              );
+              return needsFerryOrFlight(currentLocation.name, result.name) ? (
+                <div>
+                  <div className="text-sm font-medium text-[#2B2620]">
+                    ⛴️✈️ 배나 비행기로 가야 하는 곳이에요
+                    <p className="text-xs font-normal text-[#6B5F4F] mt-0.5">
+                      {currentLocation.name}에서 직선거리 약 {Math.round(haversineKm(currentLocation.lat, currentLocation.lng, result.lat, result.lng))}km · 배편/항공편을 먼저 확인하세요.
+                    </p>
+                  </div>
+                  <div className="flex justify-end mt-2">{mapLinks}</div>
+                </div>
+              ) : (
+                <div className="flex items-center" style={{ gap: 6 }}>
+                  <span className="flex items-center gap-1.5 font-bold text-[#2B2620] whitespace-nowrap" style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: "hidden" }}>
+                    <Car size={14} className="shrink-0" /> {route.duration} <span className="font-normal text-[#8C7A5E]">· {Math.round(parseFloat(route.distance))}km</span>
+                  </span>
+                  {mapLinks}
+                </div>
+              );
+            })()}
 
             {resultTheme === "halfPrice" && halfPriceOf(result.name) && (
               <button
                 onClick={() => setBenefitOpen(true)}
-                className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mt-3 mb-3"
+                className="w-full text-xs font-bold rounded-full border px-3 py-1 mt-3 mb-3"
                 style={{ borderColor: THEME_ROULETTE.halfPrice.color, color: THEME_ROULETTE.halfPrice.color, letterSpacing: "0.05em" }}
               >
                 💸 반값여행 룰렛 · 혜택 설명 보기
@@ -6694,7 +6707,7 @@ function BaramApp() {
             {resultTheme && THEME_ROULETTE[resultTheme] && THEME_ROULETTE[resultTheme].tab && (
               <button
                 onClick={() => tabsTitleRef.current && tabsTitleRef.current.scrollIntoView({ behavior: "smooth", block: "start" })}
-                className="w-full text-xs font-bold rounded-full border px-3 py-1.5 mt-3 mb-3"
+                className="w-full text-xs font-bold rounded-full border px-3 py-1 mt-3 mb-3"
                 style={{ borderColor: THEME_ROULETTE[resultTheme].color, color: THEME_ROULETTE[resultTheme].color, letterSpacing: "0.05em" }}
               >
                 {THEME_ROULETTE[resultTheme].emoji} {THEME_ROULETTE[resultTheme].label} 룰렛 · 장소 보기 ↓
