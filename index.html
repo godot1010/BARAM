@@ -1833,8 +1833,8 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
         오늘의 일정 · {spot.mood === "emotional" ? "🌙" : "⚡"} {rule.label}
       </p>
 
-      {/* 출발 시간 추천 */}
-      <div className="bg-white/50 border border-[#D9CBB0] rounded-lg px-3 py-2 mb-3">
+      {/* 출발 시간 추천 — 일정표와 같이 양옆 12px씩 넓히고 위아래 여백을 줄임 (2026-11-07 형 요청: 글자를 한 줄로 올려 높이 줄이기) */}
+      <div className="bg-white/50 border border-[#D9CBB0] rounded-lg mb-3" style={{ margin: "0 -12px 12px", padding: "6px 10px" }}>
         {travel.mode === "island" ? (
           <>
             <p className="text-sm font-bold text-[#2B2620]">⛴️✈️ 배·비행기 시간을 먼저 확인하세요</p>
@@ -1846,12 +1846,12 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
               🚗 {fmtClock(travel.departure)} 출발{travel.chosen ? "" : " 추천"} → {fmtClock(travel.arrival)} 도착
             </p>
             <p className="text-[11px] text-[#6B5F4F] mt-0.5">
-              {from.name}에서 자동차로 약 {fmtDuration(travel.travel)} ·{" "}
+              {from.name}에서 차로 약 {fmtDuration(travel.travel)} ·{" "}
               {travel.chosen
                 ? "고른 출발 시간에 맞춰 일정을 짰어요"
                 : travel.arrival > rule.targetArrival
                 ? `너무 이른 출발이 되지 않게 ${fmtClock(EARLIEST_DEPARTURE)} 출발로 맞췄어요`
-                : `${rule.label}는 ${fmtClock(rule.targetArrival)} 도착 기준`}
+                : `${rule.label} ${fmtClock(rule.targetArrival)} 도착 기준`}
             </p>
             <p className="text-[11px] text-[#6B5F4F]">
               {overnight
@@ -1861,7 +1861,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
           </>
         )}
         {travel.mode === "car" && (
-          <div className="flex flex-wrap items-center gap-1 mt-2">
+          <div className="flex flex-wrap items-center gap-1 mt-1">
             <span className="text-[11px] text-[#6B5F4F] mr-0.5">출발 시간</span>
             {[null, ...DEPART_OPTIONS].map((min) => {
               const active = (departChoice || null) === min;
