@@ -1905,7 +1905,8 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
         </div>
       )}
 
-      <ul className="space-y-2">
+      {/* 결과 카드 안쪽 여백(20px)보다 양옆으로 12px씩 넓힘: 시간은 왼쪽으로, 칸 끝은 오른쪽으로 (2026-11-07 형 요청) */}
+      <ul className="space-y-2" style={{ margin: "0 -12px" }}>
         {plan.steps.map((s, i) => (
           // 2026-11-07 형 의견: 시간과 칸 사이가 멀고 칸이 답답함 → 시간 칸 44→36px·사이 12→6px, 사진 48→64px,
           // 칸 안 여백을 줄여 높이는 거의 그대로(형: 아래로 더 길어지면 안 됨), 길찾기·다른 곳은 오른쪽 정렬
