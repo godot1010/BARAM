@@ -407,10 +407,11 @@ function buildSpots() {
       lat: loc.lat,
       lng: loc.lng,
       mood,
+      // 2026-11-07 형 요청: 위에 지역 이름이 있으니 이름을 빼고 한 줄로 ('부지런히', '고요한' 뺌)
       description:
         mood === "emotional"
-          ? `고요한 ${loc.name}의 골목과 풍경을 여유롭게 걸어보는 감성 코스예요.`
-          : `${loc.name}에서 액티비티와 로컬 명소를 부지런히 둘러보는 활기찬 코스예요.`,
+          ? "골목과 풍경을 여유롭게 걸어보는 감성 코스예요."
+          : "액티비티와 로컬 명소를 둘러보는 활기찬 코스예요.",
       isVisited: false,
       visitedDate: null,
       stampType: null,
@@ -6624,7 +6625,7 @@ function BaramApp() {
                 {result.mood === "emotional" ? "감성 코스" : "활기 코스"}
               </span>
             </div>
-            <p className="text-sm text-[#6B5F4F] mt-1">{result.description}</p>
+            <p className="text-[#6B5F4F] mt-1" style={{ fontSize: 13 }}>{result.description}</p>{/* 14→13px: 한 줄에 들어가게 (2026-11-07 형 요청) */}
             {regionFoods && (
               <p className="inline-block mt-2 text-xs font-bold text-[#2B2620] border border-[#B8860B] rounded-full px-2.5 py-1" style={{ background: "#FFF4D6" }}>
                 🍜 {result.name} 별미: {regionFoods.join(" · ")}
