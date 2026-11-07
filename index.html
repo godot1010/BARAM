@@ -1912,7 +1912,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
           <li key={i} className="flex" style={{ gap: 6 }}>
             <span className="text-xs font-bold text-[#B8860B] shrink-0 pt-2" style={{ width: 36 }}>{fmtClock(s.time)}</span>
             <div
-              className="flex-1 border rounded-lg min-w-0 flex"
+              className="flex-1 border rounded-lg min-w-0 flex items-center"
               style={{ padding: s.place?.image ? "5px 10px 5px 5px" : "8px 10px", gap: 10, background: s.highlight ? "#FFF4D6" : "rgba(255,255,255,.5)", borderColor: s.highlight ? "#B8860B" : "#D9CBB0" }}
             >
               {s.place?.image && (
@@ -1922,12 +1922,12 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                   loading="lazy"
                   onClick={() => openDetail(s.place)}
                   className="rounded-md object-cover shrink-0 cursor-pointer"
-                  style={{ width: 64, height: 64 }}
+                  style={{ width: 56, height: 56 }}
                   onError={(e) => retryLargeImage(e, s.place.imageLarge, (img) => { img.style.display = "none"; })}
                 />
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-[#2B2620]">{s.icon} {s.title}</p>
+                <p className="text-sm font-medium text-[#2B2620] truncate">{s.icon} {s.title}</p>
                 {s.place ? (
                   <p className="text-xs text-[#2B2620] truncate">
                     <span className="font-bold">{s.place.name}</span>
@@ -1937,31 +1937,36 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                 ) : (
                   <p className="text-xs text-[#6B5F4F] line-clamp-1">{s.fallback}</p>
                 )}
-                {s.note && <p className="text-[11px] font-bold text-[#C4592F]">{s.note}</p>}
+                {s.note && <p className="text-[11px] font-bold text-[#C4592F] truncate">{s.note}</p>}
                 {s.place && petById && petById.has(String(s.place.id)) && (
                   <p className="text-[11px] font-bold text-[#C2410C] line-clamp-1">🐶 반려동물 동반 · {petSummary(petById.get(String(s.place.id)))}</p>
                 )}
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1" style={{ justifyContent: "flex-end" }}>
-                  {s.place && (
-                    <a href={kakaoDirectionsUrl(s.place.name, s.place.lat, s.place.lng)} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-[#2F6E68]">
-                      길찾기 ↗
-                    </a>
-                  )}
-                  {s.slot && s.place && candidateCount(s.slot) > 1 && (
+                {s.links && s.links.length > 0 && (
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5" style={{ justifyContent: "flex-end" }}>
+                    {s.links.map((l) => (
+                      <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="text-[11px] text-[#2F6E68]">
+                        {l.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* D안(2026-11-07 형): 길찾기·다른 곳을 칸 오른쪽에 위아래로 쌓아 버튼 줄을 없앰 → 칸이 낮아짐 */}
+              {s.place && (
+                <div className="shrink-0 flex flex-col items-end justify-center" style={{ gap: 6 }}>
+                  <a href={kakaoDirectionsUrl(s.place.name, s.place.lat, s.place.lng)} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-[#2F6E68] whitespace-nowrap">
+                    길찾기 ↗
+                  </a>
+                  {s.slot && candidateCount(s.slot) > 1 && (
                     <button
                       onClick={() => setOffsets((prev) => ({ ...prev, [s.slot]: (prev[s.slot] || 0) + 1 }))}
-                      className="text-[11px] text-[#6B5F4F]"
+                      className="text-[11px] text-[#6B5F4F] whitespace-nowrap"
                     >
                       ↻ 다른 곳
                     </button>
                   )}
-                  {s.links && s.links.map((l) => (
-                    <a key={l.id} href={l.url} target="_blank" rel="noreferrer" className="text-[11px] text-[#2F6E68]">
-                      {l.label}
-                    </a>
-                  ))}
                 </div>
-              </div>
+              )}
             </div>
           </li>
         ))}
