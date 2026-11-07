@@ -5164,22 +5164,41 @@ function PlaceCard({ place, emoji }) {
         {place.pet && (place.pet.animals || place.pet.etc) && (
           <p className="text-[10px] text-[#6B5F4F] line-clamp-1">{[place.pet.animals, place.pet.etc.replace(/\s*\n\s*/g, " ")].filter(Boolean).join(" · ")}</p>
         )}
-        {!place.bike && <p className="text-[11px] text-[#A6987F] truncate mt-0.5">{place.address || "주소 정보 없음"}</p>}
-        {!place.bike && <p className="text-[11px] mt-0.5 flex items-center justify-between">
-          <span className="text-[#6B5F4F] flex items-center gap-1.5 min-w-0">
-            <span className="whitespace-nowrap">{place.distanceKm ? `시내에서 ${place.distanceKm}km` : ""}</span>
-            {place.area && <NeighborBadge area={place.area} />}
-          </span>
-          <a
-            href={kakaoDirectionsUrl(place.searchName || place.name, place.lat, place.lng)}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="font-bold text-[#2F6E68] whitespace-nowrap shrink-0 ml-2"
-          >
-            길찾기 ↗
-          </a>
-        </p>}
+        {/* 거리 정보가 없는 카드(걷기길·동네 산 등)는 '길찾기'를 주소 줄 오른쪽에 붙여 한 줄 줄임 (2026-11-08 형: 걷기길 카드가 5줄) */}
+        {(() => {
+          if (place.bike) return null;
+          const directions = (
+            <a
+              href={kakaoDirectionsUrl(place.searchName || place.name, place.lat, place.lng)}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-[#2F6E68] whitespace-nowrap shrink-0 ml-2"
+            >
+              길찾기 ↗
+            </a>
+          );
+          if (!place.distanceKm && !place.area) {
+            return (
+              <p className="text-[11px] mt-0.5 flex items-center justify-between">
+                <span className="text-[#A6987F] truncate min-w-0">{place.address || "주소 정보 없음"}</span>
+                {directions}
+              </p>
+            );
+          }
+          return (
+            <>
+              <p className="text-[11px] text-[#A6987F] truncate mt-0.5">{place.address || "주소 정보 없음"}</p>
+              <p className="text-[11px] mt-0.5 flex items-center justify-between">
+                <span className="text-[#6B5F4F] flex items-center gap-1.5 min-w-0">
+                  <span className="whitespace-nowrap">{place.distanceKm ? `시내에서 ${place.distanceKm}km` : ""}</span>
+                  {place.area && <NeighborBadge area={place.area} />}
+                </span>
+                {directions}
+              </p>
+            </>
+          );
+        })()}
       </div>
     </div>
   );
