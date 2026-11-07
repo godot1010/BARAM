@@ -7,8 +7,11 @@
 // v2부터는: 문서(HTML)는 항상 "네트워크 우선"으로 최신 버전을 먼저 시도하고,
 // 오프라인일 때만 캐시로 대체한다. 아이콘/매니페스트 같은 정적 자산만 캐시 우선을 유지.
 // v5 (2026-10-04): 앱 아이콘을 새 디자인(룰렛 + 빨간 칸을 가리키는 핀 + 가운데 빨간 원에 흰 B)으로 바꿔서, 폰에 저장돼 있던 예전 아이콘을 버리도록 버전을 올림
-const CACHE_NAME = "baram-cache-v5";
-const CORE_ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png", "/icon-maskable-192.png", "/icon-maskable-512.png"];
+// v6 (2026-11-08): 화면 코드를 미리 번역해 올리고(번역기 Babel 3MB 안 받음), React 등 도구 파일을 /vendor/에 버전 고정으로 둠 → 폰에 미리 저장
+//   (/vendor/ 파일 이름에 버전이 들어 있어 내용이 바뀌지 않으므로 캐시 우선이 안전하다. 도구를 바꿀 땐 파일 이름의 버전을 바꿀 것)
+const CACHE_NAME = "baram-cache-v6";
+const CORE_ASSETS = ["/", "/index.html", "/manifest.json", "/icon-192.png", "/icon-512.png", "/icon-maskable-192.png", "/icon-maskable-512.png",
+  "/vendor/react-18.3.1.production.min.js", "/vendor/react-dom-18.3.1.production.min.js", "/vendor/solarlunar-3.1.0.min.js"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
