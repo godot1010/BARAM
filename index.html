@@ -1907,11 +1907,13 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
 
       <ul className="space-y-2">
         {plan.steps.map((s, i) => (
-          <li key={i} className="flex gap-3">
-            <span className="text-xs font-bold text-[#B8860B] w-11 shrink-0 pt-2">{fmtClock(s.time)}</span>
+          // 2026-11-07 형 의견: 시간과 칸 사이가 멀고 칸이 답답함 → 시간 칸 44→36px·사이 12→6px, 사진 48→64px,
+          // 칸 안 여백을 줄여 높이는 거의 그대로(형: 아래로 더 길어지면 안 됨), 길찾기·다른 곳은 오른쪽 정렬
+          <li key={i} className="flex" style={{ gap: 6 }}>
+            <span className="text-xs font-bold text-[#B8860B] shrink-0 pt-2" style={{ width: 36 }}>{fmtClock(s.time)}</span>
             <div
-              className="flex-1 border rounded-lg px-3 py-2 min-w-0 flex gap-2"
-              style={{ background: s.highlight ? "#FFF4D6" : "rgba(255,255,255,.5)", borderColor: s.highlight ? "#B8860B" : "#D9CBB0" }}
+              className="flex-1 border rounded-lg min-w-0 flex"
+              style={{ padding: s.place?.image ? "5px 10px 5px 5px" : "8px 10px", gap: 10, background: s.highlight ? "#FFF4D6" : "rgba(255,255,255,.5)", borderColor: s.highlight ? "#B8860B" : "#D9CBB0" }}
             >
               {s.place?.image && (
                 <img
@@ -1919,7 +1921,8 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                   alt=""
                   loading="lazy"
                   onClick={() => openDetail(s.place)}
-                  className="w-12 h-12 rounded-md object-cover shrink-0 cursor-pointer"
+                  className="rounded-md object-cover shrink-0 cursor-pointer"
+                  style={{ width: 64, height: 64 }}
                   onError={(e) => retryLargeImage(e, s.place.imageLarge, (img) => { img.style.display = "none"; })}
                 />
               )}
@@ -1938,7 +1941,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                 {s.place && petById && petById.has(String(s.place.id)) && (
                   <p className="text-[11px] font-bold text-[#C2410C] line-clamp-1">🐶 반려동물 동반 · {petSummary(petById.get(String(s.place.id)))}</p>
                 )}
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1" style={{ justifyContent: "flex-end" }}>
                   {s.place && (
                     <a href={kakaoDirectionsUrl(s.place.name, s.place.lat, s.place.lng)} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-[#2F6E68]">
                       길찾기 ↗
