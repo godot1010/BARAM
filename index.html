@@ -1594,6 +1594,8 @@ function fmtClock(min) {
   const m = ((Math.round(min) % 1440) + 1440) % 1440;
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
+// 시간 앞 0을 뺀 모양 (07:10 → 7:10), 출발 안내 박스에서 씀 (2026-11-07 형 요청)
+function shortClock(min) { return fmtClock(min).replace(/^0(?=\d:)/, ""); }
 
 function fmtDuration(min) {
   const h = Math.floor(min / 60);
@@ -1842,21 +1844,14 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
           </>
         ) : (
           <>
-            <p className="text-sm font-bold text-[#2B2620]">
-              🚗 {fmtClock(travel.departure)} 출발{travel.chosen ? "" : " 추천"} → {fmtClock(travel.arrival)} 도착
+            {/* 2026-11-07 형 요청: 두 줄로 — 시간 앞 0 빼기, '○○에서 차로…' 줄 삭제(걸리는 시간은 첫 줄 괄호로), 두 줄 글자 크기 같게 13px */}
+            <p className="font-bold text-[#2B2620]" style={{ fontSize: 13 }}>
+              🚗 {shortClock(travel.departure)} 출발{travel.chosen ? "" : " 추천"} → {shortClock(travel.arrival)} 도착 <span className="font-normal text-[#6B5F4F]" style={{ fontSize: 11 }}>(약 {fmtDuration(travel.travel)} 소요)</span>
             </p>
-            <p className="text-[11px] text-[#6B5F4F] mt-0.5">
-              {from.name}에서 차로 약 {fmtDuration(travel.travel)} ·{" "}
-              {travel.chosen
-                ? "고른 출발 시간에 맞춰 일정을 짰어요"
-                : travel.arrival > rule.targetArrival
-                ? `너무 이른 출발이 되지 않게 ${fmtClock(EARLIEST_DEPARTURE)} 출발로 맞췄어요`
-                : `${rule.label} ${fmtClock(rule.targetArrival)} 도착 기준`}
-            </p>
-            <p className="text-[11px] text-[#6B5F4F]">
+            <p className="text-[#2B2620] mt-0.5" style={{ fontSize: 13 }}>
               {overnight
-                ? `🏠 당일로 돌아오면 ${homeArrival >= 1440 ? "다음 날 " : ""}${fmtClock(homeArrival)}쯤 도착해요. 하룻밤 묵어가는 걸 추천해요.`
-                : `🏠 ${fmtClock(plan.end)}에 출발하면 ${fmtClock(homeArrival)}쯤 도착`}
+                ? `🏠 당일로 돌아오면 ${homeArrival >= 1440 ? "다음 날 " : ""}${shortClock(homeArrival)}쯤 도착해요. 하룻밤 묵어가는 걸 추천해요.`
+                : `🏠 ${shortClock(plan.end)}에 출발하면 ${shortClock(homeArrival)}쯤 도착`}
             </p>
           </>
         )}
