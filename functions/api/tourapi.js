@@ -792,6 +792,16 @@ export async function onRequest(context) {
       const regions = {};
       items.forEach((it) => { const k = `${it.region1cd?.label || "?"}/${it.region2cd?.label || "?"}(${it.region2cd?.value || "?"})`; regions[k] = (regions[k] || 0) + 1; });
       const { items: _omit, ...head } = d;
+      if (url.searchParams.get("full") === "1") {
+        // 자료 파일 만들기용: 필요한 칸만 줄여서 한 쪽(100곳) 전부
+        const compact = items.map((it) => ({
+          id: it.contentsid, t: it.title, c: it.contentscd?.value, r1: it.region1cd?.label, r2: it.region2cd?.value, r2n: it.region2cd?.label,
+          a: it.roadaddress || it.address || "", tag: it.tag || it.alltag || "", intro: it.introduction || "",
+          lat: it.latitude, lng: it.longitude, ph: it.phoneno || "",
+          img: it.repPhoto?.photoid?.imgpath || "", thumb: it.repPhoto?.photoid?.thumbnailpath || "",
+        }));
+        return json({ status: r.status, head, items: compact });
+      }
       return json({ status: r.status, head, regions, sample: items.slice(0, 2) });
     } else if (action === "trailCourses") {
       const { durunubi } = await getTrailIndex(base, serviceKey);
