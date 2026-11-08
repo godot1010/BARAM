@@ -43,7 +43,12 @@
   @keyframes baram-ink { 0%, 68% { opacity: 0; } 71%, 90% { opacity: 1; } 100% { opacity: 0; } }
   .baram-press { animation: baram-press 2.6s ease-in-out infinite; }
   .baram-ink { opacity: 0; animation: baram-ink 2.6s ease-out infinite; }
-  @media (prefers-reduced-motion: reduce) { .baram-press, .baram-ink { animation: none; } }
+  /* 테마·지역 칸 아이콘 움직임 (2026-11-08 형 요청): 아이콘은 3초마다 살짝 통통, 꺾쇠는 아래로 살짝 끄덕 */
+  @keyframes baram-icon-bob { 0%, 70%, 100% { transform: translateY(0) scale(1) rotate(0); } 78% { transform: translateY(-2px) scale(1.12) rotate(-8deg); } 86% { transform: translateY(0) scale(1) rotate(6deg); } 92% { transform: rotate(0); } }
+  @keyframes baram-chev-nod { 0%, 60%, 100% { transform: translateY(0); } 70% { transform: translateY(2px); } 80% { transform: translateY(0); } 88% { transform: translateY(1.5px); } }
+  .baram-icon-bob { animation: baram-icon-bob 3s ease-in-out infinite; }
+  .baram-chev-nod { animation: baram-chev-nod 3s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .baram-press, .baram-ink, .baram-icon-bob, .baram-chev-nod { animation: none; } }
   body { font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif; }
 </style>
 </head>
@@ -61,6 +66,7 @@ function Icon({ size = 20, className = "", children, ...rest }) {
     </svg>
   );
 }
+const ChevronDown = (p) => (<Icon {...p}><path d="m6 9 6 6 6-6" /></Icon>);
 const MapPin = (p) => (<Icon {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></Icon>);
 const Search = (p) => (<Icon {...p}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></Icon>);
 const Package = (p) => (<Icon {...p}><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="M3.3 7 12 12l8.7-5" /><path d="M12 22V12" /></Icon>);
@@ -6427,6 +6433,32 @@ function BaramApp() {
   const route = result ? distanceEta(currentLocation.lat, currentLocation.lng, result.lat, result.lng) : null;
   const disabled = phase !== "idle";
 
+  // 테마·지역 칸 (2026-11-08 형 결정 B안 + 2안): 왼쪽 동그라미 아이콘(움직임) + 고른 값 + 오른쪽 동그라미 꺾쇠, 칸 안은 연한 색
+  function pickerButton({ which, icon: IconComp, label, color }) {
+    const open = pickerOpen === which;
+    return (
+      <button
+        disabled={disabled}
+        onClick={() => setPickerOpen(open ? null : which)}
+        className="w-full flex items-center border font-bold disabled:opacity-60 whitespace-nowrap"
+        style={{
+          gap: 8, padding: "4px 5px 4px 4px", fontSize: 13, color,
+          borderRadius: open ? "18px 18px 0 0" : 9999,
+          borderColor: open ? color : `${color}66`,
+          background: open ? "#FFFDF8" : `${color}1A`,
+        }}
+      >
+        <span className="shrink-0 flex items-center justify-center rounded-full" style={{ width: 26, height: 26, background: color, color: "#FFFDF8" }}>
+          <IconComp size={15} className={disabled ? "" : "baram-icon-bob"} />
+        </span>
+        <span className="truncate text-left" style={{ flex: 1, minWidth: 0 }}>{label}</span>
+        <span className="shrink-0 flex items-center justify-center rounded-full" style={{ width: 22, height: 22, background: open ? color : `${color}26`, color: open ? "#FFFDF8" : color }}>
+          <ChevronDown size={15} strokeWidth={2.6} className={open || disabled ? "" : "baram-chev-nod"} style={open ? { transform: "rotate(180deg)" } : undefined} />
+        </span>
+      </button>
+    );
+  }
+
   // 테마·지역 칸 바로 아래로 열리는 목록
   function pickerMenu(options) {
     return (
@@ -6547,20 +6579,16 @@ function BaramApp() {
         )}
         <div className="mt-4 flex gap-2 relative" style={{ letterSpacing: "0.05em", zIndex: 39 }}>
           <div className="flex-1 relative" style={{ minWidth: 0 }}>
-            <button
-              disabled={disabled}
-              onClick={() => setPickerOpen(pickerOpen === "theme" ? null : "theme")}
-              className="w-full text-xs px-2 py-1.5 border font-bold disabled:opacity-60 whitespace-nowrap"
-              style={{
-                borderRadius: pickerOpen === "theme" ? "14px 14px 0 0" : 9999,
-                ...(pickerOpen === "theme" || !rouletteTheme ? { background: "#FFFDF8" } : {}),
-                ...(rouletteTheme
-                  ? { borderColor: `${THEME_ROULETTE[rouletteTheme].color}80`, ...(pickerOpen === "theme" ? {} : { background: `${THEME_ROULETTE[rouletteTheme].color}1F` }), color: THEME_ROULETTE[rouletteTheme].color }
-                  : { borderColor: "#D9CBB0", color: "#2B2620" }),
-              }}
-            >
-              테마 : {rouletteTheme ? `${THEME_ROULETTE[rouletteTheme].emoji} ${THEME_ROULETTE[rouletteTheme].label}` : "일반"} {pickerOpen === "theme" ? "▴" : "▾"}
-            </button>
+            {(() => {
+              const t = rouletteTheme ? THEME_ROULETTE[rouletteTheme] : null;
+              const tab = t && t.tab ? TAB_CONFIG[t.tab] : null;
+              return pickerButton({
+                which: "theme",
+                icon: tab && tab.icon ? tab.icon : Sparkles,
+                label: t ? (tab && tab.icon ? t.label : `${t.emoji} ${t.label}`) : "일반",
+                color: t ? t.color : "#B8860B",
+              });
+            })()}
             {pickerOpen === "theme" && !disabled && pickerMenu([
               { key: "normal", label: "일반", color: "#B8860B", note: `${spots.length}곳`, on: !rouletteTheme, pick: () => changeTheme(null) },
               ...Object.entries(THEME_ROULETTE).filter(([key]) => themeAvailable(key)).map(([key, t]) => (
@@ -6569,23 +6597,15 @@ function BaramApp() {
             ])}
           </div>
           <div className="flex-1 relative" style={{ minWidth: 0 }}>
-            <button
-              disabled={disabled}
-              onClick={() => setPickerOpen(pickerOpen === "region" ? null : "region")}
-              className="w-full text-xs px-2 py-1.5 border font-bold disabled:opacity-60 whitespace-nowrap"
-              style={{
-                borderRadius: pickerOpen === "region" ? "14px 14px 0 0" : 9999,
-                ...(pickerOpen === "region" || region === "전체" ? { background: "#FFFDF8" } : {}),
-                ...(region === "전체"
-                  ? { borderColor: "#D9CBB0", color: "#2B2620" }
-                  : { borderColor: `${REGION_COLORS[region]}80`, ...(pickerOpen === "region" ? {} : { background: `${REGION_COLORS[region]}1F` }), color: REGION_COLORS[region] }),
-              }}
-            >
-              지역 : {region} {pickerOpen === "region" ? "▴" : "▾"}
-            </button>
+            {pickerButton({
+              which: "region",
+              icon: MapPin,
+              label: region === "전체" ? "전국" : region, // 칸에는 '전국'으로 보임(속 값은 '전체' 그대로)
+              color: region === "전체" ? "#B8860B" : REGION_COLORS[region],
+            })}
             {pickerOpen === "region" && !disabled && pickerMenu(REGION_LIST.map((r) => {
               const n = rouletteCandidates(spots, r, currentLocation, rouletteTheme).length;
-              return { key: r, label: r, color: REGION_COLORS[r], note: n === 0 ? "없음" : `${n}곳`, on: region === r, off: n === 0, pick: () => { setPickerOpen(null); changeRegion(r); } };
+              return { key: r, label: r === "전체" ? "전국" : r, color: REGION_COLORS[r], note: n === 0 ? "없음" : `${n}곳`, on: region === r, off: n === 0, pick: () => { setPickerOpen(null); changeRegion(r); } };
             }))}
           </div>
         </div>
