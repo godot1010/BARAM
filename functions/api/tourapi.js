@@ -779,7 +779,9 @@ export async function onRequest(context) {
       ]);
       payload = { items: [{ beaches, surf, beachIdx, shops: shops.filter((it) => /서핑|서프|surf/i.test(it.title || "")) }] };
     } else if (action === "jejuProbe") {
-      // 🍊 임시 시험(2026-11-08): 비짓제주 오픈 API 응답 모양 확인용. 키는 응답에 넣지 않는다. 확인 끝나면 지울 것
+      // 🍊 비짓제주 오픈 API 받기(2026-11-08): tools/jeju-pull.mjs가 한 달에 한 번 이걸로 받아 /jeju/*.json 자료 파일을 만든다.
+      // 키는 응답에 넣지 않는다. 남이 함부로 부르지 않게 미리보기 주소에서만 동작한다
+      if (!url.hostname.startsWith("preview.")) return json({ error: "NOT_HERE", message: "미리보기 주소에서만 써요." }, 403);
       const jejuKey = env.VISITJEJU_API_KEY;
       if (!jejuKey) return json({ error: "NO_VISITJEJU_KEY", message: "Cloudflare에 VISITJEJU_API_KEY가 아직 없어요." }, 500);
       const category = url.searchParams.get("category") || "c1";
