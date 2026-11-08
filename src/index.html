@@ -388,19 +388,28 @@ const RAW_LOCATIONS = [
   ["광주 광산구", "호남", 35.1397, 126.7936],
 ];
 
-const LOCATIONS = RAW_LOCATIONS.map(([name, region, lat, lng]) => ({ name, region, lat, lng }));
-const REGION_LIST = ["전체", "서울", "경기", "인천·제주", "강원", "충청", "영남", "호남"];
+// 권역 다시 묶기 (2026-11-08 형 결정): '경기'·'인천'을 '경기·인천'으로 합치고 '제주'를 따로.
+// ⚠ 감성/활기는 옛 권역 이름(moodRegion)으로 섞어서 정한다 — 권역 이름을 바꿔도 모든 지역의 테마가 그대로 유지되게.
+const MOOD_REGION_LIST = ["전체", "서울", "경기", "인천·제주", "강원", "충청", "영남", "호남"]; // 바꾸지 말 것
+const JEJU_NAMES = new Set(["제주시", "서귀포시"]);
+function displayRegionOf(name, oldRegion) {
+  if (oldRegion === "인천·제주" && JEJU_NAMES.has(name)) return "제주";
+  if (oldRegion === "경기" || oldRegion === "인천·제주") return "경기·인천";
+  return oldRegion;
+}
+const LOCATIONS = RAW_LOCATIONS.map(([name, moodRegion, lat, lng]) => ({ name, region: displayRegionOf(name, moodRegion), moodRegion, lat, lng }));
+const REGION_LIST = ["전체", "서울", "경기·인천", "강원", "충청", "영남", "호남", "제주"];
 // 지역 배너(필터 칩)마다 구분되는 고유 색상
 const REGION_COLORS = {
   "전체": "#2B2620",
   // 룰렛판의 파랑·빨강을 번갈아 쓰고 진하기만 다르게 (2026-11-01 형 요청)
   "서울": "#2B62A1",
-  "경기": "#C13225",
-  "인천·제주": "#3A7BBF",
-  "강원": "#A3271C",
-  "충청": "#1F4C85",
-  "영남": "#D24A3D",
-  "호남": "#2F70B3",
+  "경기·인천": "#C13225",
+  "강원": "#3A7BBF",
+  "충청": "#A3271C",
+  "영남": "#1F4C85",
+  "호남": "#D24A3D",
+  "제주": "#2F70B3",
 };
 
 // 229곳을 감성/활기로 반씩 나눈다. 권역마다 지역 순서를 섞은 뒤 번갈아 배정해서
@@ -411,8 +420,8 @@ const MOOD_SEED = 20260926;
 function buildSpots() {
   const moodByLocIndex = new Array(LOCATIONS.length);
   let startEmotional = true;
-  REGION_LIST.filter((r) => r !== "전체").forEach((region) => {
-    const idxs = LOCATIONS.map((l, i) => (l.region === region ? i : -1)).filter((i) => i >= 0);
+  MOOD_REGION_LIST.filter((r) => r !== "전체").forEach((region) => {
+    const idxs = LOCATIONS.map((l, i) => (l.moodRegion === region ? i : -1)).filter((i) => i >= 0);
     seededShuffle(idxs, MOOD_SEED).forEach((locIdx, order) => {
       moodByLocIndex[locIdx] = (order % 2 === 0) === startEmotional ? "emotional" : "energetic";
     });
@@ -2446,14 +2455,25 @@ async function tourApiProxyFetchOnce(action, extraParams) {
 // 가까운 순으로 50곳을 받아 온다. 여행지(spotName) 주소의 장소를 먼저, 이웃 지역은 그 뒤에 둔다.
 // 가장 가까운 곳이 관광지가 아닌 단체 사무실 같은 곳일 때가 많아서,
 // preferImages면 같은 지역 안에서 사진이 등록된 곳(대부분 실제 볼거리)을 앞으로 올린다 (그 안에서는 가까운 순 유지).
+// 제주는 섬이 넓어 시청 20km 안만 찾으면 성산·협재·표선 등이 빠진다 → 섬 가운데에서 45km로 섬 전체를 찾고,
+// 거리는 여행지 중심에서 다시 잰다 (2026-11-08 형: 제주 특별 관리)
+const JEJU_ISLAND_CENTER = { lat: 33.38, lng: 126.55, radius: 45000 };
+function withSpotDistance(list, lat, lng) {
+  return list.map((it) => {
+    const y = parseFloat(it.mapy), x = parseFloat(it.mapx);
+    return Number.isFinite(y) && Number.isFinite(x) ? { ...it, dist: String(Math.round(haversineKm(lat, lng, y, x) * 1000)) } : it;
+  }).sort((a, c) => parseFloat(a.dist || 1e9) - parseFloat(c.dist || 1e9));
+}
 async function fetchNearbyTourSpots({ lat, lng, spotName, contentTypeId, radius = 20000, num = 5, preferImages = false }) {
-  const arr = await tourApiProxyFetch("nearby", {
-    lat: String(lat),
-    lng: String(lng),
+  const jeju = JEJU_NAMES.has(spotName);
+  const fetched = await tourApiProxyFetch("nearby", {
+    lat: String(jeju ? JEJU_ISLAND_CENTER.lat : lat),
+    lng: String(jeju ? JEJU_ISLAND_CENTER.lng : lng),
     contentTypeId: String(contentTypeId),
-    radius: String(radius),
-    num: String(Math.max(num, 50)),
+    radius: String(jeju ? JEJU_ISLAND_CENTER.radius : radius),
+    num: String(Math.max(num, jeju ? 200 : 50)),
   });
+  const arr = jeju ? withSpotDistance(fetched, lat, lng) : fetched;
   // 관광지(12)로 등록됐지만 볼거리가 아닌 곳(화장실, 사우나, 노인회 사무실 등)은 뺀다
   const located = arr.filter((it) => !hasWrongCoords(it)); // 주소와 좌표가 어긋난 곳은 뺀다
   const cleaned = contentTypeId === 12 ? located.filter((it) => !NOT_ATTRACTION.test(it.title || "")) : located;
@@ -2784,8 +2804,24 @@ async function fetchFishingNearby({ lat, lng, spotName }) {
 }
 // "남항진해변(남항진해수욕장)" → "남항진" (해변·해수욕장 글자를 빼고 비교)
 const plainBeach = (s) => (s || "").replace(/\(.*?\)/g, "").replace(/\s/g, "").replace(/(해수욕장|해변|해안|비치)$/, "");
+// 제주 해변은 섬 둘레 6곳에서 받아 합친다 (서버는 한 점에서 20~30km만 찾음, 2026-11-08: 11곳 → 섬 전체 31곳)
+const JEJU_COAST_POINTS = [[33.42, 126.30], [33.50, 126.53], [33.50, 126.85], [33.25, 126.33], [33.24, 126.56], [33.33, 126.82]];
+async function fetchJejuSeaside(lat, lng) {
+  const parts = await Promise.all(JEJU_COAST_POINTS.map(([y, x]) => tourApiProxyFetch("seaside", { lat: String(y), lng: String(x), v: "2" }).then((r) => r[0]).catch(() => null)));
+  const uniq = (key, getId) => {
+    const seen = new Map();
+    parts.forEach((d) => (d && d[key] || []).forEach((it) => { const id = getId(it); if (!seen.has(id)) seen.set(id, it); }));
+    return [...seen.values()];
+  };
+  const tour = (key) => withSpotDistance(uniq(key, (it) => it.contentid || it.title), lat, lng);
+  const pts = (key) => uniq(key, (pt) => pt.name).map((pt) => ({ ...pt, km: haversineKm(lat, lng, pt.lat, pt.lng) })).sort((a, c) => a.km - c.km);
+  if (!parts.some(Boolean)) return null;
+  return { beaches: tour("beaches"), shops: tour("shops"), surf: pts("surf"), beachIdx: pts("beachIdx") };
+}
 async function fetchSeasideNearby({ lat, lng, spotName }) {
-  const [d] = await tourApiProxyFetch("seaside", { lat: String(lat), lng: String(lng), v: "2" });
+  const d = JEJU_NAMES.has(spotName)
+    ? await fetchJejuSeaside(lat, lng)
+    : (await tourApiProxyFetch("seaside", { lat: String(lat), lng: String(lng), v: "2" }))[0];
   if (!d) return [];
   const surf = (d.surf || []).filter((pt) => upcomingFc(pt.fc).length > 0);
   const idx = d.beachIdx || [];
@@ -5716,8 +5752,9 @@ const THEME_ROULETTE = {
   camping: { label: "캠핑", emoji: "🏕️", color: CAMPING_COLOR, tab: "camping",
     counts: { "서울 종로구": 1, "서울 중랑구": 1, "서울 은평구": 4, "서울 마포구": 1, "서울 구로구": 2, "서울 관악구": 1, "서울 서초구": 2, "서울 강동구": 1, "수원시": 2, "성남시": 1, "의정부시": 1, "안양시": 2, "광명시": 1, "평택시": 10, "동두천시": 5, "안산시": 3, "고양시": 4, "과천시": 1, "구리시": 2, "남양주시": 17, "오산시": 2, "시흥시": 5, "군포시": 1, "의왕시": 5, "하남시": 5, "용인시": 28, "파주시": 34, "이천시": 9, "안성시": 25, "김포시": 8, "화성시": 23, "광주시": 5, "양주시": 29, "포천시": 43, "여주시": 20, "연천군": 35, "가평군": 74, "양평군": 43, "인천 중구": 2, "인천 남동구": 2, "인천 서구": 2, "강화군": 39, "제주시": 16, "서귀포시": 12, "춘천시": 37, "원주시": 16, "강릉시": 24, "동해시": 7, "태백시": 3, "속초시": 4, "삼척시": 12, "홍천군": 29, "횡성군": 25, "영월군": 35, "평창군": 13, "정선군": 12, "철원군": 15, "화천군": 10, "양구군": 4, "인제군": 18, "고성군-강원": 18, "양양군": 41, "청주시": 16, "충주시": 33, "제천시": 46, "보은군": 13, "옥천군": 7, "영동군": 9, "증평군": 1, "진천군": 11, "괴산군": 29, "음성군": 4, "단양군": 22, "천안시": 26, "공주시": 21, "보령시": 15, "아산시": 22, "서산시": 9, "논산시": 14, "계룡시": 1, "당진시": 11, "금산군": 19, "부여군": 9, "서천군": 17, "청양군": 3, "홍성군": 10, "예산군": 7, "태안군": 57, "대전 동구": 4, "대전 중구": 1, "대전 서구": 6, "대전 유성구": 3, "대전 대덕구": 1, "세종시": 6, "포항시": 14, "경주시": 39, "김천시": 8, "안동시": 3, "구미시": 8, "영주시": 7, "영천시": 13, "상주시": 7, "문경시": 12, "경산시": 6, "의성군": 2, "청송군": 1, "영양군": 1, "영덕군": 8, "청도군": 28, "고령군": 15, "성주군": 14, "칠곡군": 23, "예천군": 2, "봉화군": 4, "울진군": 8, "울릉군": 3, "대구 동구": 5, "대구 수성구": 1, "대구 달서구": 1, "달성군": 6, "군위군": 5, "부산 영도구": 1, "부산 북구": 1, "부산 강서구": 1, "부산 사상구": 1, "기장군": 1, "울산 중구": 4, "울산 북구": 2, "울주군": 14, "창원시": 6, "진주시": 9, "통영시": 17, "사천시": 25, "김해시": 11, "밀양시": 35, "거제시": 17, "양산시": 8, "의령군": 8, "함안군": 10, "창녕군": 8, "고성군-경남": 18, "남해군": 27, "하동군": 12, "산청군": 29, "함양군": 11, "거창군": 17, "합천군": 24, "전주시": 3, "군산시": 3, "익산시": 5, "정읍시": 9, "남원시": 9, "김제시": 2, "완주군": 8, "진안군": 8, "무주군": 20, "장수군": 3, "임실군": 7, "순창군": 7, "고창군": 4, "부안군": 5, "목포시": 1, "여수시": 20, "순천시": 9, "나주시": 7, "광양시": 13, "담양군": 20, "곡성군": 18, "구례군": 8, "고흥군": 16, "보성군": 9, "화순군": 14, "장흥군": 9, "강진군": 8, "해남군": 4, "영암군": 8, "무안군": 7, "함평군": 8, "영광군": 6, "장성군": 28, "완도군": 9, "진도군": 2, "신안군": 7, "광주 동구": 1, "광주 서구": 1, "광주 남구": 2, "광주 북구": 2, "광주 광산구": 2 } },
   // 🌊 바다 룰렛 (2026-11-05): 그 지역 칩에 나오는 해변·해수욕장 중 주소가 그 지역인 곳 (229개 지역 점검, 47개 지역·260곳)
+  // 2026-11-08 제주는 섬 전체에서 찾게 바꿔 제주시 6→22, 서귀포시 2→9 (모두 283곳)
   sea: { group: true, label: "해수욕 · 서핑", short: "바다", emoji: "🌊", color: SEA_COLOR, tab: "sea",
-    counts: { "화성시": 2, "인천 중구": 3, "강화군": 2, "제주시": 6, "서귀포시": 2, "강릉시": 20, "동해시": 9, "속초시": 5, "삼척시": 12, "고성군-강원": 23, "양양군": 19, "보령시": 8, "당진시": 1, "서천군": 5, "태안군": 23, "포항시": 9, "영덕군": 8, "울진군": 6, "울릉군": 3, "부산 서구": 1, "부산 영도구": 1, "부산 해운대구": 2, "부산 사하구": 2, "부산 수영구": 1, "기장군": 2, "울산 동구": 2, "울산 북구": 1, "울주군": 2, "통영시": 4, "사천시": 2, "거제시": 17, "남해군": 11, "부안군": 1, "목포시": 1, "여수시": 6, "순천시": 2, "광양시": 1, "고흥군": 8, "보성군": 1, "장흥군": 1, "해남군": 1, "무안군": 3, "함평군": 2, "영광군": 1, "완도군": 6, "진도군": 3, "신안군": 9 } },
+    counts: { "화성시": 2, "인천 중구": 3, "강화군": 2, "제주시": 22, "서귀포시": 9, "강릉시": 20, "동해시": 9, "속초시": 5, "삼척시": 12, "고성군-강원": 23, "양양군": 19, "보령시": 8, "당진시": 1, "서천군": 5, "태안군": 23, "포항시": 9, "영덕군": 8, "울진군": 6, "울릉군": 3, "부산 서구": 1, "부산 영도구": 1, "부산 해운대구": 2, "부산 사하구": 2, "부산 수영구": 1, "기장군": 2, "울산 동구": 2, "울산 북구": 1, "울주군": 2, "통영시": 4, "사천시": 2, "거제시": 17, "남해군": 11, "부안군": 1, "목포시": 1, "여수시": 6, "순천시": 2, "광양시": 1, "고흥군": 8, "보성군": 1, "장흥군": 1, "해남군": 1, "무안군": 3, "함평군": 2, "영광군": 1, "완도군": 6, "진도군": 3, "신안군": 9 } },
   // 🎣 낚시 룰렛 (2026-11-05): 그 지역 칩에 나오는 낚시터 중 주소가 그 지역인 곳 + 바다낚시 지수 포인트(가장 가까운 지역 하나에만) (229개 지역 점검, 77개 지역·234곳)
   fishing: { label: "낚시", emoji: "🎣", color: FISHING_COLOR, tab: "fishing",
     counts: { "평택시": 1, "안산시": 1, "고양시": 5, "남양주시": 4, "시흥시": 8, "용인시": 13, "파주시": 2, "이천시": 4, "안성시": 12, "김포시": 2, "화성시": 5, "광주시": 2, "양주시": 3, "포천시": 9, "여주시": 1, "연천군": 2, "양평군": 5, "인천 중구": 5, "인천 연수구": 1, "인천 남동구": 1, "인천 서구": 2, "강화군": 13, "옹진군": 1, "제주시": 6, "서귀포시": 1, "춘천시": 1, "원주시": 3, "강릉시": 6, "태백시": 1, "속초시": 3, "삼척시": 3, "화천군": 1, "양구군": 2, "고성군-강원": 3, "양양군": 3, "청주시": 2, "충주시": 1, "제천시": 1, "진천군": 2, "음성군": 4, "천안시": 3, "공주시": 1, "보령시": 3, "아산시": 10, "서산시": 7, "당진시": 6, "부여군": 4, "서천군": 1, "홍성군": 1, "예산군": 1, "태안군": 9, "포항시": 3, "안동시": 1, "문경시": 1, "영덕군": 1, "울진군": 2, "울릉군": 1, "부산 영도구": 2, "부산 남구": 1, "부산 해운대구": 1, "부산 사하구": 1, "기장군": 1, "울산 동구": 2, "통영시": 6, "사천시": 1, "거제시": 3, "창녕군": 1, "남해군": 3, "군산시": 1, "김제시": 2, "무주군": 1, "부안군": 1, "보성군": 1, "영광군": 1, "완도군": 2, "진도군": 1, "신안군": 2 } },
