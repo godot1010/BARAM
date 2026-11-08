@@ -10,6 +10,7 @@ import { dirname, join } from "node:path";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = "https://preview.baram-bh4.pages.dev/api/tourapi?action=jejuProbe&full=1";
 const CATS = { c1: "1", c3: "3", c4: "4" }; // 관광지 / 숙박 / 음식점
+const NAME_FIX = { "추차도": "추자도" }; // 원본 자료의 오타
 const SKIP_TAGS = /^(비짓제주|visitjeju|제주|제주도|제주여행|\d{4}.*|.*페스타)$/i;
 
 async function getPage(cat, page) {
@@ -31,7 +32,7 @@ for (const [cat, short] of Object.entries(CATS)) {
   for (const it of list) {
     if (!it.lat || !it.lng || !it.r2) continue; // 위치 없는 곳은 거리·길찾기를 못 해서 뺀다
     const tags = [...new Set(it.tag.split(",").map((t) => t.trim()).filter((t) => t && !SKIP_TAGS.test(t)))].slice(0, 6);
-    (byArea[it.r2] ||= { code: it.r2, name: it.r2n, items: [] }).items.push({
+    (byArea[it.r2] ||= { code: it.r2, name: NAME_FIX[it.r2n] || it.r2n, items: [] }).items.push({
       id: it.id, t: it.t.trim(), c: short, a: it.a, tags, intro: it.intro.trim(),
       lat: Math.round(it.lat * 1e6) / 1e6, lng: Math.round(it.lng * 1e6) / 1e6, ph: it.ph, th: it.thumb, img: it.img,
     });

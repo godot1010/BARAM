@@ -2464,7 +2464,62 @@ function withSpotDistance(list, lat, lng) {
     return Number.isFinite(y) && Number.isFinite(x) ? { ...it, dist: String(Math.round(haversineKm(lat, lng, y, x) * 1000)) } : it;
   }).sort((a, c) => parseFloat(a.dist || 1e9) - parseFloat(c.dist || 1e9));
 }
+// 🍊 비짓제주(제주관광공사) 자료 (2026-11-08): 관광공사 자료엔 성산일출봉·우도·만장굴 등이 없어 제주는 이 자료로 명소·맛집·카페·숙소를 채운다.
+// /jeju/<권역코드>.json (tools/jeju-pull.mjs로 만듦). 지금은 제주시·서귀포시 두 지역이라 권역 여러 개를 합쳐 쓴다.
+const JEJU_AREA_CODES = {
+  "제주시": ["11", "12", "13", "14", "15", "16", "31", "32", "34", "35"], // 제주시내·애월·한림·한경·조천·구좌 + 우도·추자도·비양도·차귀도
+  "서귀포시": ["17", "21", "22", "23", "24", "25", "26", "33", "36"], // 성산·서귀포시내·대정·안덕·중문·남원·표선 + 마라도·가파도
+};
+const VJ_KIND = { "12": "1", "39": "4", "32": "3" }; // 관광정보 종류 → 비짓제주 종류(관광지/음식점/숙박)
+const jejuAreaCache = new Map();
+function loadJejuArea(code) {
+  if (!jejuAreaCache.has(code)) {
+    const p = fetch(`/jeju/${code}.json?v=1`).then((r) => { if (!r.ok) throw new Error("제주 자료를 불러오지 못했어요."); return r.json(); });
+    jejuAreaCache.set(code, p);
+    p.catch(() => jejuAreaCache.delete(code));
+  }
+  return jejuAreaCache.get(code);
+}
+const VJ_CAFE = /카페|커피|디저트|베이커리|빵|케이크|티하우스|찻집/;
+async function fetchJejuPlaces({ lat, lng, spotName, contentTypeId, num }) {
+  const codes = JEJU_AREA_CODES[spotName] || [];
+  const areas = await Promise.all(codes.map((c) => loadJejuArea(c).catch(() => null)));
+  const want = VJ_KIND[String(contentTypeId)];
+  const list = [];
+  areas.forEach((area) => area && area.items.forEach((it) => {
+    if (it.c !== want) return;
+    const km = haversineKm(lat, lng, it.lat, it.lng);
+    const isCafe = it.c === "4" && (VJ_CAFE.test(it.t) || it.tags.some((t) => VJ_CAFE.test(t)));
+    list.push({
+      id: `vj_${it.id}`, name: it.t, title: it.t, // title은 중복 지우기(dedupeByName)가 씀
+      kind: it.c === "1" ? (it.tags.find((t) => /오름|해변|폭포|박물관|미술관|공원|숲|올레|동굴|포구|테마공원|유적/.test(t)) || "") : it.c === "3" ? "숙소" : isCafe ? "카페" : "",
+      address: it.a, distanceKm: km.toFixed(1), lat: it.lat, lng: it.lng,
+      image: it.th || it.img || null, imageLarge: it.img || it.th || null,
+      cafe: isCafe, area: null,
+      vj: { intro: it.intro, tags: it.tags, phone: it.ph, areaName: area.name },
+      _km: km, _img: it.th ? 1 : 0,
+    });
+  }));
+  // 사진 있는 곳 먼저, 그 안에서 가까운 순 (관광정보 쪽 preferImages와 같은 생각)
+  // 관광지는 '볼거리 점수' 순: 거리(km)에 큰 볼거리는 -6km, 공방·체험·실내는 +6km를 더해 비교
+  // (그냥 가까운 순이면 서귀포 일정에 향수공방·시장이 먼저 나오고 천지연·정방폭포가 밀렸음, 2026-11-08)
+  const BIG = /자연경관|해변|해수욕|오름|폭포|공원|문화유적|유적지|테마공원|박물관|미술관|올레|동굴|해안|포구|숲|경관|일출|일몰|등대|섬|전망/;
+  const SMALL = /공방|체험|교육|실내|쇼핑|만들기|클래스|매장|상점|시장/;
+  // 대표 명소(공영관광지·유네스코·'가볼만한곳' 태그)는 -12km: 천지연·정방폭포처럼 꼭 갈 곳이 먼저
+  const MUST = /공영관광지|유네스코|세계자연유산|지질공원|가볼만한곳|갈만한곳|필수/;
+  const score = (p) => p._km + (want === "1"
+    ? (p.vj.tags.some((t) => MUST.test(t)) ? -12 : 0)
+      + (p.vj.tags.some((t) => BIG.test(t)) || BIG.test(p.name) ? -6 : 0) + (p.vj.tags.some((t) => SMALL.test(t)) || SMALL.test(p.name) ? 6 : 0)
+    : 0);
+  list.sort((a, c) => (c._img - a._img) || (score(a) - score(c)));
+  const n = String(contentTypeId) === "39" ? Math.max(num, 60) : Math.max(num, 40); // 맛집은 식사·카페 두 탭이 나눠 쓴다
+  return dedupeByName(list).slice(0, n);
+}
 async function fetchNearbyTourSpots({ lat, lng, spotName, contentTypeId, radius = 20000, num = 5, preferImages = false }) {
+  if (JEJU_NAMES.has(spotName) && VJ_KIND[String(contentTypeId)]) {
+    const vj = await fetchJejuPlaces({ lat, lng, spotName, contentTypeId, num }).catch(() => []);
+    if (vj.length > 0) return vj; // 못 받으면 아래 관광정보로
+  }
   const jeju = JEJU_NAMES.has(spotName);
   const fetched = await tourApiProxyFetch("nearby", {
     lat: String(jeju ? JEJU_ISLAND_CENTER.lat : lat),
@@ -4890,6 +4945,14 @@ function fetchPlaceDetail(place) {
   if ((place.fishing && place.fishing.point) || (place.sea && place.sea.point)) {
     return Promise.resolve({ addr1: "", intro: {} });
   }
+  if (place.vj) {
+    return Promise.resolve({
+      overview: [place.vj.intro, place.vj.tags.length ? place.vj.tags.map((t) => `#${t}`).join(" ") : ""].filter(Boolean).join("\n\n"),
+      tel: place.vj.phone, addr1: place.address, intro: {},
+      images: place.imageLarge ? [{ url: place.imageLarge }] : [],
+      photoCredit: "제주관광공사 VISIT JEJU",
+    });
+  }
   if (place.camping) {
     return Promise.resolve({ overview: place.camping.intro, tel: place.camping.tel, homepage: place.camping.homepage, addr1: place.address, intro: {} });
   }
@@ -5034,7 +5097,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
               네이버 지도 <ExternalLink size={12} className="text-[#2F6E68]" />
             </a>
           </div>
-          {!place.mountain && !place.walk && <p className="text-[10px] text-[#A6987F] mt-2">정보 출처: 한국관광공사. 이용 시간과 요금은 바뀔 수 있으니 방문 전에 확인하세요.</p>}
+          {!place.mountain && !place.walk && <p className="text-[10px] text-[#A6987F] mt-2">정보 출처: {place.vj ? "제주관광공사 VISIT JEJU" : "한국관광공사"}. 이용 시간과 요금은 바뀔 수 있으니 방문 전에 확인하세요.</p>}
         </div>
       </div>
     </div>
@@ -6816,7 +6879,7 @@ function BaramApp() {
               setCache={setDetailCache}
             />
             {/* 공공데이터 출처 표시 (날씨 줄에서 '기상청'을 빼고 여기로 옮김, 2026-10-21) */}
-            <p className="text-[10px] text-[#A6987F] text-center" style={{ marginTop: 20 }}>정보 출처: 한국관광공사(관광정보), 기상청(날씨)</p>
+            <p className="text-[10px] text-[#A6987F] text-center" style={{ marginTop: 20 }}>정보 출처: 한국관광공사(관광정보), {JEJU_NAMES.has(result.name) ? "제주관광공사 VISIT JEJU(제주 관광지·맛집·숙소), " : ""}기상청(날씨)</p>
 
             {resultSpot && resultSpot.isVisited ? (
               <button
