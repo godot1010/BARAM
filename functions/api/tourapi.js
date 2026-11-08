@@ -778,6 +778,21 @@ export async function onRequest(context) {
         tourNearByClass(base, lat, lng, "LS020100"),
       ]);
       payload = { items: [{ beaches, surf, beachIdx, shops: shops.filter((it) => /서핑|서프|surf/i.test(it.title || "")) }] };
+    } else if (action === "jejuProbe") {
+      // 🍊 임시 시험(2026-11-08): 비짓제주 오픈 API 응답 모양 확인용. 키는 응답에 넣지 않는다. 확인 끝나면 지울 것
+      const jejuKey = env.VISITJEJU_API_KEY;
+      if (!jejuKey) return json({ error: "NO_VISITJEJU_KEY", message: "Cloudflare에 VISITJEJU_API_KEY가 아직 없어요." }, 500);
+      const category = url.searchParams.get("category") || "c1";
+      const page = url.searchParams.get("page") || "1";
+      const r = await fetch(`https://api.visitjeju.net/vsjApi/contents/searchList?${new URLSearchParams({ apiKey: jejuKey, locale: "kr", category, page })}`);
+      const text = await r.text();
+      let d = null;
+      try { d = JSON.parse(text); } catch { return json({ status: r.status, notJson: text.slice(0, 500) }); }
+      const items = d.items || [];
+      const regions = {};
+      items.forEach((it) => { const k = `${it.region1cd?.label || "?"}/${it.region2cd?.label || "?"}(${it.region2cd?.value || "?"})`; regions[k] = (regions[k] || 0) + 1; });
+      const { items: _omit, ...head } = d;
+      return json({ status: r.status, head, regions, sample: items.slice(0, 2) });
     } else if (action === "trailCourses") {
       const { durunubi } = await getTrailIndex(base, serviceKey);
       payload = { items: durunubi.map((c) => ({ id: c.id, name: c.name, area: c.area, km: c.km, minutes: c.minutes, level: c.level })) };
