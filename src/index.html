@@ -89,8 +89,8 @@ function MiniChevron({ up = false }) {
 // 색은 여행지 코스 색: 감성 청색 #1B4B91 / 활기 빨강 #B3261E (2026-11-11 형 요청)
 function CloseButton({ onClick, className = "", mood }) {
   return (
-    <button onClick={onClick} aria-label="닫기" className={`shrink-0 inline-flex items-center justify-center rounded-full ${className}`} style={{ width: 28, height: 28, background: mood === "energetic" ? "#B3261E" : mood === "emotional" ? "#1B4B91" : "#2B2620", color: "#FFFDF8", boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }}>
-      <X size={16} strokeWidth={2.6} />
+    <button onClick={onClick} aria-label="닫기" className={`shrink-0 inline-flex items-center justify-center rounded-full ${className}`} style={{ width: 22, height: 22, background: mood === "energetic" ? "#B3261E" : mood === "emotional" ? "#1B4B91" : "#2B2620", color: "#FFFDF8", boxShadow: "0 1px 3px rgba(0,0,0,0.18)" }}>
+      <X size={13} strokeWidth={2.8} />
     </button>
   );
 }
