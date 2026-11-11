@@ -81,6 +81,18 @@ const Utensils = (p) => (<Icon {...p}><path d="M6 2v7a2 2 0 0 0 2 2 2 2 0 0 0 2-
 const BookOpen = (p) => (<Icon {...p}><path d="M12 7v14" /><path d="M3 5a2 2 0 0 1 2-2h4a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H3Z" /><path d="M21 5a2 2 0 0 0-2-2h-4a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7Z" /></Icon>);
 const Music = (p) => (<Icon {...p}><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></Icon>);
 const CalendarDays = (p) => (<Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></Icon>);
+// 작은 꺾쇠 (2026-11-11 형 요청: ▾ 글자가 너무 작음 → 동그라미·색은 빼고 원래 회색 그대로 아이콘만 조금 크게, 테마·지역 칸보다 작게)
+function MiniChevron({ up = false }) {
+  return <ChevronDown size={14} strokeWidth={2.6} className="shrink-0" style={{ color: "#6B5F4F", ...(up ? { transform: "rotate(180deg)" } : {}) }} />;
+}
+// 눈에 띄는 닫기 버튼 (2026-11-11 형 요청): 32px 진한 동그라미에 흰 ×
+function CloseButton({ onClick, className = "" }) {
+  return (
+    <button onClick={onClick} aria-label="닫기" className={`shrink-0 inline-flex items-center justify-center rounded-full ${className}`} style={{ width: 28, height: 28, background: "#2B2620", color: "#FFFDF8", boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }}>
+      <X size={16} strokeWidth={2.6} />
+    </button>
+  );
+}
 // 결과 화면 구역 제목 (2026-11-07 형 결정 B안): 금색 동그라미 아이콘 + 15px 굵은 제목 + 오른쪽으로 이어지는 선
 function SectionTitle({ icon: IconComp, children, extra, className = "", style, titleRef }) {
   return (
@@ -2080,10 +2092,10 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
           <div className="relative">
             <button
               onClick={() => setAgeOpen((v) => !v)}
-              className="text-[11px] font-bold rounded-full border px-2.5 py-0.5 whitespace-nowrap"
-              style={{ color: "#B8860B", borderColor: "#B8860B", background: "#FFFDF8" }}
+              className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full border whitespace-nowrap"
+              style={{ color: "#B8860B", borderColor: "#B8860B", background: "#FFFDF8", padding: "2px 3px 2px 9px" }}
             >
-              🎚 {musicAge.label} {ageOpen ? "▴" : "▾"}
+              🎚 {musicAge.label} <MiniChevron up={ageOpen} />
             </button>
             {ageOpen && (
               <div className="absolute mt-1 rounded-xl border border-[#D9CBB0] overflow-hidden" style={{ right: 0, zIndex: 20, background: "#FFFDF8", boxShadow: "0 8px 16px rgba(0,0,0,0.15)", minWidth: 140 }}>
@@ -4477,7 +4489,7 @@ function TravelFortuneCard({ fortune, onEdit }) {
       <button onClick={toggle} className="w-full mt-3 rounded-xl px-3 py-2 flex items-center gap-2 text-left" style={bg} aria-label="오늘의 여행운 펼치기">
         <span className="text-xs font-bold shrink-0" style={{ color: "#B8860B" }}>✦ 오늘의 여행운</span>
         <span className="text-[11px] text-[#2B2620] truncate flex-1 min-w-0">{fortune.direction} · {fortune.colors} · {fortune.item}</span>
-        <span className="text-[11px] text-[#6B5F4F] shrink-0">▾</span>
+        <MiniChevron />
       </button>
     );
   }
@@ -4485,7 +4497,7 @@ function TravelFortuneCard({ fortune, onEdit }) {
     <div className="mt-3 rounded-xl px-4 py-3" style={bg}>
       <div className="flex items-center justify-between">
         <button onClick={toggle} className="text-sm font-medium flex items-center gap-1" style={{ color: "#B8860B" }} aria-label="오늘의 여행운 접기">
-          ✦ 오늘의 여행운 <span className="text-[11px] text-[#6B5F4F]">▴ 접기</span>
+          ✦ 오늘의 여행운 <span className="inline-flex items-center gap-0.5 text-[11px] text-[#6B5F4F]"><MiniChevron up /> 접기</span>
         </button>
         <button onClick={onEdit} className="text-[10px] text-[#A6987F] underline">내 정보 수정</button>
       </div>
@@ -4758,7 +4770,7 @@ function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, on
               STAMP TOUR{spot.stampType === PICKED_STAMP ? " · 내가 선택" : " · 룰렛"}
             </span>
           </div>
-          <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F]"><X size={18} /></button>
+          <CloseButton onClick={onClose} />
         </div>
         <h2 className="font-serif text-xl text-[#2B2620]">{spot.name}</h2>
         <p className="text-xs text-[#6B5F4F] mt-0.5 flex items-center gap-1.5">
@@ -5078,7 +5090,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
                 {[place.kind, place.distanceKm ? `시내에서 ${place.distanceKm}km` : null, place.area ? `이웃 · ${place.area}` : null].filter(Boolean).join(" · ")}
               </p>
             </div>
-            <button onClick={onClose} aria-label="닫기" className="text-[#6B5F4F] shrink-0"><X size={18} /></button>
+            <CloseButton onClick={onClose} />
           </div>
           {photos.length > 1 && <p className="text-[11px] font-bold text-[#2F6E68] mt-1">📷 사진 {photos.length}장 · 옆으로 넘겨 보세요 →</p>}
           {d && d.photoCredit && <p className="text-[10px] text-[#A6987F] mt-0.5">사진: {d.photoCredit}</p>}
