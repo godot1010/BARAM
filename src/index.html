@@ -43,6 +43,8 @@
   @keyframes baram-ink { 0%, 68% { opacity: 0; } 71%, 90% { opacity: 1; } 100% { opacity: 0; } }
   .baram-press { animation: baram-press 2.6s ease-in-out infinite; }
   .baram-ink { opacity: 0; animation: baram-ink 2.6s ease-out infinite; }
+  /* 창(모달) 안 스크롤이 끝에 닿아도 뒤 화면이 따라 움직이지 않게 (2026-11-11 형 지적) */
+  .overflow-y-auto, .overflow-auto { overscroll-behavior: contain; }
   /* 테마·지역 칸 아이콘 움직임 (2026-11-08 형 요청): 아이콘은 3초마다 살짝 통통, 꺾쇠는 아래로 살짝 끄덕 */
   @keyframes baram-icon-bob { 0%, 70%, 100% { transform: translateY(0) scale(1) rotate(0); } 78% { transform: translateY(-2px) scale(1.12) rotate(-8deg); } 86% { transform: translateY(0) scale(1) rotate(6deg); } 92% { transform: rotate(0); } }
   @keyframes baram-chev-nod { 0%, 60%, 100% { transform: translateY(0); } 70% { transform: translateY(2px); } 80% { transform: translateY(0); } 88% { transform: translateY(1.5px); } }
@@ -81,6 +83,26 @@ const Utensils = (p) => (<Icon {...p}><path d="M6 2v7a2 2 0 0 0 2 2 2 2 0 0 0 2-
 const BookOpen = (p) => (<Icon {...p}><path d="M12 7v14" /><path d="M3 5a2 2 0 0 1 2-2h4a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H3Z" /><path d="M21 5a2 2 0 0 0-2-2h-4a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7Z" /></Icon>);
 const Music = (p) => (<Icon {...p}><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></Icon>);
 const CalendarDays = (p) => (<Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></Icon>);
+// 창이 열린 동안 뒤 화면(body) 스크롤을 잠근다 (2026-11-11 형: 상세 창을 밀면 뒤 화면이 움직임)
+// overflow:hidden만 쓰면 열 때 뒤 화면이 맨 위로 튀어서, 지금 위치에 body를 고정해 두고 닫을 때 그 자리로 돌려놓는다
+let bodyLockCount = 0;
+let bodyLockY = 0;
+function useBodyScrollLock() {
+  useEffect(() => {
+    bodyLockCount += 1;
+    if (bodyLockCount === 1) {
+      bodyLockY = window.scrollY;
+      Object.assign(document.body.style, { position: "fixed", top: `-${bodyLockY}px`, left: "0", right: "0", width: "100%" });
+    }
+    return () => {
+      bodyLockCount = Math.max(0, bodyLockCount - 1);
+      if (bodyLockCount === 0) {
+        Object.assign(document.body.style, { position: "", top: "", left: "", right: "", width: "" });
+        window.scrollTo(0, bodyLockY);
+      }
+    };
+  }, []);
+}
 // 작은 꺾쇠 (2026-11-11 형 요청: ▾ 글자가 너무 작음 → 동그라미·색은 빼고 원래 회색 그대로 아이콘만 조금 크게, 테마·지역 칸보다 작게)
 function MiniChevron({ up = false }) {
   return <ChevronDown size={14} strokeWidth={2.6} className="shrink-0" style={{ color: "#6B5F4F", ...(up ? { transform: "rotate(180deg)" } : {}) }} />;
@@ -89,8 +111,8 @@ function MiniChevron({ up = false }) {
 // 색은 여행지 코스 색: 감성 청색 #1B4B91 / 활기 빨강 #B3261E (2026-11-11 형 요청)
 function CloseButton({ onClick, className = "", mood }) {
   return (
-    <button onClick={onClick} aria-label="닫기" className={`shrink-0 inline-flex items-center justify-center rounded-full ${className}`} style={{ width: 22, height: 22, background: mood === "energetic" ? "#B3261E" : mood === "emotional" ? "#1B4B91" : "#2B2620", color: "#FFFDF8", boxShadow: "0 1px 3px rgba(0,0,0,0.18)" }}>
-      <X size={13} strokeWidth={2.8} />
+    <button onClick={onClick} aria-label="닫기" className={`shrink-0 inline-flex items-center justify-center rounded-full ${className}`} style={{ width: 19, height: 19, background: mood === "energetic" ? "#B3261E" : mood === "emotional" ? "#1B4B91" : "#2B2620", color: "#FFFDF8", boxShadow: "0 1px 3px rgba(0,0,0,0.18)" }}>
+      <X size={11} strokeWidth={3} />
     </button>
   );
 }
@@ -2348,6 +2370,7 @@ function BenefitBadges({ spot }) {
 }
 
 function BenefitInfoDialog({ kind, spot, half, onClose }) {
+  useBodyScrollLock();
   const name = shortSpotName(spot.name);
   const isHalf = kind === "half";
   // 제목·안내 글은 여행지 테마 색 (감성 청색, 활기 빨강 - STAMP 색과 같음)
@@ -3221,6 +3244,7 @@ function MemoryBox({ memKey, name, color = "#B8860B" }) {
 }
 // STAMP TOUR 목록에서 여는 추억 창 (둘레길 코스·동네 걷기길처럼 정보 창이 없는 곳)
 function MemoryDialog({ memKey, name, color, onClose }) {
+  useBodyScrollLock();
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 px-4" onClick={onClose}>
       <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-4 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -4193,6 +4217,7 @@ function findNearestLocation(lat, lng) {
 }
 
 function LocationDialog({ currentLocation, onSelect, onClose }) {
+  useBodyScrollLock();
   const [query, setQuery] = useState("");
   const [gpsStatus, setGpsStatus] = useState(""); // "" | "loading" | 오류 문구
 
@@ -4318,6 +4343,7 @@ function daysInSolarMonth(year, month) {
 }
 
 function BirthInfoModal({ initial, onSave, onClose }) {
+  useBodyScrollLock();
   const [calendarType, setCalendarType] = useState(initial?.calendarType || "solar"); // "solar" | "lunar"
   const initialDate = (calendarType === "lunar" ? initial?.lunarDate : initial?.date) || "";
   const [iy, im, id] = initialDate ? initialDate.split("-") : ["", "", ""];
@@ -4532,6 +4558,7 @@ function TravelFortuneCard({ fortune, onEdit }) {
 // '가고 싶은 곳 찾기' 창: 지역 이름을 검색해 골라서, 룰렛 없이 그 지역 정보를 본다.
 // 이미 STAMP를 찍은 곳도 고를 수 있다 (다시 가거나 정보만 보고 싶을 수 있으니)
 function PlaceFinderDialog({ spots, currentId, onSelect, onClose }) {
+  useBodyScrollLock();
   const [query, setQuery] = useState("");
   const q = query.replace(/\s/g, "");
   const filtered = q === "" ? spots : spots.filter((s) => s.name.replace(/\s/g, "").includes(q));
@@ -4588,6 +4615,7 @@ function PlaceFinderDialog({ spots, currentId, onSelect, onClose }) {
 }
 
 function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, onImportBackup, lastBackupAt, backupNotice, onClose }) {
+  useBodyScrollLock();
   const [query, setQuery] = useState("");
   const importInputRef = useRef(null);
   // 칸: 전국(229개 지역 - 찍은 곳이 맨 위) / 100대 명산 / 걷기길. 예전의 'STAMP'(찍은 곳만) 칸은 전국에 합침 (2026-11-05 형 요청)
@@ -4756,6 +4784,7 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
 
 // 여행지에 대한 추억(사진 2컷 + 메모)을 남기는 "도장깨기" 상세 모달
 function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, onEditDate, onClose }) {
+  useBodyScrollLock();
   const fileInputRefA = useRef(null);
   const fileInputRefB = useRef(null);
   const fileInputRefs = [fileInputRefA, fileInputRefB];
@@ -4891,6 +4920,7 @@ function StampDateDialog({ spot, initialDate, title, confirmLabel, color = STAMP
 
 // 실수로 누르면 되돌리기 어려운 동작(룰렛 다시 돌리기, STAMP 취소 등) 전에 한 번 묻는 확인창
 function ConfirmDialog({ title, message, confirmLabel = "확인", onConfirm, onCancel }) {
+  useBodyScrollLock();
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-sm bg-[#F6F1E7] rounded-2xl border border-[#D9CBB0] p-5">
@@ -5038,6 +5068,7 @@ function fetchPlaceDetail(place) {
 
 // mood: 지금 여행지 테마 → 장소 이름 색 (감성 남색 / 활기 빨강, 결과 카드의 여행지 이름과 같은 색)
 function PlaceDetailSheet({ place, mood, onClose }) {
+  useBodyScrollLock();
   const [state, setState] = useState({ status: "loading" });
   const [showAll, setShowAll] = useState(false);
   useEffect(() => {
