@@ -86,9 +86,10 @@ function MiniChevron({ up = false }) {
   return <ChevronDown size={14} strokeWidth={2.6} className="shrink-0" style={{ color: "#6B5F4F", ...(up ? { transform: "rotate(180deg)" } : {}) }} />;
 }
 // 눈에 띄는 닫기 버튼 (2026-11-11 형 요청): 32px 진한 동그라미에 흰 ×
-function CloseButton({ onClick, className = "" }) {
+// 색은 여행지 코스 색: 감성 청색 #1B4B91 / 활기 빨강 #B3261E (2026-11-11 형 요청)
+function CloseButton({ onClick, className = "", mood }) {
   return (
-    <button onClick={onClick} aria-label="닫기" className={`shrink-0 inline-flex items-center justify-center rounded-full ${className}`} style={{ width: 28, height: 28, background: "#2B2620", color: "#FFFDF8", boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }}>
+    <button onClick={onClick} aria-label="닫기" className={`shrink-0 inline-flex items-center justify-center rounded-full ${className}`} style={{ width: 28, height: 28, background: mood === "energetic" ? "#B3261E" : mood === "emotional" ? "#1B4B91" : "#2B2620", color: "#FFFDF8", boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }}>
       <X size={16} strokeWidth={2.6} />
     </button>
   );
@@ -4770,7 +4771,7 @@ function StampDetailModal({ spot, onChangeMemo, onChangePhoto, onRemovePhoto, on
               STAMP TOUR{spot.stampType === PICKED_STAMP ? " · 내가 선택" : " · 룰렛"}
             </span>
           </div>
-          <CloseButton onClick={onClose} />
+          <CloseButton onClick={onClose} mood={spot.mood} />
         </div>
         <h2 className="font-serif text-xl text-[#2B2620]">{spot.name}</h2>
         <p className="text-xs text-[#6B5F4F] mt-0.5 flex items-center gap-1.5">
@@ -5090,7 +5091,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
                 {[place.kind, place.distanceKm ? `시내에서 ${place.distanceKm}km` : null, place.area ? `이웃 · ${place.area}` : null].filter(Boolean).join(" · ")}
               </p>
             </div>
-            <CloseButton onClick={onClose} />
+            <CloseButton onClick={onClose} mood={mood} />
           </div>
           {photos.length > 1 && <p className="text-[11px] font-bold text-[#2F6E68] mt-1">📷 사진 {photos.length}장 · 옆으로 넘겨 보세요 →</p>}
           {d && d.photoCredit && <p className="text-[10px] text-[#A6987F] mt-0.5">사진: {d.photoCredit}</p>}
