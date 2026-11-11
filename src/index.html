@@ -6988,7 +6988,14 @@ function BaramApp() {
               setCache={setDetailCache}
             />
             {/* 공공데이터 출처 표시 (날씨 줄에서 '기상청'을 빼고 여기로 옮김, 2026-10-21) */}
-            <p className="text-[10px] text-[#A6987F] text-center" style={{ marginTop: 20 }}>정보 출처: 한국관광공사(관광정보), {JEJU_NAMES.has(result.name) ? "제주관광공사 VISIT JEJU(제주 관광지·맛집·숙소), " : ""}기상청(날씨)</p>
+            {/* 2026-11-11 형 요청: 윗줄 '한국관광공사·기상청', 제주면 아랫줄에 제주관광공사 — 아랫줄은 '한국관광공사' 시작점에 맞춤 */}
+            <div className="text-[10px] text-[#A6987F] flex justify-center" style={{ marginTop: 20 }}>
+              <span className="shrink-0">정보 출처:&nbsp;</span>
+              <span className="text-left">
+                한국관광공사(관광정보), 기상청(날씨)
+                {JEJU_NAMES.has(result.name) && <><br />제주관광공사 VISIT JEJU(제주 관광지·맛집·숙소)</>}
+              </span>
+            </div>
 
             {resultSpot && resultSpot.isVisited ? (
               <button
