@@ -818,7 +818,7 @@ export async function onRequest(context) {
       const op = url.searchParams.get("op") || "locationBasedList2";
       if (!/^[a-zA-Z0-9]+$/.test(op)) return json({ error: "BAD_OP" }, 400);
       const params = {};
-      url.searchParams.forEach((v, k) => { if (!["action", "op", "_t"].includes(k)) params[k] = v; });
+      url.searchParams.forEach((v, k) => { if (!["action", "op", "_t", "show"].includes(k)) params[k] = v; });
       const r = await fetch(`${TOUR_API_BASE}/${op}?${new URLSearchParams({ ...base, ...params })}`);
       const text = await r.text();
       let d = null;
@@ -829,7 +829,7 @@ export async function onRequest(context) {
       return json({
         header: d?.response?.header, totalCount: d?.response?.body?.totalCount, n: items.length,
         byType: count("contenttypeid"), byL1: count("lclsSystm1"), byL2: count("lclsSystm2"),
-        sample: items.slice(0, Number(url.searchParams.get("show") || 8)).map((it) => ({ id: it.contentid, t: it.contenttypeid, title: it.title, l3: it.lclsSystm3, cat3: it.cat3, dist: it.dist, img: !!it.firstimage, mod: it.modifiedtime })),
+        sample: items.slice(0, Number(url.searchParams.get("show") || 8)).map((it) => ({ id: it.contentid, t: it.contenttypeid, title: it.title, l3: it.lclsSystm3, cat3: it.cat3, dist: it.dist, x: it.mapx, y: it.mapy, img: !!it.firstimage, mod: it.modifiedtime })),
       });
     } else if (action === "trailCourses") {
       const { durunubi } = await getTrailIndex(base, serviceKey);
