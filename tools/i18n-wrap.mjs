@@ -16,7 +16,8 @@ const s = html.indexOf(open) + open.length, e = html.indexOf("</script>", s);
 const code = html.slice(s, e);
 const H = /[가-힣]/;
 const ast = parse(code, { sourceType: "script", plugins: ["jsx"] });
-const line = (n) => code.slice(0, n.start).split("\n").length;
+const lineBase = html.slice(0, s).split("\n").length - 1; // 파일 줄 번호로 보여 주기
+const line = (n) => lineBase + code.slice(0, n.start).split("\n").length;
 const edits = []; const keys = new Set(); const mixed = [];
 
 const isExprChild = (c) => c.type === "JSXExpressionContainer" && c.expression.type !== "JSXEmptyExpression";
