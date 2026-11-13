@@ -241,15 +241,18 @@ async function buildPetIndex(base) {
   return index;
 }
 
-async function petNearby(base, lat, lng) {
+async function petNearby(base, lat, lng, area = {}) {
   const index = await getPetIndex(base);
   // 종류별로 주변 20km 안의 장소를 넉넉히 받아서, 반려동물 색인에 있는 곳만 남긴다
   let failed = 0;
+  let partial = false;
   let lastError = null;
   const lists = await Promise.all(
     PET_CONTENT_TYPES.map((contentTypeId) =>
-      callTourApi("locationBasedList2", {
-        ...base, arrange: "E", mapX: lng, mapY: lat, radius: "20000", contentTypeId, numOfRows: "300", pageNo: "1",
+      // 반려동물은 종류가 6개라 한 번에 부르는 수(Cloudflare 무료 50번)를 넘지 않게 지역 목록은 1쪽(1,000곳)만
+      nearbyWithArea(base, { lat, lng, radius: "20000", contentTypeId, num: "300", sido: area.sido || "", sgg: area.sgg || "", maxPages: 1 }).then((r) => {
+        if (r.incomplete) partial = true;
+        return r;
       }).catch((err) => { // 한 종류가 실패해도 나머지는 보여준다
         failed += 1;
         lastError = err;
@@ -282,7 +285,7 @@ async function petNearby(base, lat, lng) {
   });
   items.sort((a, b) => parseFloat(a.dist) - parseFloat(b.dist));
   // incomplete: 일부 종류를 못 받음 → 저장하지 않고, 지난 저장본이 있으면 그걸 쓴다
-  return { items: items.slice(0, 80), petTotal: index.total, incomplete: failed > 0 };
+  return { items: items.slice(0, 80), petTotal: index.total, incomplete: failed > 0 || partial };
 }
 
 // ------------------------------------------------------------------
@@ -320,6 +323,80 @@ async function placeDetail(base, contentId, contentTypeId) {
       images: ((images && images.items) || []).slice(0, MAX_DETAIL_IMAGES).map((im) => ({ url: im.originimgurl, small: im.smallimageurl })),
     }],
     incomplete: !intro || !images,
+  };
+}
+
+// ------------------------------------------------------------------
+// 2026-11-13: 관광공사 '위치 기반 목록'(locationBasedList2)이 2026-11-11쯤부터 장소를 대부분 빠뜨린다
+// (강릉 20km 명소: 지역 목록엔 좌표 있는 곳 134곳인데 위치 검색은 5곳). '지역 기반 목록'(areaBasedList2)은 그대로라
+// 여행지의 시·군·구 목록을 받아 거리를 직접 재고, 위치 검색 결과와 합친다 (위치 검색이 고쳐지면 그쪽 이웃 지역도 그대로 들어옴).
+// 앱이 sido(시·도 앞글자, 예: 서울·강원·경상남)·sgg(시·군·구, 예: 종로구·강릉시)를 보낼 때만 쓴다.
+// ------------------------------------------------------------------
+const LDONG_INDEX_KEY = "https://baram-cache.internal/ldong-v1";
+async function getLdongIndex(base) {
+  const hit = await cacheGet(LDONG_INDEX_KEY);
+  if (hit && isFresh(hit, 7 * DAY)) return JSON.parse(hit.body);
+  try {
+    const { items } = await callTourApi("ldongCode2", { ...base, lDongListYn: "Y", numOfRows: "1000", pageNo: "1" });
+    const list = items
+      .map((it) => ({ r: String(it.lDongRegnCd || ""), rn: String(it.lDongRegnNm || ""), s: String(it.lDongSignguCd || ""), sn: String(it.lDongSignguNm || "") }))
+      .filter((x) => x.r && x.s);
+    if (list.length === 0) throw new Error("법정동 코드 목록이 비어 있어요.");
+    await cachePut(LDONG_INDEX_KEY, JSON.stringify(list));
+    return list;
+  } catch (err) {
+    if (hit) return JSON.parse(hit.body);
+    throw err;
+  }
+}
+
+// 시·도 앞글자 + 시·군·구 이름 → 법정동 코드들 (청주시처럼 구가 나뉜 시는 '청주시 상당구' 등 모두)
+// 2026년 행정구역 개편: 앱의 옛 이름 → 지금 코드 목록의 이름 (앱 DISTRICT_ALIASES의 반대 방향)
+const LDONG_SGG_ALIASES = { "인천|중구": ["제물포구", "영종구"], "인천|동구": ["제물포구"], "인천|서구": ["서해구", "검단구"] };
+async function ldongCodesFor(base, sido, sgg) {
+  if (!sido && !sgg) return [];
+  const list = await getLdongIndex(base);
+  const sggs = LDONG_SGG_ALIASES[`${sido}|${sgg}`] || [sgg];
+  const sidoOk = (rn) => !sido || rn.startsWith(sido) || (sido === "광주광역" && rn.startsWith("전남광주")); // 광주는 '전남광주통합특별시'로 바뀜
+  return list.filter((x) => sidoOk(x.rn) && sggs.some((g) => !g || x.sn === g || x.sn.startsWith(`${g} `) || x.sn.replace(/\s+/g, "") === g));
+}
+
+// 위치 검색 + (sido/sgg가 있으면) 그 시·군·구 지역 목록을 합쳐 가까운 순으로. 결과 모양은 locationBasedList2와 같다 (dist 칸 포함)
+// 지역 목록이 실패해도 위치 검색 결과는 돌려준다. 둘 다 실패하면 오류
+const AREA_PAGE = 1000;
+async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido, sgg, maxPages = 3 }) {
+  const located = callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, ...(contentTypeId ? { contentTypeId } : {}), numOfRows: num, pageNo: "1" });
+  const areaPart = (async () => {
+    const codes = await ldongCodesFor(base, sido, sgg);
+    const lists = await Promise.all(codes.slice(0, 6).map(async (c) => {
+      const p = { ...base, lDongRegnCd: c.r, lDongSignguCd: c.s, ...(contentTypeId ? { contentTypeId } : {}), arrange: "A", numOfRows: String(AREA_PAGE) };
+      const first = await callTourApi("areaBasedList2", { ...p, pageNo: "1" });
+      const pages = Math.min(Math.ceil(first.totalCount / AREA_PAGE), maxPages); // 큰 도시 맛집은 1,000곳이 넘는다 (최대 3,000곳)
+      const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => callTourApi("areaBasedList2", { ...p, pageNo: String(i + 2) }).catch(() => ({ items: [] }))));
+      return [first, ...rest].flatMap((r) => r.items);
+    }));
+    return lists.flat();
+  })();
+  const [a, b] = await Promise.allSettled([located, areaPart]);
+  if (a.status === "rejected" && b.status === "rejected") throw a.reason;
+  const maxKm = Number(radius) / 1000;
+  const seen = new Set();
+  const out = [];
+  (a.status === "fulfilled" ? a.value.items : []).forEach((it) => { seen.add(String(it.contentid)); out.push({ ...it, _km: Number(it.dist) / 1000 }); });
+  (b.status === "fulfilled" ? b.value : []).forEach((it) => {
+    const id = String(it.contentid);
+    if (seen.has(id)) return;
+    const y = Number(it.mapy), x = Number(it.mapx);
+    if (!y || !x) return;
+    const km = kmBetween(Number(lat), Number(lng), y, x);
+    if (km > maxKm) return;
+    seen.add(id);
+    out.push({ ...it, dist: String(km * 1000), _km: km });
+  });
+  out.sort((p, q) => p._km - q._km);
+  return {
+    items: out.slice(0, Number(num) || 50).map(({ _km, ...it }) => it),
+    incomplete: a.status === "rejected" || b.status === "rejected", // 한쪽만 받은 결과는 저장하지 않는다
   };
 }
 
@@ -681,8 +758,7 @@ export async function onRequest(context) {
       const radius = url.searchParams.get("radius") || "20000";
       const num = url.searchParams.get("num") || "5";
       if (!lat || !lng || !contentTypeId) return json({ error: "BAD_REQUEST", message: "lat/lng/contentTypeId가 필요해요." }, 400);
-      const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, contentTypeId, numOfRows: num, pageNo: "1" });
-      payload = { items };
+      payload = await nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido: url.searchParams.get("sido") || "", sgg: url.searchParams.get("sgg") || "" });
     } else if (action === "festival") {
       const eventStartDate = url.searchParams.get("eventStartDate");
       const numOfRows = url.searchParams.get("numOfRows") || "30";
@@ -699,7 +775,7 @@ export async function onRequest(context) {
       const lat = url.searchParams.get("lat");
       const lng = url.searchParams.get("lng");
       if (!lat || !lng) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
-      payload = await petNearby(base, lat, lng);
+      payload = await petNearby(base, lat, lng, { sido: url.searchParams.get("sido") || "", sgg: url.searchParams.get("sgg") || "" });
     } else if (action === "detail") {
       const contentId = url.searchParams.get("contentId");
       const contentTypeId = url.searchParams.get("contentTypeId") || "";

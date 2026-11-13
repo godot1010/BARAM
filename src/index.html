@@ -2614,6 +2614,8 @@ async function fetchNearbyTourSpots({ lat, lng, spotName, contentTypeId, radius 
     contentTypeId: String(contentTypeId),
     radius: String(jeju ? JEJU_ISLAND_CENTER.radius : radius),
     num: String(Math.max(num, jeju ? 200 : 50)),
+    // 2026-11-13: 관광공사 위치 검색이 장소를 대부분 빠뜨려서(강릉 명소 134곳 중 5곳) 서버가 이 시·군·구의 지역 목록을 합친다
+    ...(jeju ? {} : localMountainQuery(spotName)),
   });
   const arr = jeju ? withSpotDistance(fetched, lat, lng) : fetched;
   // 관광지(12)로 등록됐지만 볼거리가 아닌 곳(화장실, 사우나, 노인회 사무실 등)은 뺀다
@@ -2760,7 +2762,7 @@ const CONTENT_TYPE_LABELS = { "12": "명소", "14": "문화", "28": "레포츠",
 // 여행 추천답게 볼거리·놀거리를 먼저, 쇼핑(애견용품점·편의점 등)은 뒤로. 같은 순위 안에서는 사진 있는 곳 → 가까운 곳 순
 const PET_TYPE_RANK = { "12": 0, "28": 0, "39": 1, "14": 1, "32": 2, "38": 3 };
 async function fetchPetNearby({ lat, lng, spotName }) {
-  const arr = await tourApiProxyFetch("petNearby", { lat: String(lat), lng: String(lng) });
+  const arr = await tourApiProxyFetch("petNearby", { lat: String(lat), lng: String(lng), ...localMountainQuery(spotName) }); // 시·군·구 목록도 합침 (2026-11-13)
   const ranked = arr.filter((it) => !hasWrongCoords(it)).sort((a, b) =>
     areaRank(a.addr1, spotName) - areaRank(b.addr1, spotName) ||
     (PET_TYPE_RANK[a.contenttypeid] ?? 2) - (PET_TYPE_RANK[b.contenttypeid] ?? 2) ||
