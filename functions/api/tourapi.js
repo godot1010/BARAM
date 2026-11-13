@@ -893,26 +893,6 @@ export async function onRequest(context) {
         return json({ status: r.status, head, items: compact });
       }
       return json({ status: r.status, head, regions, sample: items.slice(0, 2) });
-    } else if (action === "kProbe") {
-      // 임시 점검(2026-11-13, 명소가 줄어든 원인 찾기): i18n 미리보기 주소에서만. 키는 응답에 넣지 않는다
-      if (!url.hostname.startsWith("i18n.")) return json({ error: "NOT_HERE" }, 403);
-      const op = url.searchParams.get("op") || "locationBasedList2";
-      if (!/^[a-zA-Z0-9]+$/.test(op)) return json({ error: "BAD_OP" }, 400);
-      const params = {};
-      url.searchParams.forEach((v, k) => { if (!["action", "op", "_t", "show", "raw"].includes(k)) params[k] = v; });
-      const r = await fetch(`${TOUR_API_BASE}/${op}?${new URLSearchParams({ ...base, ...params })}`);
-      const text = await r.text();
-      let d = null;
-      try { d = JSON.parse(text); } catch { return json({ status: r.status, notJson: text.slice(0, 500) }); }
-      const raw = d?.response?.body?.items?.item;
-      const items = Array.isArray(raw) ? raw : raw ? [raw] : [];
-      const count = (f) => items.reduce((m, it) => ((m[it[f] || "-"] = (m[it[f] || "-"] || 0) + 1), m), {});
-      return json({
-        header: d?.response?.header, totalCount: d?.response?.body?.totalCount, n: items.length,
-        byType: count("contenttypeid"), byL1: count("lclsSystm1"), byL2: count("lclsSystm2"),
-        raw: url.searchParams.get("raw") ? items.slice(0, Number(url.searchParams.get("raw")) || 3) : undefined,
-        sample: items.slice(0, Number(url.searchParams.get("show") || 8)).map((it) => ({ id: it.contentid, t: it.contenttypeid, title: it.title, l3: it.lclsSystm3, cat3: it.cat3, dist: it.dist, x: it.mapx, y: it.mapy, img: !!it.firstimage, mod: it.modifiedtime })),
-      });
     } else if (action === "trailCourses") {
       const { durunubi } = await getTrailIndex(base, serviceKey);
       payload = { items: durunubi.map((c) => ({ id: c.id, name: c.name, area: c.area, km: c.km, minutes: c.minutes, level: c.level })) };
