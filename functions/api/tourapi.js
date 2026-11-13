@@ -909,7 +909,7 @@ export async function onRequest(context) {
       return json({
         header: d?.response?.header, totalCount: d?.response?.body?.totalCount, n: items.length,
         byType: count("contenttypeid"), byL1: count("lclsSystm1"), byL2: count("lclsSystm2"),
-        raw: url.searchParams.get("raw") ? items.slice(0, 3) : undefined,
+        raw: url.searchParams.get("raw") ? items.slice(0, Number(url.searchParams.get("raw")) || 3) : undefined,
         sample: items.slice(0, Number(url.searchParams.get("show") || 8)).map((it) => ({ id: it.contentid, t: it.contenttypeid, title: it.title, l3: it.lclsSystm3, cat3: it.cat3, dist: it.dist, x: it.mapx, y: it.mapy, img: !!it.firstimage, mod: it.modifiedtime })),
       });
     } else if (action === "trailCourses") {
