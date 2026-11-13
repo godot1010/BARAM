@@ -355,13 +355,14 @@ async function getLdongIndex(base) {
 }
 
 // 시·도 앞글자 + 시·군·구 이름 → 법정동 코드들 (청주시처럼 구가 나뉜 시는 '청주시 상당구' 등 모두)
+// 2026년 행정구역 개편: 앱의 옛 이름 → 지금 코드 목록의 이름 (앱 DISTRICT_ALIASES의 반대 방향)
+const LDONG_SGG_ALIASES = { "인천|중구": ["제물포구", "영종구"], "인천|동구": ["제물포구"], "인천|서구": ["서해구", "검단구"] };
 async function ldongCodesFor(base, sido, sgg) {
   if (!sido && !sgg) return [];
   const list = await getLdongIndex(base);
-  return list.filter((x) =>
-    (!sido || x.rn.startsWith(sido)) &&
-    (!sgg || x.sn === sgg || x.sn.startsWith(`${sgg} `) || x.sn.replace(/\s+/g, "") === sgg)
-  );
+  const sggs = LDONG_SGG_ALIASES[`${sido}|${sgg}`] || [sgg];
+  const sidoOk = (rn) => !sido || rn.startsWith(sido) || (sido === "광주광역" && rn.startsWith("전남광주")); // 광주는 '전남광주통합특별시'로 바뀜
+  return list.filter((x) => sidoOk(x.rn) && sggs.some((g) => !g || x.sn === g || x.sn.startsWith(`${g} `) || x.sn.replace(/\s+/g, "") === g));
 }
 
 // 위치 검색 + (sido/sgg가 있으면) 그 시·군·구 지역 목록을 합쳐 가까운 순으로. 결과 모양은 locationBasedList2와 같다 (dist 칸 포함)
