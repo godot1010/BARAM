@@ -24,6 +24,10 @@
 // - walkPhoto         : 걷기길 사진 여러 장 (관광사진 포토코리아에서 코스·길 이름 → 지나는 장소, 없으면 관광지 사진. 모두 같은 시·군 안에서)
 
 const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
+// 🌐 영어판(2026-11-13): lang=en 이면 영문 관광정보(EngService2, 2026-10-19 활용신청·승인)에서 받는다.
+// 영문 서비스는 종류 번호가 다르다 (관광지 12→76, 문화 14→78, 레포츠 28→75, 숙박 32→80, 쇼핑 38→79, 음식점 39→82, 축제 15→85)
+const ENG_API_BASE = "https://apis.data.go.kr/B551011/EngService2";
+const ENG_TYPE_ID = { "12": "76", "14": "78", "15": "85", "28": "75", "32": "80", "38": "79", "39": "82" };
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
 const WITH_API_BASE = "https://apis.data.go.kr/B551011/KorWithService2";
 // 고캠핑(전국 야영장)도 같은 키로 쓰는 다른 서비스 (2026-11-04 형이 활용신청·승인)
@@ -291,11 +295,11 @@ async function petNearby(base, lat, lng) {
 // ------------------------------------------------------------------
 const MAX_DETAIL_IMAGES = 10;
 
-async function placeDetail(base, contentId, contentTypeId) {
+async function placeDetail(base, contentId, contentTypeId, apiBase = TOUR_API_BASE) {
   const [common, intro, images] = await Promise.all([
-    callTourApi("detailCommon2", { ...base, contentId }),
-    contentTypeId ? callTourApi("detailIntro2", { ...base, contentId, contentTypeId }).catch(() => null) : Promise.resolve({ items: [] }),
-    callTourApi("detailImage2", { ...base, contentId, imageYN: "Y" }).catch(() => null),
+    callTourApi("detailCommon2", { ...base, contentId }, apiBase),
+    contentTypeId ? callTourApi("detailIntro2", { ...base, contentId, contentTypeId }, apiBase).catch(() => null) : Promise.resolve({ items: [] }),
+    callTourApi("detailImage2", { ...base, contentId, imageYN: "Y" }, apiBase).catch(() => null),
   ]);
   const c = common.items[0];
   if (!c) throw new TourApiError({ error: "NOT_FOUND", message: "이 장소의 자세한 정보가 없어요." }, 404);
@@ -672,6 +676,9 @@ export async function onRequest(context) {
     }
     const serviceKey = normalizeServiceKey(rawServiceKey);
     const base = { serviceKey, MobileOS: "ETC", MobileApp: "BARAM", _type: "json" };
+    const eng = url.searchParams.get("lang") === "en"; // 영어판: nearby·festival·detail만
+    const kindBase = eng ? ENG_API_BASE : TOUR_API_BASE;
+    const kindId = (id) => (eng ? ENG_TYPE_ID[id] || id : id);
 
     let payload;
     if (action === "nearby") {
@@ -681,13 +688,13 @@ export async function onRequest(context) {
       const radius = url.searchParams.get("radius") || "20000";
       const num = url.searchParams.get("num") || "5";
       if (!lat || !lng || !contentTypeId) return json({ error: "BAD_REQUEST", message: "lat/lng/contentTypeId가 필요해요." }, 400);
-      const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, contentTypeId, numOfRows: num, pageNo: "1" });
+      const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, contentTypeId: kindId(contentTypeId), numOfRows: num, pageNo: "1" }, kindBase);
       payload = { items };
     } else if (action === "festival") {
       const eventStartDate = url.searchParams.get("eventStartDate");
       const numOfRows = url.searchParams.get("numOfRows") || "30";
       if (!eventStartDate) return json({ error: "BAD_REQUEST", message: "eventStartDate가 필요해요." }, 400);
-      const { items } = await callTourApi("searchFestival2", { ...base, arrange: "A", numOfRows, pageNo: "1", eventStartDate });
+      const { items } = await callTourApi("searchFestival2", { ...base, arrange: "A", numOfRows, pageNo: "1", eventStartDate }, kindBase);
       payload = { items };
     } else if (action === "pet") {
       // 반려동물 동반 여행 정보 원본. contentId가 있으면 그 장소만, 없으면 목록을 받는다
@@ -704,7 +711,7 @@ export async function onRequest(context) {
       const contentId = url.searchParams.get("contentId");
       const contentTypeId = url.searchParams.get("contentTypeId") || "";
       if (!contentId || !/^\d+$/.test(contentId)) return json({ error: "BAD_REQUEST", message: "contentId가 필요해요." }, 400);
-      payload = await placeDetail(base, contentId, /^\d+$/.test(contentTypeId) ? contentTypeId : "");
+      payload = await placeDetail(base, contentId, /^\d+$/.test(contentTypeId) ? kindId(contentTypeId) : "", kindBase);
     } else if (action === "barrierFree") {
       const lat = url.searchParams.get("lat");
       const lng = url.searchParams.get("lng");
