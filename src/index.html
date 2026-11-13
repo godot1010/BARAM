@@ -59,6 +59,47 @@
 <script type="text/babel" data-presets="react">
 const { useState, useRef, useEffect, useMemo, useContext, createContext } = React;
 
+// ==========================================
+// 다국어 틀 (2026-11-13 영어판 1단계, i18n 줄기에서만)
+// - 화면 글자는 tr("한국어 원문")으로 감싼다. 한국어면 넣은 글자를 그대로 돌려준다(번역표가 비거나 틀려도 한국어 화면은 그대로).
+// - 바뀌는 숫자·이름은 tr("후보 {n}곳", { n: 18 })처럼 {이름} 자리로 넣는다.
+// - 영어는 주소에 ?lang=en 을 붙였을 때만. 폰 언어 자동 전환·🌐 버튼은 형 오케이 뒤 맨 마지막에.
+// - 고른 언어는 아직 폰에 저장하지 않는다(나중에 생기는 저장 칸은 이것 하나뿐: baram_lang).
+// - 함수 이름을 t가 아니라 tr로 한 까닭: 코드 곳곳에 t라는 지역 이름(테마 등)이 이미 있어 가려지면 오류가 난다.
+// - 번역표 열쇠는 한국어 원문 그대로. 표에 없는 글자는 한국어로 나온다(영어 화면에서 빠진 곳 찾기: I18N_MISSING).
+// ==========================================
+const SUPPORTED_LANGS = ["ko", "en"];
+const LANG = (() => {
+  try {
+    const q = new URLSearchParams(window.location.search).get("lang");
+    return SUPPORTED_LANGS.includes(q) ? q : "ko";
+  } catch { return "ko"; }
+})();
+if (LANG !== "ko") { try { document.documentElement.lang = LANG; } catch {} }
+const I18N = {
+  en: {
+    "여행 룰렛 바람": "Travel Roulette", // 아래 BARAM과 겹치지 않게
+    "내 위치 : {name}": "My location : {name}",
+    "✦ 생년월일을 입력하고 나만의 여행운 보기": "✦ Enter your birthday for today's travel luck",
+    "몰라!! 돌려서 나오는 데로 갈꺼야! ({n}개 지역)": "Who knows! I'll go wherever it lands! ({n} areas)",
+    "감성 여행": "Calm trip",
+    "활기찬 여행이 빚어내는 마법 속으로...": "Lively trip — let the magic begin...",
+    "어디?": "Where?",
+    "가고 싶은 곳이 있나요? 직접 찾기": "Have a place in mind? Search it",
+  },
+};
+const I18N_MISSING = new Set(); // 영어 화면에서 번역표에 없던 원문(콘솔에서 [...I18N_MISSING]로 확인)
+function tr(ko, vars) {
+  let s = ko;
+  if (LANG !== "ko") {
+    const table = I18N[LANG];
+    if (table && Object.prototype.hasOwnProperty.call(table, ko)) s = table[ko];
+    else I18N_MISSING.add(ko);
+  }
+  if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (Object.prototype.hasOwnProperty.call(vars, k) ? String(vars[k]) : m));
+  return s;
+}
+
 // lucide-react 대신, 외부 ESM 의존성 없이 동작하도록 최소 아이콘을 직접 SVG로 정의
 function Icon({ size = 20, className = "", children, ...rest }) {
   return (
@@ -6719,7 +6760,7 @@ function BaramApp() {
             <MiniRoulette size={40} fast={phase !== "idle"} />
             {/* '여행 룰렛 바람' 12.5px, 글자 간격으로 아래 BARAM의 처음과 끝에 맞춘다 (2026-11-05 형 결정) */}
             <div style={{ display: "inline-flex", flexDirection: "column" }}>
-              <FitWidthText text="여행 룰렛 바람" targetRef={titleRef} className="font-bold text-[#1B4B91]" />
+              <FitWidthText text={tr("여행 룰렛 바람")}targetRef={titleRef} className="font-bold text-[#1B4B91]" />
               <h1 ref={titleRef} className="font-serif font-bold text-[#DC2626]" style={{ fontSize: 22, lineHeight: 1.15 }}>
                 BARAM
               </h1>
@@ -6752,7 +6793,7 @@ function BaramApp() {
           className="w-full flex items-center gap-2 bg-white/50 border border-[#D9CBB0] rounded-xl px-4 py-3 text-left"
         >
           <MapPin size={16} style={{ color: accent }} />
-          <span className="flex-1 text-sm font-medium text-[#2B2620]">내 위치 : {currentLocation.name}</span>
+          <span className="flex-1 text-sm font-medium text-[#2B2620]">{tr("내 위치 : {name}", { name: currentLocation.name })}</span>
           <Search size={14} className="text-[#A6987F]" />
         </button>
 
@@ -6766,7 +6807,7 @@ function BaramApp() {
             onClick={() => setBirthModalOpen(true)}
             className="w-full mt-3 flex items-center justify-center gap-1.5 border border-dashed border-[#D9CBB0] rounded-xl px-4 py-2 text-xs text-[#6B5F4F]"
           >
-            ✦ 생년월일을 입력하고 나만의 여행운 보기
+            {tr("✦ 생년월일을 입력하고 나만의 여행운 보기")}
           </button>
         )}
 
@@ -6776,10 +6817,10 @@ function BaramApp() {
           style={{ background: "linear-gradient(90deg, #DCE7F5 0%, #F3E9DC 50%, #F8DCDC 100%)", border: "1px solid #D9CBB0" }}
         >
           <p className="text-sm font-extrabold" style={{ background: "linear-gradient(90deg, #1B4B91, #B3261E)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}>
-            몰라!! 돌려서 나오는 데로 갈꺼야! ({spots.length}개 지역)
+            {tr("몰라!! 돌려서 나오는 데로 갈꺼야! ({n}개 지역)", { n: spots.length })}
           </p>
           <p className="text-xs font-medium text-[#6B5F4F] mt-1 text-center">
-            <Moon size={14} className="inline-block align-middle -mt-0.5" /> 감성 여행 + <Zap size={14} className="inline-block align-middle -mt-0.5" /> 활기찬 여행이 빚어내는 마법 속으로...
+            <Moon size={14} className="inline-block align-middle -mt-0.5" /> {tr("감성 여행")} + <Zap size={14} className="inline-block align-middle -mt-0.5" /> {tr("활기찬 여행이 빚어내는 마법 속으로...")}
           </p>
         </div>
 
@@ -6853,7 +6894,7 @@ function BaramApp() {
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border-4 border-[#F6F1E7] flex items-center justify-center text-sm font-bold text-white disabled:opacity-50"
             style={{ background: phase === "spinning" || phase === "ramping" ? "#A8441F" : accent }}
           >
-            {phase === "stopping" ? "어디?" : phase === "idle" ? "START" : "STOP"}
+            {phase === "stopping" ? tr("어디?") : phase === "idle" ? "START" : "STOP"}
           </button>
         </div>
         <p className="text-center text-[11px] text-[#A6987F] mt-2">
@@ -6869,7 +6910,7 @@ function BaramApp() {
           disabled={disabled}
           className="mx-auto mt-3 flex items-center gap-1.5 rounded-full border-2 border-[#2F6E68] bg-white px-5 py-2 text-sm font-bold text-[#2F6E68] disabled:opacity-60"
         >
-          <Search size={15} /> 가고 싶은 곳이 있나요? 직접 찾기
+          <Search size={15} /> {tr("가고 싶은 곳이 있나요? 직접 찾기")}
         </button>
 
         {/* 결과 카드 */}
