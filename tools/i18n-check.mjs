@@ -13,9 +13,12 @@ traverse(ast, { CallExpression(p) {
   const a = p.node.arguments[0];
   if (a && a.type === "StringLiteral") used.add(a.value); else dynamic.push(p.node.loc.start.line);
 } });
-const window = {}; eval(readFileSync(new URL("../i18n/en.js", import.meta.url), "utf8"));
+const enSrc = readFileSync(new URL("../i18n/en.js", import.meta.url), "utf8");
+const window = {}; eval(enSrc);
 const en = window.BARAM_I18N_EN;
-const missing = [...used].filter((k) => !(k in en)), unused = Object.keys(en).filter((k) => !used.has(k));
+// '// @동적' 줄 아래 열쇠는 그릴 때 tr(값)으로 쓰는 데이터 값이라 코드에 글자로 안 나온다 → '안 쓰는 열쇠'에서 뺀다
+const dynKeys = new Set(enSrc.includes("// @동적") ? [...enSrc.slice(enSrc.indexOf("// @동적")).matchAll(/^\s*("(?:[^"\\]|\\.)*"):/gm)].map((m) => JSON.parse(m[1])) : []);
+const missing = [...used].filter((k) => !(k in en)), unused = Object.keys(en).filter((k) => !used.has(k) && !dynKeys.has(k));
 const badVars = [...used].filter((k) => k in en && (k.match(/\{\w+\}/g) || []).sort().join() !== (en[k].match(/\{\w+\}/g) || []).sort().join());
 console.log(`tr 원문 ${used.size}, 번역표 ${Object.keys(en).length}`);
 console.log("표에 없음:", missing); console.log("안 쓰는 열쇠:", unused); console.log("{자리} 안 맞음:", badVars);
