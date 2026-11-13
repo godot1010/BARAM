@@ -2,6 +2,12 @@
   "name": "baram-tools",
   "private": true,
   "description": "BARAM 만들기 도구: src/index.html(원본) → index.html(사이트용, 미리 번역)",
-  "scripts": { "build": "node build.mjs" },
-  "devDependencies": { "esbuild": "0.24.2" }
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@babel/parser": "7.26.3",
+    "@babel/traverse": "7.26.4",
+    "esbuild": "0.24.2"
+  }
 }
