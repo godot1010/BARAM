@@ -1166,9 +1166,9 @@
 "id": "star_82",
 "name": "환상숲곶자왈공원",
 "region": "제주 한경",
-"desc": "BTS 화보 촬영지로 알려진 곶자왈 숲",
-"src": "한국경제(2021)",
-"url": "https://www.hankyung.com/article/2021090313091",
+"desc": "BTS '화양연화 pt.2' 앨범 화보 촬영지",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
 "star": "BTS",
 "lat": 33.322402,
 "lng": 126.26292,
@@ -1216,7 +1216,7 @@
 "src": "한국경제 『더 퍼플 로드』(2023)",
 "url": "https://magazine.hankyung.com/business/article/202309137048b",
 "star": "BTS",
-"tour": "용문각 회동동"
+"tour": "용문각 금사로"
 },
 {
 "id": "star_87",
@@ -1345,6 +1345,110 @@
 "contentId": "2511261",
 "typeId": "12",
 "image": "https://tong.visitkorea.or.kr/cms/resource/71/3515171_image2_1.jpg"
+},
+{
+"id": "star_95",
+"name": "해쉬더우드",
+"region": "서울 용산구",
+"desc": "슈가 목공 브이로그(BTS VLOG) 촬영 공방",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"tour": "해쉬더우드 후암로"
+},
+{
+"id": "star_96",
+"name": "실버키트하우스",
+"region": "서울 용산구",
+"desc": "지민이 은팔찌를 만든 금속공예 공방(영상 촬영)",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"tour": "실버키트하우스 신흥로36길"
+},
+{
+"id": "star_97",
+"name": "전남도립미술관 (RM존)",
+"region": "광양시",
+"desc": "RM이 관람 사진을 남긴 미술관(2021, BTS 공식 SNS), 'RM존' 표시",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"lat": 34.967775,
+"lng": 127.588842,
+"addr": "전남광주통합특별시 광양시 광양읍 순광로 660",
+"tour": "전남도립미술관",
+"contentId": "2778026",
+"typeId": "14",
+"image": "https://tong.visitkorea.or.kr/cms/resource/85/4082885_image2_1.jpg"
+},
+{
+"id": "star_98",
+"name": "이호테우해수욕장",
+"region": "제주 제주시내",
+"desc": "진이 제주 여행 중 SNS에 올린 사진 속 해변",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"lat": 33.497387,
+"lng": 126.453145,
+"addr": "제주특별자치도 제주시 도리로",
+"tour": "이호테우해변",
+"contentId": "126448",
+"typeId": "12",
+"image": "https://tong.visitkorea.or.kr/cms/resource/30/4096630_image2_1.jpg"
+},
+{
+"id": "star_99",
+"name": "협재해수욕장",
+"region": "제주 한림",
+"desc": "지민 사진 속 제주 바다",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"lat": 33.393746,
+"lng": 126.239431,
+"addr": "제주특별자치도 제주시 한림읍 한림로 329-10",
+"tour": "협재해수욕장",
+"contentId": "127490",
+"typeId": "12",
+"image": "https://tong.visitkorea.or.kr/cms/resource/66/3096066_image2_1.jpg"
+},
+{
+"id": "star_100",
+"name": "생각하는 정원",
+"region": "제주 한경",
+"desc": "RM이 인증 사진을 남긴 정원",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"tour": "생각하는 정원",
+"lat": 33.325371,
+"lng": 126.255164,
+"addr": "제주특별자치도 제주시 한경면 녹차분재로 675",
+"contentId": "125445",
+"typeId": "12",
+"image": "https://tong.visitkorea.or.kr/cms/resource/24/4090224_image2_1.jpg"
+},
+{
+"id": "star_101",
+"name": "문쏘",
+"region": "제주 한림",
+"desc": "지민이 들른 식당",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"tour": "문쏘 한림상로"
+},
+{
+"id": "star_102",
+"name": "남경미락",
+"region": "제주 안덕",
+"desc": "지민이 노을 사진을 찍은 횟집 앞",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"tour": "남경미락 사계"
 }
 ]
 }
