@@ -3,7 +3,7 @@
 // - 두 번 연속 실패할 때만 형 카톡으로 알림, 고쳐지면 '복구' 알림 한 번.
 // - 매주 월요일 9시(한국)에 '이번 주도 정상' 한 줄 → 점검기가 살아 있는지 형이 알 수 있게 + 카카오 토큰이 만료되지 않게.
 // 비밀 값(코드에 넣지 않음, 형이 Cloudflare에 직접 넣음): KAKAO_REST_KEY (카카오 앱 REST API 키), KAKAO_CLIENT_SECRET(쓸 때만)
-// 저장(KV, 바인딩 이름 MONITOR): "state"(점검 상태), "kakao"(카카오 토큰), "oauth-state"(로그인 확인용)
+// 저장(KV, 바인딩 이름 MONITOR): "state"(점검 상태), "kakao"(카카오 토큰), (로그인 확인 값은 쿠키)
 // 카카오 로그인을 다시 연결하려면 KV의 "kakao" 열쇠를 지우고 /kakao/login 을 다시 연다.
 
 const SITE = "https://baram-bh4.pages.dev";
@@ -199,27 +199,33 @@ async function handle(request, env) {
   if (url.pathname === "/kakao/login") {
     if (!env.KAKAO_REST_KEY) return page("준비 안 됨", "<p>Cloudflare에 KAKAO_REST_KEY 비밀 값을 먼저 넣어 주세요.</p>");
     if (await env.MONITOR.get("kakao")) return page("이미 연결됨", "<p>카카오가 이미 연결돼 있어요. 다시 연결하려면 KV의 'kakao'를 지운 뒤 여세요.</p>");
+    // 확인 값은 KV가 아니라 쿠키에 (KV는 방금 쓴 값을 다른 곳에서 바로 못 읽을 때가 있어 '확인 값이 맞지 않아요'가 났음, 2026-11-15)
     const st = crypto.randomUUID();
-    await env.MONITOR.put("oauth-state", st, { expirationTtl: 600 });
     const q = new URLSearchParams({ client_id: env.KAKAO_REST_KEY, redirect_uri: redirectUri, response_type: "code", scope: "talk_message", state: st });
-    return Response.redirect(`https://kauth.kakao.com/oauth/authorize?${q}`, 302);
+    return new Response(null, { status: 302, headers: {
+      location: `https://kauth.kakao.com/oauth/authorize?${q}`,
+      "set-cookie": `oauth_state=${st}; Path=/kakao; Max-Age=600; HttpOnly; Secure; SameSite=Lax`,
+    } });
   }
 
   if (url.pathname === "/kakao/callback") {
-    const expect = await env.MONITOR.get("oauth-state");
+    const expect = (/(?:^|;\s*)oauth_state=([\w-]+)/.exec(request.headers.get("cookie") || "") || [])[1];
     if (!expect || url.searchParams.get("state") !== expect) return page("연결 실패", "<p>확인 값이 맞지 않아요. /kakao/login 부터 다시 해 주세요.</p>");
     if (await env.MONITOR.get("kakao")) return page("이미 연결됨", "<p>카카오가 이미 연결돼 있어요.</p>");
     const code = url.searchParams.get("code");
     if (!code) return page("연결 실패", `<p>${esc(url.searchParams.get("error_description") || "동의하지 않았어요.")}</p>`);
     try {
       const d = await kakaoToken(env, { grant_type: "authorization_code", redirect_uri: redirectUri, code });
+      // 메시지 전송은 '선택 동의'라 체크를 안 하면 토큰에 권한이 없다 (2026-11-15 첫 시도에서 이렇게 실패)
+      if (!String(d.scope || "").split(" ").includes("talk_message")) {
+        return page("한 번 더 해 주세요", "<p>카카오 동의 화면에서 <b>'카카오톡 메시지 전송'</b>에 체크가 안 됐어요.<br><a href='/kakao/login'>다시 로그인</a>하고 그 칸에 체크해 주세요.</p>");
+      }
       await env.MONITOR.put("kakao", JSON.stringify({
         access: d.access_token,
         accessExp: Date.now() + (d.expires_in || 3600) * 1000,
         refresh: d.refresh_token,
         refreshExp: Date.now() + (d.refresh_token_expires_in || 0) * 1000,
       }));
-      await env.MONITOR.delete("oauth-state");
       await sendKakao(env, `🔔 BARAM 자동 점검이 연결됐어요.\n문제가 2시간 연속 생기면 여기로 알려 드릴게요. · ${kstLabel()}`);
       return page("연결 완료 🎉", "<p>카카오톡 '나와의 채팅'에 시험 메시지를 보냈어요. 알림음이 울렸는지 확인해 주세요.</p>");
     } catch (e) {
