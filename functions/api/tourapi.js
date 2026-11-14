@@ -881,11 +881,6 @@ export async function onRequest(context) {
         return json({ status: r.status, head, items: compact });
       }
       return json({ status: r.status, head, regions, sample: items.slice(0, 2) });
-    } else if (action === "kwProbe") {
-      // 임시(2026-11-14 STAR 장소 위치 찾기): 미리보기 주소에서만
-      if (!url.hostname.startsWith("preview.")) return json({ error: "NOT_HERE" }, 403);
-      const { items } = await callTourApi("searchKeyword2", { ...base, keyword: url.searchParams.get("k") || "", numOfRows: "20", pageNo: "1", arrange: "O" });
-      return json({ items: items.map((it) => [it.title, it.addr1, it.mapy, it.mapx, it.contenttypeid, it.contentid, it.firstimage || ""]) });
     } else if (action === "trailCourses") {
       const { durunubi } = await getTrailIndex(base, serviceKey);
       payload = { items: durunubi.map((c) => ({ id: c.id, name: c.name, area: c.area, km: c.km, minutes: c.minutes, level: c.level })) };

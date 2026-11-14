@@ -1449,6 +1449,74 @@
 "url": "https://magazine.hankyung.com/business/article/202309137048b",
 "star": "BTS",
 "tour": "남경미락 사계"
+},
+{
+"id": "star_103",
+"name": "보문정",
+"region": "경주시",
+"desc": "BTS '화양연화 pt.1' 앨범 재킷 촬영지(벚꽃 3~4월)",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"lat": 35.841281,
+"lng": 129.28925,
+"addr": "경상북도 경주시 신평동",
+"tour": "보문정(경주)",
+"contentId": "2015553",
+"typeId": "12",
+"image": "https://tong.visitkorea.or.kr/cms/resource/17/3541617_image2_1.jpg"
+},
+{
+"id": "star_104",
+"name": "불국사",
+"region": "경주시",
+"desc": "RM이 사진을 남긴 곳(석가탑 가기 전 회랑 뒤편)",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"lat": 35.792302,
+"lng": 129.331725,
+"addr": "경상북도 경주시 불국로 385 (진현동)",
+"tour": "경주 불국사 [유네스코 세계유산]",
+"contentId": "126166",
+"typeId": "12",
+"image": "https://tong.visitkorea.or.kr/cms/resource/70/3506170_image2_1.jpg"
+},
+{
+"id": "star_105",
+"name": "금남로4가역 (BTS 팬아트)",
+"region": "광주 동구",
+"desc": "BTS 팬아트 공모전 작품이 전시된 지하철역",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"tour": "금남로4가역"
+},
+{
+"id": "star_106",
+"name": "광안리해수욕장",
+"region": "부산 수영구",
+"desc": "지민이 인증 사진을 SNS에 올린 해변",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"lat": 35.153193,
+"lng": 129.118976,
+"addr": "부산광역시 수영구 광안해변로 219 (광안동)",
+"tour": "광안리해수욕장",
+"contentId": "126078",
+"typeId": "12",
+"image": "https://tong.visitkorea.or.kr/cms/resource_photo/46/4140046_image2_1.JPG"
+},
+{
+"id": "star_107",
+"name": "석불사",
+"region": "부산 북구",
+"desc": "부산관광공사 '정국 코스'의 절(암벽 불상)",
+"src": "한국경제 『더 퍼플 로드』(2023)",
+"url": "https://magazine.hankyung.com/business/article/202309137048b",
+"star": "BTS",
+"tour": "석불사 만덕고개길"
 }
 ]
 }
