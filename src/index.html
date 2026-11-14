@@ -2681,7 +2681,7 @@ async function fetchNearbyTourSpots({ lat, lng, spotName, contentTypeId, radius 
   return dedupeByName(ordered).slice(0, num).map((it) => ({
     id: it.contentid,
     name: it.title,
-    kind: PLACE_KIND_LABELS[it.cat3] || LANDMARK_KIND_LABELS[it.cat2] || "",
+    kind: placeKindOf(it),
     address: it.addr1 || "",
     distanceKm: it.dist ? (parseFloat(it.dist) / 1000).toFixed(1) : null,
     lat: parseFloat(it.mapy) || null,
@@ -2689,12 +2689,25 @@ async function fetchNearbyTourSpots({ lat, lng, spotName, contentTypeId, radius 
     image: toHttps(it.firstimage2 || it.firstimage),
     imageLarge: toHttps(it.firstimage), // 작은 사진(firstimage2)이 깨진 경우가 있어 대신 쓸 큰 사진
     typeId: it.contenttypeid, // 자세한 정보를 받을 때 쓴다 (12 명소, 39 음식점 …)
-    cafe: it.cat3 === "A05020900", // 음식점(39) 안의 '카페/전통찻집' 분류
+    cafe: isCafeItem(it), // 음식점(39) 안의 '카페/전통찻집' 분류 (옛 cat3 또는 새 lclsSystm3)
     area: neighborArea(it.addr1, spotName), // 이웃 지역이면 그 지역 이름
   }));
 }
 
 const NOT_ATTRACTION = /화장실|사우나|노인회|경로당|주차장|복지관|주민센터|행정복지/;
+
+// 2026-11-14 점검: 지역 목록(areaBasedList2)으로 합친 장소는 옛 분류(cat3)가 비어 있고 새 분류(lclsSystm)만 있다.
+// 그래서 카페를 못 알아봐 '카페' 탭이 0곳이 되고 점심에 커피집이 나왔다 → 새 분류로도 알아본다 (FD05… = 카페)
+// 이름표는 같은 장소에 두 분류가 같이 붙은 경우로 확인한 것만 넣었다 (FD010100=한식 A05020100, FD020200=일식 A05020300, AC010100=호텔, AC040100=모텔)
+const LCLS_KIND_LABELS = { FD010100: "한식", FD020200: "일식", FD050100: "카페", AC010100: "호텔", AC040100: "모텔" };
+const LCLS1_KIND_LABELS = { NA: "자연", HS: "역사", EX: "체험", LS: "레포츠" };
+function isCafeItem(it) {
+  return it.cat3 === "A05020900" || /^FD05/.test(it.lclsSystm3 || "");
+}
+function placeKindOf(it) {
+  return PLACE_KIND_LABELS[it.cat3] || LCLS_KIND_LABELS[it.lclsSystm3] || LANDMARK_KIND_LABELS[it.cat2]
+    || (String(it.contenttypeid) === "12" ? LCLS1_KIND_LABELS[it.lclsSystm1] : "") || "";
+}
 
 // 관광정보에는 주소와 좌표가 서로 다른 곳이 있다. 예: '공주 우금치 전적'은 주소가 충남 공주시인데
 // 좌표가 평택 시내로 잘못 등록돼 있어 평택시 일정에 '0.9km' 명소로 나왔다 (2026-10-09 형이 발견).
@@ -2814,7 +2827,7 @@ const CONTENT_TYPE_LABELS = { "12": "명소", "14": "문화", "28": "레포츠",
 // 여행 추천답게 볼거리·놀거리를 먼저, 쇼핑(애견용품점·편의점 등)은 뒤로. 같은 순위 안에서는 사진 있는 곳 → 가까운 곳 순
 const PET_TYPE_RANK = { "12": 0, "28": 0, "39": 1, "14": 1, "32": 2, "38": 3 };
 async function fetchPetNearby({ lat, lng, spotName }) {
-  const arr = await tourApiProxyFetch("petNearby", { lat: String(lat), lng: String(lng), ...localMountainQuery(spotName) }); // 시·군·구 목록도 합침 (2026-11-13)
+  const arr = await tourApiProxyFetch("petNearby", { lat: String(lat), lng: String(lng), ...localMountainQuery(spotName), v: "2" }); // 시·군·구 목록도 합침 (2026-11-13)
   const ranked = arr.filter((it) => !hasWrongCoords(it)).sort((a, b) =>
     areaRank(a.addr1, spotName) - areaRank(b.addr1, spotName) ||
     (PET_TYPE_RANK[a.contenttypeid] ?? 2) - (PET_TYPE_RANK[b.contenttypeid] ?? 2) ||
@@ -2824,7 +2837,7 @@ async function fetchPetNearby({ lat, lng, spotName }) {
   return dedupeByName(ranked).map((it) => ({
     id: it.contentid,
     name: it.title,
-    kind: it.cat3 === "A05020900" ? "카페" : CONTENT_TYPE_LABELS[it.contenttypeid] || "",
+    kind: isCafeItem(it) ? "카페" : CONTENT_TYPE_LABELS[it.contenttypeid] || "",
     address: it.addr1 || "",
     distanceKm: it.dist ? (parseFloat(it.dist) / 1000).toFixed(1) : null,
     lat: parseFloat(it.mapy) || null,
@@ -2851,7 +2864,7 @@ async function fetchBarrierFreeNearby({ lat, lng, spotName }) {
   return dedupeByName(ranked).map((it) => ({
     id: it.contentid,
     name: it.title,
-    kind: it.cat3 === "A05020900" ? "카페" : CONTENT_TYPE_LABELS[it.contenttypeid] || "",
+    kind: isCafeItem(it) ? "카페" : CONTENT_TYPE_LABELS[it.contenttypeid] || "",
     address: it.addr1 || "",
     distanceKm: it.dist ? (parseFloat(it.dist) / 1000).toFixed(1) : null,
     lat: parseFloat(it.mapy) || null,

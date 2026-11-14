@@ -153,10 +153,23 @@ class TourApiError extends Error {
   }
 }
 
+// 공공데이터 서버가 멈춘 듯 느릴 때 오래 기다리지 않는다 (2026-11-14 점검: 522일 때 20초 가까이 기다렸다가 지난 저장본을 줘서,
+// 12초에 포기하는 앱은 저장본이 있어도 오류를 봤다). 8초가 지나면 끊고, 저장본이 있으면 그걸 돌려준다
+const UPSTREAM_TIMEOUT_MS = 8000;
 async function callTourApi(path, params, apiBase = TOUR_API_BASE) {
   const qs = new URLSearchParams(params).toString();
-  const res = await fetch(`${apiBase}/${path}?${qs}`);
-  const bodyText = await res.text();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+  let res, bodyText;
+  try {
+    res = await fetch(`${apiBase}/${path}?${qs}`, { signal: controller.signal });
+    bodyText = await res.text();
+  } catch (err) {
+    if (controller.signal.aborted) throw new TourApiError({ error: "UPSTREAM_TIMEOUT", message: "공공데이터 서버가 응답하지 않아요. 잠시 뒤 다시 시도해 주세요." }, 504);
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     throw new TourApiError({ error: "UPSTREAM_ERROR", status: res.status, upstreamBody: bodyText.slice(0, 500), message: `TourAPI 응답 오류 (HTTP ${res.status})` }, 502);
@@ -279,6 +292,8 @@ async function petNearby(base, lat, lng, area = {}) {
         firstimage2: it.firstimage2,
         cat2: it.cat2,
         cat3: it.cat3,
+        lclsSystm1: it.lclsSystm1, // 지역 목록으로 합친 곳은 cat3가 비어 새 분류로 카페 등을 알아본다 (2026-11-14)
+        lclsSystm3: it.lclsSystm3,
         pet: index.conds[condIdx],
       });
     });
@@ -366,6 +381,9 @@ async function ldongCodesFor(base, sido, sgg) {
 const AREA_PAGE = 1000;
 async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido, sgg, maxPages = 3 }) {
   const located = callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, ...(contentTypeId ? { contentTypeId } : {}), numOfRows: num, pageNo: "1" });
+  // 위치 검색이 달라는 수만큼 다 주면(맛집처럼 고장 나지 않은 종류) 지역 목록은 받지 않는다 → 처음 여는 지역이 빨라진다 (2026-11-14 점검: 16초 → )
+  const first = await located.then((r) => r, () => null);
+  if (first && first.items.length >= Number(num)) return { items: first.items, incomplete: false };
   const areaPart = (async () => {
     const codes = await ldongCodesFor(base, sido, sgg);
     const lists = await Promise.all(codes.slice(0, 6).map(async (c) => {
