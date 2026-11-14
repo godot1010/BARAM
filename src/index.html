@@ -822,6 +822,44 @@ function useWalkStamps() {
   }, []);
   return stamps;
 }
+// ★ STAR 도장깨기 (2026-11-14 형 결정 A+B: 지역별 목록 + 멤버 칩). { STAR 장소 id(star_N): { name, date } }. 폰 안에만 저장
+// 주의: star-places.json의 id(star_1…)로 저장하므로 장소를 추가할 때는 번호를 바꾸지 말고 맨 뒤에만 붙일 것
+const STAR_STAMPS_KEY = "baram_star_stamps";
+const STAR_STAMP_EVENT = "baram-star-stamps";
+const STAR_BADGES = [[10, "⭐", "첫 10곳"], [30, "💜", "30곳"], [50, "🎤", "50곳"]]; // 마지막 배지 '👑 전부'는 장소 수에 맞춰 붙인다
+const STAR_MEMBERS = ["BTS", "RM", "진", "슈가", "제이홉", "지민", "뷔", "정국"];
+function readStarStamps() {
+  try {
+    const v = JSON.parse(window.localStorage.getItem(STAR_STAMPS_KEY) || "{}");
+    return v && typeof v === "object" ? v : {};
+  } catch {
+    return {};
+  }
+}
+function writeStarStamps(map) {
+  try { window.localStorage.setItem(STAR_STAMPS_KEY, JSON.stringify(map)); } catch {}
+  window.dispatchEvent(new Event(STAR_STAMP_EVENT));
+}
+function setStarStamp(id, name, on) {
+  const map = readStarStamps();
+  if (on) map[id] = { name, date: new Date().toISOString() };
+  else delete map[id];
+  writeStarStamps(map);
+}
+function useStarStamps() {
+  const [stamps, setStamps] = useState(readStarStamps);
+  useEffect(() => {
+    const refresh = () => setStamps(readStarStamps());
+    window.addEventListener(STAR_STAMP_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(STAR_STAMP_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  return stamps;
+}
+
 function walkedKm(stamps) {
   return Math.round(Object.values(stamps).reduce((sum, s) => sum + (Number(s.km) || 0), 0) * 10) / 10;
 }
@@ -848,6 +886,8 @@ function buildBackup(spots) {
     mountains: Object.entries(readMountainStamps()).map(([code, v]) => ({ code, name: v.name, date: v.date })),
     // 걷기길 도장 (옛 앱은 이 칸을 모르고 넘어간다)
     walks: Object.entries(readWalkStamps()).map(([key, v]) => ({ key, ...v })),
+    // ★ STAR 도장 (옛 앱은 이 칸을 모르고 넘어간다)
+    stars: Object.entries(readStarStamps()).map(([id, v]) => ({ id, name: v.name, date: v.date })),
   };
 }
 
@@ -891,7 +931,11 @@ function parseBackup(text, baseSpots) {
   const walks = Array.isArray(data.walks)
     ? data.walks.filter((w) => w && w.key).reduce((map, w) => ({ ...map, [w.key]: { name: w.name || "", km: Number(w.km) || 0, route: w.route || "", date: w.date || null } }), {})
     : null;
-  return { records, exportedAt: data.exportedAt, mountains, walks, memories };
+  // STAR 도장 칸이 없는 옛 백업이면 null → 지금 폰의 STAR 도장은 그대로 둔다
+  const stars = Array.isArray(data.stars)
+    ? data.stars.filter((x) => x && typeof x.id === "string").reduce((map, x) => ({ ...map, [x.id]: { name: x.name || "", date: x.date || null } }), {})
+    : null;
+  return { records, exportedAt: data.exportedAt, mountains, walks, memories, stars };
 }
 
 function downloadJson(filename, obj) {
@@ -3405,6 +3449,116 @@ function MountainStampList({ query }) {
   );
 }
 
+// STAMP TOUR의 '★ STAR' 칸 (2026-11-14 형 결정 A+B): 진행·배지 + 멤버 칩 + 권역별 목록
+const STAR_REGION_ORDER = ["서울", "경기·인천", "강원", "충청", "영남", "호남", "제주"];
+function StarStampList({ query }) {
+  const stamps = useStarStamps();
+  const [cancelDialog, askCancel] = useStampCancel();
+  const memoryKeys = useMemoryKeys();
+  const openDetail = useContext(PlaceDetailContext);
+  const [member, setMember] = useState("");
+  const [state, setState] = useState({ status: "loading", list: [] });
+  useEffect(() => {
+    let alive = true;
+    loadStarPlaces()
+      .then((list) => alive && setState({ status: "success", list }))
+      .catch(() => alive && setState({ status: "error", list: [] }));
+    return () => { alive = false; };
+  }, []);
+  const total = state.list.length;
+  const count = state.list.filter((s) => stamps[s.id]).length;
+  const badges = [...STAR_BADGES, ...(total ? [[total, "👑", "전부"]] : [])];
+  const next = badges.find(([n]) => n > count);
+  const q = query.replace(/\s/g, "");
+  const shown = state.list.filter((s) =>
+    (q === "" || s.name.replace(/\s/g, "").includes(q) || s.region.replace(/\s/g, "").includes(q)) &&
+    (!member || (s.members || ["BTS"]).includes(member)));
+  const groups = STAR_REGION_ORDER.map((g) => ({
+    g, items: shown.filter((s) => ((LOCATION_BY_NAME.get(s.region) || {}).region || "") === g),
+  })).filter((x) => x.items.length > 0);
+  const memberCount = (m) => state.list.filter((s) => (s.members || ["BTS"]).includes(m)).length;
+  return (
+    <div>
+      {cancelDialog}
+      <div className="rounded-lg border px-3 py-2.5 mb-2" style={{ borderColor: `${STAR_COLOR}66`, background: `${STAR_COLOR}10` }}>
+        <p className="text-sm font-bold" style={{ color: STAR_COLOR }}>★ STAR 장소 {count} / {total || "…"}</p>
+        <div className="h-1.5 rounded-full bg-white/70 mt-1.5 overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: total ? `${(count / total) * 100}%` : 0, background: STAR_COLOR }} />
+        </div>
+        <div className="flex gap-1.5 mt-2" style={{ flexWrap: "wrap" }}>
+          {badges.map(([n, emoji, label]) => (
+            <span key={label} className="text-[10px] font-bold rounded-full border px-2 py-0.5" style={count >= n ? { color: "#F6F1E7", background: STAR_COLOR, borderColor: STAR_COLOR } : { color: "#A6987F", borderColor: "#D9CBB0" }}>
+              {emoji} {label}
+            </span>
+          ))}
+        </div>
+        <p className="text-[11px] text-[#6B5F4F] mt-1.5">
+          {next ? `다음 배지까지 ${next[0] - count}곳 남았어요.` : "STAR 장소를 모두 다녀왔어요! 🎉"} 장소를 누르면 정보와 도장 찍기가 있어요.
+        </p>
+        <p className="text-[10px] text-[#A6987F] mt-0.5">BARAM 개인 기록이에요 (소속사 공식 인증과는 별개, 이 폰에만 저장).</p>
+      </div>
+      <div className="flex gap-1 mb-1" style={{ flexWrap: "wrap" }}>
+        {["", ...STAR_MEMBERS].map((m) => (
+          <button
+            key={m || "all"}
+            onClick={() => setMember(m)}
+            className="text-[11px] px-2 py-1 rounded-full border font-medium whitespace-nowrap"
+            style={member === m ? { background: STAR_COLOR, color: "#F6F1E7", borderColor: STAR_COLOR } : { borderColor: "#D9CBB0", color: "#6B5F4F" }}
+          >
+            {m === "" ? `전체 ${total || ""}` : m === "BTS" ? `단체 ${memberCount(m)}` : `${m} ${memberCount(m)}`}
+          </button>
+        ))}
+      </div>
+      {state.status === "loading" && <p className="text-center text-sm text-[#6B5F4F] py-8">STAR 장소를 불러오는 중…</p>}
+      {state.status === "error" && <p className="text-center text-sm text-[#A8441F] py-8">STAR 장소를 불러오지 못했어요. 잠시 뒤 다시 열어 보세요.</p>}
+      {state.status === "success" && groups.length === 0 && <p className="text-center text-sm text-[#6B5F4F] py-8">검색 결과가 없어요.</p>}
+      {groups.map(({ g, items }) => (
+        <div key={g}>
+          <p className="text-[11px] font-bold mt-3 mb-0.5" style={{ color: STAR_COLOR }}>
+            {g} · {items.filter((s) => stamps[s.id]).length} / {items.length}
+          </p>
+          <ul className="divide-y divide-[#D9CBB0]">
+            {items.map((s) => {
+              const mine = stamps[s.id];
+              return (
+                <li key={s.id} className="flex items-center gap-2 py-2.5">
+                  <button onClick={() => openDetail(starToPlace(s))} className="flex-1 flex items-center gap-3 text-left min-w-0">
+                    <span
+                      className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 border-2 ${mine ? "" : "border-dashed"}`}
+                      style={{ borderColor: mine ? STAR_COLOR : "#D9CBB0", color: STAR_COLOR }}
+                    >
+                      {mine ? <span className="text-base font-bold">★</span> : null}
+                    </span>
+                    <span className="min-w-0">
+                      <p className="text-sm truncate" style={mine ? { color: STAR_COLOR, fontWeight: 700 } : { color: "#2B2620" }}>{s.name}</p>
+                      <p className="text-xs text-[#6B5F4F] mt-0.5 truncate">
+                        {mine ? `${formatDate(mine.date)} 다녀옴 · ` : ""}{s.region.replace(/-.*$/, "")} · {s.desc}{memoryKeys.has(`star:${s.id}`) ? " · 추억 저장됨" : ""}
+                      </p>
+                    </span>
+                  </button>
+                  {mine ? (
+                    <button onClick={() => askCancel(s.name, `star:${s.id}`, () => setStarStamp(s.id, s.name, false))} className="flex items-center gap-1 text-xs text-[#C4592F] px-2 py-1 shrink-0">
+                      <RotateCcw size={12} /> 취소
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setStarStamp(s.id, s.name, true)}
+                      className="text-xs font-bold rounded-full border px-2.5 py-1 shrink-0"
+                      style={{ color: STAR_COLOR, borderColor: STAR_COLOR }}
+                    >
+                      ★ 도장
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // 장소 정보 창의 명산 정보: 100대 명산 선정 이유 · 등산 코스 · 대중교통
 function MountainInfo({ place }) {
   const m = place.mountain;
@@ -3656,36 +3810,73 @@ const STAR_COLOR = "#8E44AD";
 let starPlacesPromise = null;
 function loadStarPlaces() {
   if (!starPlacesPromise) {
-    starPlacesPromise = fetch("/star-places.json?v=5")
+    starPlacesPromise = fetch("/star-places.json?v=6")
       .then((r) => { if (!r.ok) throw new Error("STAR 장소 정보를 불러오지 못했어요."); return r.json(); })
       .then((d) => d.places || [])
       .catch((e) => { starPlacesPromise = null; throw e; });
   }
   return starPlacesPromise;
 }
+function starToPlace(s, lat, lng) {
+  return {
+    // 관광정보에 있는 곳은 그 번호로 정보 창(소개·사진)을 받는다
+    id: s.contentId || s.id, name: s.name, kind: "STAR", address: s.addr || s.region,
+    distanceKm: s.lat && lat ? haversineKm(lat, lng, s.lat, s.lng).toFixed(1) : null,
+    lat: s.lat || null, lng: s.lng || null,
+    image: toHttps(s.image) || null, imageLarge: toHttps(s.image) || null,
+    typeId: s.typeId, area: null, searchName: s.tour || s.name.replace(/\s*\(.*\)$/, ""),
+    star: { id: s.id, who: s.star, desc: s.desc, src: s.src, url: s.url },
+  };
+}
 async function fetchStarNearby({ lat, lng, spotName }) {
   const list = await loadStarPlaces();
-  return list
-    .filter((s) => s.region === spotName)
-    .map((s) => ({
-      // 관광정보에 있는 곳은 그 번호로 정보 창(소개·사진)을 받는다
-      id: s.contentId || s.id, name: s.name, kind: "STAR", address: s.addr || s.region,
-      distanceKm: s.lat && lat ? haversineKm(lat, lng, s.lat, s.lng).toFixed(1) : null,
-      lat: s.lat || null, lng: s.lng || null,
-      image: toHttps(s.image) || null, imageLarge: toHttps(s.image) || null,
-      typeId: s.typeId, area: null, searchName: s.tour || s.name.replace(/\s*\(.*\)$/, ""),
-      star: { who: s.star, desc: s.desc, src: s.src, url: s.url },
-    }));
+  return list.filter((s) => s.region === spotName).map((s) => starToPlace(s, lat, lng));
 }
+// ★ STAR 도장 버튼 (정보 창). 찍으면 몇 번째인지와 배지를 알려 준다
+function StarStampButton({ id, name }) {
+  const stamps = useStarStamps();
+  const [cancelDialog, askCancel] = useStampCancel();
+  const [justStamped, setJustStamped] = useState(false);
+  const [total, setTotal] = useState(0);
+  useEffect(() => { loadStarPlaces().then((l) => setTotal(l.length)).catch(() => {}); }, []);
+  const mine = stamps[id];
+  const count = Object.keys(stamps).length;
+  const badge = total && count === total ? [total, "👑", "STAR 장소 전부"] : STAR_BADGES.find(([n]) => n === count);
+  if (mine) {
+    return (
+      <div className="mb-2 rounded-lg border px-3 py-2 flex items-center justify-between gap-2" style={{ borderColor: STAR_COLOR, background: `${STAR_COLOR}14` }}>
+        <span className="text-xs font-bold min-w-0" style={{ color: STAR_COLOR }}>
+          ★ {justStamped ? `도장 쾅! ${count}번째 STAR 장소예요${badge ? ` · ${badge[1]} ${badge[2]} 달성!` : ""}` : `${formatDate(mine.date)}에 다녀왔어요`}
+        </span>
+        <button onClick={() => askCancel(name, `star:${id}`, () => { setStarStamp(id, name, false); setJustStamped(false); })} className="text-[11px] text-[#C4592F] shrink-0">도장 취소</button>
+        {cancelDialog}
+      </div>
+    );
+  }
+  return (
+    <button
+      onClick={() => { setStarStamp(id, name, true); setJustStamped(true); }}
+      className="mb-2 w-full rounded-lg py-2 text-xs font-bold text-[#F6F1E7]"
+      style={{ background: STAR_COLOR }}
+    >
+      ★ 다녀왔어요! 도장 찍기 ({count}{total ? ` / ${total}` : ""})
+    </button>
+  );
+}
+
 function StarInfo({ place }) {
   const s = place.star;
   return (
-    <div className="mt-3 rounded-lg px-3 py-2" style={{ background: `${STAR_COLOR}14`, border: `1px solid ${STAR_COLOR}55` }}>
+    <div className="mt-3">
+      {s.id && <StarStampButton id={s.id} name={place.name} />}
+      {s.id && <StampedMemory stampKey={s.id} kind="star" name={place.name} color={STAR_COLOR} />}
+    <div className="rounded-lg px-3 py-2" style={{ background: `${STAR_COLOR}14`, border: `1px solid ${STAR_COLOR}55` }}>
       <p className="text-xs font-bold" style={{ color: STAR_COLOR }}>★ STAR · {s.desc}</p>
       <a href={s.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] font-bold mt-1" style={{ color: STAR_COLOR }}>
         출처: {s.src} <ExternalLink size={10} />
       </a>
       <p className="text-[10px] text-[#A6987F] mt-1">기사·지자체·책 자료로 확인한 공개 장소예요. 소속사 공식 정보가 아니에요.</p>
+    </div>
     </div>
   );
 }
@@ -3694,7 +3885,8 @@ function StarInfo({ place }) {
 function StampedMemory({ stampKey, kind, name, color }) {
   const mountainStamps = useMountainStamps();
   const walkStamps = useWalkStamps();
-  const stamped = kind === "mtn" ? !!mountainStamps[stampKey] : !!walkStamps[stampKey];
+  const starStamps = useStarStamps();
+  const stamped = kind === "mtn" ? !!mountainStamps[stampKey] : kind === "star" ? !!starStamps[stampKey] : !!walkStamps[stampKey];
   return stamped ? <MemoryBox memKey={`${kind}:${stampKey}`} name={name} color={color} /> : null;
 }
 
@@ -4685,7 +4877,7 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={tab === "mountain" ? "산 이름 검색" : tab === "walk" ? "길 이름 검색" : "도시 이름 검색"}
+              placeholder={tab === "mountain" ? "산 이름 검색" : tab === "walk" ? "길 이름 검색" : tab === "star" ? "장소·지역 이름 검색" : "도시 이름 검색"}
               className="flex-1 bg-transparent outline-none text-sm text-[#2B2620] placeholder:text-[#A6987F]"
             />
           </div>
@@ -4710,10 +4902,19 @@ function DrawerModal({ spots, onUnvisit, onStamp, onOpenStamp, onExportBackup, o
             >
               🥾 걷기길
             </button>
+            <button
+              onClick={() => setTab("star")}
+              className="text-xs px-2.5 py-1.5 rounded-full border font-medium whitespace-nowrap"
+              style={tab === "star" ? { background: STAR_COLOR, color: "#F6F1E7", borderColor: STAR_COLOR } : { borderColor: "#D9CBB0", color: "#6B5F4F" }}
+            >
+              ★ STAR
+            </button>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-3">
-          {tab === "mountain" ? (
+          {tab === "star" ? (
+            <StarStampList query={query} />
+          ) : tab === "mountain" ? (
             <MountainStampList query={query} />
           ) : tab === "walk" ? (
             <WalkStampList query={query} />
@@ -6288,7 +6489,7 @@ function BaramApp() {
     }
     downloadJson(`BARAM-백업-${toDateInputValue()}.json`, backup);
     setLastBackupAt(backup.exportedAt);
-    setBackupNotice(`STAMP ${backup.spots.filter((s) => s.isVisited).length}곳${backup.mountains.length ? `, 명산 ${backup.mountains.length}곳` : ""}${backup.walks.length ? `, 걷기길 ${backup.walks.length}곳` : ""}을 백업 파일로 저장했어요. (다운로드 폴더)`);
+    setBackupNotice(`STAMP ${backup.spots.filter((s) => s.isVisited).length}곳${backup.mountains.length ? `, 명산 ${backup.mountains.length}곳` : ""}${backup.walks.length ? `, 걷기길 ${backup.walks.length}곳` : ""}${backup.stars.length ? `, STAR ${backup.stars.length}곳` : ""}을 백업 파일로 저장했어요. (다운로드 폴더)`);
   }
 
   function importBackup(file) {
@@ -6303,7 +6504,7 @@ function BaramApp() {
       const stampCount = parsed.records.filter((r) => r.isVisited).length;
       setConfirmState({
         title: "백업을 불러올까요?",
-        message: `${formatDate(parsed.exportedAt)}에 만든 백업이에요 (STAMP ${stampCount}곳${parsed.mountains ? `, 명산 ${Object.keys(parsed.mountains).length}곳` : ""}${parsed.walks ? `, 걷기길 ${Object.keys(parsed.walks).length}곳` : ""}).\n지금 이 폰의 기록은 백업 내용으로 바뀌어요.`,
+        message: `${formatDate(parsed.exportedAt)}에 만든 백업이에요 (STAMP ${stampCount}곳${parsed.mountains ? `, 명산 ${Object.keys(parsed.mountains).length}곳` : ""}${parsed.walks ? `, 걷기길 ${Object.keys(parsed.walks).length}곳` : ""}${parsed.stars ? `, STAR ${Object.keys(parsed.stars).length}곳` : ""}).\n지금 이 폰의 기록은 백업 내용으로 바뀌어요.`,
         confirmLabel: "불러오기",
         onConfirm: async () => {
           try {
@@ -6314,6 +6515,7 @@ function BaramApp() {
           }
           if (parsed.mountains) writeMountainStamps(parsed.mountains);
           if (parsed.walks) writeWalkStamps(parsed.walks);
+          if (parsed.stars) writeStarStamps(parsed.stars);
           if (parsed.memories) { try { await replaceAllMemories(parsed.memories); } catch {} }
           const progress = {};
           parsed.records.forEach((r) => { progress[r.id] = r; });
@@ -6322,7 +6524,7 @@ function BaramApp() {
           setSpots(merged);
           if (result && resultSource !== PICKED_STAMP && merged.find((s) => s.id === result.id && s.isVisited)) clearResult();
           pickRouletteSpots(merged, region, currentLocation);
-          setBackupNotice(`백업을 불러왔어요. STAMP ${stampCount}곳${parsed.mountains ? `, 명산 ${Object.keys(parsed.mountains).length}곳` : ""}${parsed.walks ? `, 걷기길 ${Object.keys(parsed.walks).length}곳` : ""}`);
+          setBackupNotice(`백업을 불러왔어요. STAMP ${stampCount}곳${parsed.mountains ? `, 명산 ${Object.keys(parsed.mountains).length}곳` : ""}${parsed.walks ? `, 걷기길 ${Object.keys(parsed.walks).length}곳` : ""}${parsed.stars ? `, STAR ${Object.keys(parsed.stars).length}곳` : ""}`);
         },
       });
     });
