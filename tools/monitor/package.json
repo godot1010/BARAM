@@ -1,0 +1,7 @@
+{
+  "name": "baram-monitor",
+  "private": true,
+  "description": "BARAM 자동 점검 Worker (1시간마다, 문제 2번 연속이면 카카오톡 나에게 보내기)",
+  "scripts": { "deploy": "wrangler deploy" },
+  "devDependencies": { "wrangler": "4.162.0" }
+}
