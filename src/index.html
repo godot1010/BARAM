@@ -3650,13 +3650,13 @@ function BikeInfo({ place }) {
   );
 }
 
-// ★ STAR 장소 (2026-11-06 형 기획): 스타가 촬영·방문한 공개 장소. 지금은 BTS 31곳 (store-assets/BTS-장소-목록.md의 O)
+// ★ STAR 장소 (2026-11-06 형 기획): 스타가 촬영·방문한 공개 장소. 2026-11-14부터 BTS 94곳 (31곳 + 책 『더 퍼플 로드』·한경 [BTS 투어] 등으로 확인한 63곳, store-assets/퍼플로드-후보.md)
 // 사실만 짧게 적고 출처를 붙인다. 멤버 사진·로고는 쓰지 않고 장소 사진(관광정보)만. 기능 이름은 'STAR'(퍼블리시티권 주의)
 const STAR_COLOR = "#8E44AD";
 let starPlacesPromise = null;
 function loadStarPlaces() {
   if (!starPlacesPromise) {
-    starPlacesPromise = fetch("/star-places.json?v=2")
+    starPlacesPromise = fetch("/star-places.json?v=3")
       .then((r) => { if (!r.ok) throw new Error("STAR 장소 정보를 불러오지 못했어요."); return r.json(); })
       .then((d) => d.places || [])
       .catch((e) => { starPlacesPromise = null; throw e; });
@@ -3685,7 +3685,7 @@ function StarInfo({ place }) {
       <a href={s.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] font-bold mt-1" style={{ color: STAR_COLOR }}>
         출처: {s.src} <ExternalLink size={10} />
       </a>
-      <p className="text-[10px] text-[#A6987F] mt-1">기사·지자체 자료로 확인한 공개 장소예요. 소속사 공식 정보가 아니에요.</p>
+      <p className="text-[10px] text-[#A6987F] mt-1">기사·지자체·책 자료로 확인한 공개 장소예요. 소속사 공식 정보가 아니에요.</p>
     </div>
   );
 }
@@ -5831,7 +5831,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
         )}
         {tab === "star" && entry && entry.status === "success" && (
           <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
-            <span style={{ color: STAR_COLOR }}>★</span> 스타가 촬영하거나 다녀간 공개 장소예요{items.length > 0 ? ` (${items.length}곳)` : ""}. 기사·지자체 자료로 확인한 곳만 넣었고, 장소를 누르면 출처를 볼 수 있어요.
+            <span style={{ color: STAR_COLOR }}>★</span> 스타가 촬영하거나 다녀간 공개 장소예요{items.length > 0 ? ` (${items.length}곳)` : ""}. 기사·지자체·책 자료로 확인한 곳만 넣었고, 장소를 누르면 출처를 볼 수 있어요.
           </p>
         )}
         {tab === "bike" && entry && entry.status === "success" && (
@@ -5950,9 +5950,9 @@ function usePersistentState(key, initialValue) {
 const CURRENT_RESULT_THEME_KEY = "baram_current_result_theme";
 const THEME_ROULETTE = {
   // 목록 순서(2026-11-06 형 결정 C안): 자연(등산·걷기길·캠핑) / 바다(바다·낚시) / 함께(반려견·무장애) / 혜택(반값여행), 묶음 첫 줄은 group: true
-  // ★ STAR 룰렛 (2026-11-06 형 요청): STAR 장소가 있는 22개 지역(31곳), 맨 위. 이 룰렛으로 정한 여행지는 추천 음악이 모두 BTS 노래
+  // ★ STAR 룰렛 (2026-11-06 형 요청): STAR 장소가 있는 41개 지역(94곳, 2026-11-14), 맨 위. 이 룰렛으로 정한 여행지는 추천 음악이 모두 BTS 노래
   star: { label: "STAR", emoji: "★", color: STAR_COLOR, tab: "star",
-    counts: { "서울 종로구": 2, "서울 중구": 2, "서울 용산구": 2, "서울 영등포구": 1, "서울 마포구": 2, "서울 광진구": 1, "서울 송파구": 1, "서울 강남구": 1, "서울 성동구": 2, "서울 중랑구": 1, "양주시": 1, "용인시": 1, "양평군": 1, "강릉시": 2, "삼척시": 1, "평창군": 1, "제천시": 1, "부안군": 3, "완주군": 2, "광주 동구": 1, "부산 사하구": 1, "부산 연제구": 1 } },
+    counts: {"서울 종로구": 4, "서울 중구": 2, "서울 용산구": 2, "서울 영등포구": 1, "서울 마포구": 2, "서울 광진구": 1, "서울 송파구": 2, "서울 강남구": 2, "서울 성동구": 2, "서울 중랑구": 1, "양주시": 2, "용인시": 3, "양평군": 7, "강릉시": 2, "삼척시": 4, "평창군": 1, "제천시": 1, "부안군": 3, "완주군": 7, "광주 동구": 1, "부산 사하구": 2, "부산 연제구": 1, "고양시": 5, "의정부시": 1, "고성군-강원": 3, "춘천시": 4, "경주시": 7, "대구 중구": 4, "대구 남구": 1, "대구 수성구": 1, "제주 구좌": 1, "제주 안덕": 2, "제주 한경": 1, "부산 부산진구": 2, "부산 금정구": 3, "부산 동래구": 1, "부산 남구": 1, "부산 해운대구": 1, "광주 북구": 1, "광주 남구": 1, "광주 서구": 1} },
   // ⛰️ 등산 룰렛 (2026-11-06 형 결정 B안): 100대 명산 + 동네 산이 있는 220개 지역. 무게 = 그 지역 100대 명산 수 × 10 + 동네 산 수
   // (100대 명산이 있는 지역이 더 자주 나오게). 목록 숫자는 명산 100 + 동네 산 4,611 = 4,711곳
   mountain: { group: true, label: "등산", emoji: "⛰️", color: MOUNTAIN_COLOR, tab: "mountain", total: 4711,
