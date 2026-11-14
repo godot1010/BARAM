@@ -5399,6 +5399,38 @@ function fetchPlaceDetail(place) {
   return placeDetailCache.get(key);
 }
 
+// ---- 앱 안 '문제 알리기' (2026-11-15 형 결정 '3번'): 메일 앱을 열어 형에게 보낸다 ----
+// 사용자가 보내기 전에 내용을 보고 고치거나 지울 수 있다. 서버로 따로 보내는 것은 없다.
+// 자동으로 넣는 것: 여행지·장소 이름, 앱/웹, 날짜, 오늘 이 폰이 만난 오류 종류(baram_err_sent) — 이름·위치·기기 정보는 넣지 않는다.
+const REPORT_EMAIL = "a01083252780@gmail.com"; // privacy.html에 공개한 문의 메일과 같음
+function reportProblemHref({ spotName = "", placeName = "", placeAddr = "" } = {}) {
+  const now = new Date(Date.now() + 9 * 3600 * 1000);
+  const today = now.toISOString().slice(0, 10);
+  let src = "웹";
+  let errs = [];
+  try {
+    if (sessionStorage.getItem("baram_src") === "app") src = "앱";
+    const rec = JSON.parse(localStorage.getItem("baram_err_sent") || "null");
+    if (rec && rec.d === today) errs = rec.k || [];
+  } catch {
+    // 저장소를 못 쓰면 빼고 보낸다
+  }
+  const subject = placeName ? `[BARAM 문제] ${placeName} 정보` : `[BARAM 문제] ${shortSpotName(spotName) || "앱"}`;
+  const body = [
+    "어떤 문제가 있었나요? 여기에 적어 주세요.",
+    "(예: 장소가 문을 닫았어요, 주소가 달라요, 화면이 멈췄어요)",
+    "",
+    "",
+    "",
+    "---- 아래는 자동으로 들어간 정보예요 (지워도 돼요) ----",
+    spotName ? `여행지: ${spotName}` : false,
+    placeName ? `장소: ${placeName}${placeAddr ? ` (${placeAddr})` : ""}` : false,
+    `${src}에서 · ${today} ${now.toISOString().slice(11, 16)}`,
+    errs.length > 0 && `오늘 앱이 만난 오류: ${errs.join(" / ")}`,
+  ].filter((line) => typeof line === "string").join("\n"); // 빈 줄("")은 적을 자리라 남기고, 없는 항목(false)만 뺀다
+  return `mailto:${REPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 // mood: 지금 여행지 테마 → 장소 이름 색 (감성 남색 / 활기 빨강, 결과 카드의 여행지 이름과 같은 색)
 function PlaceDetailSheet({ place, mood, onClose }) {
   useBodyScrollLock();
@@ -5529,6 +5561,14 @@ function PlaceDetailSheet({ place, mood, onClose }) {
             </a>
           </div>
           {!place.mountain && !place.walk && <p className="text-[10px] text-[#A6987F] mt-2">정보 출처: {place.vj ? "제주관광공사 VISIT JEJU" : "한국관광공사"}. 이용 시간과 요금은 바뀔 수 있으니 방문 전에 확인하세요.</p>}
+          {/* 2026-11-15 형 결정 3번: 장소 정보가 틀렸을 때 메일로 알리기 */}
+          <a
+            href={reportProblemHref({ placeName: place.name || place.title || "", placeAddr: place.address || place.addr || place.addr1 || "" })}
+            className="block text-center underline"
+            style={{ fontSize: 11, color: "#6B5F4F", marginTop: 8 }}
+          >
+            🛠 이 정보가 틀렸나요? 알려 주기
+          </a>
         </div>
       </div>
     </div>
@@ -7328,6 +7368,14 @@ function BaramApp() {
                 {JEJU_NAMES.has(result.name) && <><br />제주관광공사 VISIT JEJU(제주 관광지·맛집·숙소)</>}
               </span>
             </div>
+            {/* 2026-11-15 형 결정 3번: 앱 안 '문제 알리기' — 메일 앱이 열리고, 사용자가 보내기 전에 내용을 본다 */}
+            <a
+              href={reportProblemHref({ spotName: result.name })}
+              className="block text-center underline"
+              style={{ fontSize: 11, color: "#6B5F4F", marginTop: 6 }}
+            >
+              🛠 문제 알리기
+            </a>
 
             {resultSpot && resultSpot.isVisited ? (
               <button
