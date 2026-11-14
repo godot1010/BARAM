@@ -7039,8 +7039,10 @@ function BaramApp() {
           className="w-full flex items-center gap-2 bg-white/50 border border-[#D9CBB0] rounded-xl px-4 py-3 text-left"
         >
           <MapPin size={16} style={{ color: accent }} />
-          <span className="flex-1 text-sm font-medium text-[#2B2620]">내 위치 : {currentLocation.name}</span>
-          <Search size={14} className="text-[#A6987F]" />
+          {/* 2026-11-14 형 요청: '내 위치'는 왼쪽, 지역 이름은 오른쪽(코스 색), 검색 칸이라 돋보기 그대로 */}
+          <span className="flex-1 text-sm font-medium text-[#2B2620]">내 위치</span>
+          <span className="text-sm font-bold truncate" style={{ color: accent, maxWidth: "60%" }}>{currentLocation.name.replace(/-.*$/, "")}</span>
+          <Search size={14} className="text-[#A6987F] shrink-0" />
         </button>
 
 
