@@ -2408,13 +2408,13 @@ function BenefitBadges({ spot }) {
       {half && (
         <button onClick={() => setOpen("half")} className={badge} style={{ background: "#FDECEA", borderColor: "#E8A39C", color: "#8E1F16" }}>
           💸 <span className="benefit-shine" style={{ "--c": "#8E1F16" }}>반값여행 {half.status === "open" ? "신청 중" : "곧 접수"} · 여행 경비 50% 돌려받기</span>
-          <span className="font-normal" style={{ opacity: 0.7, marginLeft: "auto" }}>ⓘ</span>
+          <span style={{ marginLeft: "auto", fontWeight: 900, fontSize: 13 }}>ⓘ</span>
         </button>
       )}
       {resident && (
         <button onClick={() => setOpen("resident")} className={badge} style={{ background: "#EAF0FA", borderColor: "#A9BEE0", color: "#1B4B91" }}>
           🎫 <span className="benefit-shine" style={{ "--c": "#1B4B91" }}>디지털관광주민증 지역 · 할인 혜택</span>
-          <span className="font-normal" style={{ opacity: 0.7, marginLeft: "auto" }}>ⓘ</span>
+          <span style={{ marginLeft: "auto", fontWeight: 900, fontSize: 13 }}>ⓘ</span>
         </button>
       )}
       {open && <BenefitInfoDialog kind={open} spot={spot} half={half} onClose={() => setOpen(null)} />}
