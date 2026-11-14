@@ -60,6 +60,45 @@
   @media (prefers-reduced-motion: reduce) { .baram-press, .baram-ink, .baram-icon-bob, .baram-chev-nod, .baram-pin-drop, .baram-step, .baram-twinkle { animation: none; } }
   body { font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif; }
 </style>
+<script>
+  // 익명 오류 집계 (2026-11-15 형 결정 '2번 오류 모으기'): 앱이 오류를 만나면 오류 '종류'만 /api/ping?err= 로 보낸다.
+  // 이름·기기 번호·위치는 보내지 않는다. 숫자(좌표 등)와 인터넷 주소는 지우고 80자까지만.
+  // 폰마다 같은 종류는 하루 한 번, 하루 5종류까지만 (localStorage baram_err_sent) → 서버 숫자 ≈ 그 오류를 만난 폰 수.
+  (function () {
+    var LOCAL = location.hostname === "127.0.0.1" || location.hostname === "localhost";
+    function clean(s) {
+      return String(s || "").replace(/https?:\/\/\S+/g, "(주소)").replace(/\d[\d.]{3,}/g, "#").replace(/\s+/g, " ").trim().slice(0, 80);
+    }
+    window.baramReportError = function (kind) {
+      try {
+        kind = clean(kind);
+        if (!kind) return;
+        var today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+        var rec = JSON.parse(localStorage.getItem("baram_err_sent") || "null");
+        if (!rec || rec.d !== today) rec = { d: today, k: [] };
+        if (rec.k.indexOf(kind) >= 0 || rec.k.length >= 5) return;
+        rec.k.push(kind);
+        localStorage.setItem("baram_err_sent", JSON.stringify(rec));
+        if (LOCAL) { console.warn("[오류 집계] 로컬이라 보내지 않음:", kind); return; }
+        fetch("/api/ping?err=" + encodeURIComponent(kind), { method: "POST", keepalive: true }).catch(function () {});
+      } catch (e) {
+        // 저장소를 못 쓰는 환경 등 — 집계만 건너뛴다
+      }
+    };
+    window.addEventListener("error", function (e) {
+      if (e.filename && e.filename.indexOf(location.origin) !== 0) return; // 확장 프로그램 등 우리 것이 아닌 오류
+      var m = e.message || "";
+      if (!m || /^Script error/.test(m) || /ResizeObserver/.test(m)) return; // 브라우저가 내는 의미 없는 오류
+      window.baramReportError("화면 오류: " + m);
+    });
+    window.addEventListener("unhandledrejection", function (e) {
+      var r = e.reason;
+      var m = r && r.message ? r.message : String(r);
+      if (/AbortError|aborted|Failed to fetch|NetworkError|Load failed|network/i.test(m)) return; // 인터넷 끊김은 오류로 안 셈
+      window.baramReportError("처리 안 된 오류: " + m);
+    });
+  })();
+</script>
 </head>
 <body>
 <div id="root"></div>
@@ -2311,8 +2350,10 @@ function fetchWeather(lat, lng) {
     try {
       const res = await fetch(`/api/weather?lat=${lat}&lng=${lng}`, { signal: controller.signal });
       const data = await res.json();
+      if (!(res.ok && !data.error && data.now) && window.baramReportError) window.baramReportError(`날씨 오류 ${res.status}`);
       return res.ok && !data.error && data.now ? data : null;
     } catch {
+      if (navigator.onLine !== false && window.baramReportError) window.baramReportError("날씨 응답 없음");
       return null;
     } finally {
       clearTimeout(timer);
@@ -2567,6 +2608,7 @@ async function tourApiProxyFetchOnce(action, extraParams) {
     res = await fetchWithTimeout();
   }
   if (!res) {
+    if (navigator.onLine !== false && window.baramReportError) window.baramReportError(`관광정보 응답 없음: ${action}`);
     const err = new Error("관광정보 서버가 응답하지 않아요.");
     err.code = "HTTP_ERROR";
     throw err;
@@ -2579,6 +2621,7 @@ async function tourApiProxyFetchOnce(action, extraParams) {
   }
   if (!res.ok || (data && data.error)) {
     const isServerNoKey = data && data.error === "SERVER_NO_KEY";
+    if (window.baramReportError) window.baramReportError(`관광정보 오류 ${res.status}: ${action}`);
     // 서버(Netlify Function)가 진단용으로 넣어준 상세 메시지 + TourAPI 원본 응답을 그대로 보여준다
     let detail = data && data.message ? data.message : `공공데이터 API 응답 오류 (HTTP ${res.status})`;
     if (data && data.upstreamBody) {

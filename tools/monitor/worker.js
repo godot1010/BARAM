@@ -9,6 +9,8 @@
 const SITE = "https://baram-bh4.pages.dev";
 const TIMEOUT_MS = 25000;
 // 강릉 — 늘 같은 값으로 물어서 서버 저장본(24시간)을 주로 쓰게 한다 → 공공데이터 호출은 하루 몇 번뿐
+// 사용자 폰 오류(2026-11-15): 하루에 같은 오류를 만난 폰이 이만큼 되면 카톡 (종류마다 하루 한 번)
+const USER_ERROR_ALERT = 5;
 const SPOT = { lat: "37.7519", lng: "128.8761", sido: "강원", sgg: "강릉시", name: "강릉" };
 
 async function getJson(path) {
@@ -160,6 +162,26 @@ async function hourly(env) {
     await sendKakao(env, `✅ BARAM 복구됐어요\n모든 점검 정상 · ${kstLabel()}`).catch((e) => { state.sendError = String(e.message); });
   }
 
+  // 사용자 폰에서 모인 오류 (/api/ping?view=stats 의 오늘 errors)
+  const today = kstNow().toISOString().slice(0, 10);
+  const alertedToday = prev.errDate === today ? prev.errAlerted || [] : [];
+  state.errDate = today;
+  state.errAlerted = alertedToday;
+  try {
+    const stats = await getJson("/api/ping?view=stats");
+    const errors = ((stats.days || [])[0] || {}).errors || {};
+    state.userErrors = errors;
+    const hot = Object.keys(errors).filter((kind) => errors[kind] >= USER_ERROR_ALERT && !alertedToday.includes(kind));
+    if (hot.length) {
+      const lines = hot.map((kind) => `· ${kind} (폰 ${errors[kind]}대)`).join("\n");
+      await sendKakao(env, `⚠️ BARAM 사용자 오류가 많아요 (오늘)\n${lines}\n${kstLabel()}`)
+        .then(() => { state.errAlerted = alertedToday.concat(hot); })
+        .catch((e) => { state.sendError = String(e.message); });
+    }
+  } catch (e) {
+    state.userErrorsFail = String(e.message || e); // 집계를 못 읽은 것은 알림하지 않음 (위 점검이 따로 봄)
+  }
+
   const k = kstNow();
   // 매주 월요일 9시: 살아 있다는 한 줄 (토큰도 이때 새로 받아 만료를 막음)
   if (k.getUTCDay() === 1 && k.getUTCHours() === 9) {
@@ -188,7 +210,7 @@ async function handle(request, env) {
     const kakao = await env.MONITOR.get("kakao", "json");
     return page("BARAM 자동 점검", `
       <p>카카오 연결: ${kakao ? "✅ 됨" : "❌ 안 됨 — <a href='/kakao/login'>카카오 로그인</a>"}</p>
-      ${state ? `<p>마지막 점검: ${esc(state.last)} · 연속 실패 ${state.fails}번${state.alerted ? " · 알림 보냄" : ""}</p>${resultList(state.results || [])}${state.sendError ? `<p>보내기 오류: ${esc(state.sendError)}</p>` : ""}` : "<p>아직 점검 기록 없음</p>"}
+      ${state ? `<p>마지막 점검: ${esc(state.last)} · 연속 실패 ${state.fails}번${state.alerted ? " · 알림 보냄" : ""}</p>${resultList(state.results || [])}<p>오늘 사용자 오류: ${Object.keys(state.userErrors || {}).length ? Object.entries(state.userErrors).map(([k, n]) => `${esc(k)} (${n})`).join(", ") : "없음"}</p>${state.sendError ? `<p>보내기 오류: ${esc(state.sendError)}</p>` : ""}` : "<p>아직 점검 기록 없음</p>"}
       <p><a href="/check">지금 점검해 보기</a> (알림은 안 보냄)</p>`);
   }
 
