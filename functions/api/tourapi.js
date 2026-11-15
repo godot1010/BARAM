@@ -383,8 +383,9 @@ async function ldongCodesFor(base, sido, sgg) {
 // 위치 검색 + (sido/sgg가 있으면) 그 시·군·구 지역 목록을 합쳐 가까운 순으로. 결과 모양은 locationBasedList2와 같다 (dist 칸 포함)
 // 지역 목록이 실패해도 위치 검색 결과는 돌려준다. 둘 다 실패하면 오류
 const AREA_PAGE = 1000;
-async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido, sgg, maxPages = 3 }) {
-  const located = callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, ...(contentTypeId ? { contentTypeId } : {}), numOfRows: num, pageNo: "1" });
+// apiBase: 영어판은 ENG_API_BASE(영문 관광정보도 위치 검색이 같은 고장이라 지역 목록을 합친다, 2026-11-15)
+async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido, sgg, maxPages = 3 }, apiBase = TOUR_API_BASE) {
+  const located = callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, ...(contentTypeId ? { contentTypeId } : {}), numOfRows: num, pageNo: "1" }, apiBase);
   // 위치 검색이 달라는 수만큼 다 주면(맛집처럼 고장 나지 않은 종류) 지역 목록은 받지 않는다 → 처음 여는 지역이 빨라진다 (2026-11-14 점검: 16초 → )
   const first = await located.then((r) => r, () => null);
   if (first && first.items.length >= Number(num)) return { items: first.items, incomplete: false };
@@ -392,9 +393,9 @@ async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido
     const codes = await ldongCodesFor(base, sido, sgg);
     const lists = await Promise.all(codes.slice(0, 6).map(async (c) => {
       const p = { ...base, lDongRegnCd: c.r, lDongSignguCd: c.s, ...(contentTypeId ? { contentTypeId } : {}), arrange: "A", numOfRows: String(AREA_PAGE) };
-      const first = await callTourApi("areaBasedList2", { ...p, pageNo: "1" });
+      const first = await callTourApi("areaBasedList2", { ...p, pageNo: "1" }, apiBase);
       const pages = Math.min(Math.ceil(first.totalCount / AREA_PAGE), maxPages); // 큰 도시 맛집은 1,000곳이 넘는다 (최대 3,000곳)
-      const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => callTourApi("areaBasedList2", { ...p, pageNo: String(i + 2) }).catch(() => ({ items: [] }))));
+      const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => callTourApi("areaBasedList2", { ...p, pageNo: String(i + 2) }, apiBase).catch(() => ({ items: [] }))));
       return [first, ...rest].flatMap((r) => r.items);
     }));
     return lists.flat();
@@ -784,8 +785,7 @@ export async function onRequest(context) {
       const num = url.searchParams.get("num") || "5";
       if (!lat || !lng || !contentTypeId) return json({ error: "BAD_REQUEST", message: "lat/lng/contentTypeId가 필요해요." }, 400);
       if (eng) {
-        const { items } = await callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, contentTypeId: kindId(contentTypeId), numOfRows: num, pageNo: "1" }, kindBase);
-        payload = { items };
+        payload = await nearbyWithArea(base, { lat, lng, radius, contentTypeId: kindId(contentTypeId), num, sido: url.searchParams.get("sido") || "", sgg: url.searchParams.get("sgg") || "", maxPages: 1 }, kindBase);
       } else {
         payload = await nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido: url.searchParams.get("sido") || "", sgg: url.searchParams.get("sgg") || "" });
       }

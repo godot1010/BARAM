@@ -132,6 +132,69 @@ function nameMatches(name, q) {
   if (LANG === "ko" || !q) return false;
   return tr(name).replace(/\s/g, "").toLowerCase().includes(q.toLowerCase());
 }
+// ---- 영어판 장소 이름 (2026-11-15 형 결정 '추천안') ----
+// 영어 관광정보에 같은 곳이 있으면 그 영어 이름(enName), 없으면 'Gyeongpodae (경포대)'처럼 로마자 + 한글.
+// 한국어 화면은 이름 그대로. 길찾기·검색·기록에는 늘 한국어 이름(name)을 쓴다(지도 앱이 한국어로 찾음).
+const RR_I = ["g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss", "", "j", "jj", "ch", "k", "t", "p", "h"];
+const RR_V = ["a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae", "oe", "yo", "u", "wo", "we", "wi", "yu", "eu", "ui", "i"];
+// 받침 대표 소리(뒤에 자음이 오거나 끝날 때)
+const RR_F = ["", "k", "k", "k", "n", "n", "n", "t", "l", "k", "m", "l", "l", "l", "p", "l", "m", "p", "p", "t", "t", "ng", "t", "t", "k", "t", "p", "t"];
+// 뒤 글자가 ㅇ으로 시작할 때: [남는 소리, 넘어가는 첫소리]
+const RR_LINK = [["", ""], ["", "g"], ["", "kk"], ["k", "s"], ["", "n"], ["n", "j"], ["", "n"], ["", "d"], ["", "r"], ["l", "g"], ["l", "m"], ["l", "b"], ["l", "s"], ["l", "t"], ["l", "p"], ["", "r"], ["", "m"], ["", "b"], ["p", "s"], ["", "s"], ["", "ss"], ["ng", ""], ["", "j"], ["", "ch"], ["", "k"], ["", "t"], ["", "p"], ["", ""]];
+// 국어의 로마자 표기법(자주 나오는 소리 바뀜만: 이어 읽기, 받침+ㄴ·ㅁ, ㄴ+ㄹ, ㄹ+ㄴ, 받침+ㄹ). 낱말 첫 글자는 대문자
+function romanizeKo(text) {
+  const chars = [...String(text || "")];
+  const syl = chars.map((c) => {
+    const code = c.charCodeAt(0) - 0xac00;
+    return code >= 0 && code < 11172 ? { i: Math.floor(code / 588), v: Math.floor((code % 588) / 28), f: code % 28 } : null;
+  });
+  let out = "";
+  let carry = null; // 앞 받침이 바꿔 놓은 이번 글자 첫소리
+  syl.forEach((x, k) => {
+    if (!x) { out += chars[k]; carry = null; return; }
+    let head = carry !== null ? carry : RR_I[x.i];
+    carry = null;
+    let tail = RR_F[x.f];
+    const nx = syl[k + 1];
+    if (x.f && nx) {
+      if (nx.i === 11) { const [keep, move] = RR_LINK[x.f]; tail = keep; carry = move; }
+      else if (x.f === 27) { tail = ""; carry = { 0: "k", 3: "t", 12: "ch" }[nx.i] ?? null; } // ㅎ 받침 + ㄱ·ㄷ·ㅈ → ㅋ·ㅌ·ㅊ
+      else if (nx.i === 2 || nx.i === 6) { tail = { k: "ng", t: "n", p: "m" }[tail] || tail; if (tail === "l" && nx.i === 2) carry = "l"; }
+      else if (nx.i === 5) {
+        if (tail === "n" || tail === "l") { tail = "l"; carry = "l"; }
+        else { tail = { k: "ng", t: "n", p: "m" }[tail] || tail; carry = "n"; }
+      }
+    }
+    out += head + RR_V[x.v] + tail;
+  });
+  return out.replace(/(^|[\s(\[\-·/])([a-z])/g, (m, a, b) => a + b.toUpperCase());
+}
+function placeName(name, enName) {
+  if (LANG === "ko" || !name) return name || "";
+  if (enName) return enName;
+  return /[가-힣]/.test(name) ? `${romanizeKo(name)} (${name})` : name;
+}
+// 영어 관광정보 목록에서 같은 곳 찾아 붙이기: 영어 제목 끝 괄호의 한국어 이름(예: 'Bosingak Belfry (보신각 종)')이 같거나,
+// 우리 이름 안에 그 이름(3글자 이상)이 들어 있고 3km 안. 영어 쪽 이름이 더 긴 경우는 안 맞춤('쌈지길' ≠ '하이드앤시크 쌈지길점' 가게)
+const enNameMatch = (k, c) => c.key === k || (c.key.length >= 3 && k.includes(c.key));
+function splitEnTitle(title) {
+  const m = String(title || "").match(/^(.*?)\s*\(([^()]*[가-힣][^()]*)\)\s*$/);
+  return m ? { en: m[1].trim(), ko: m[2].trim() } : { en: String(title || "").trim(), ko: "" };
+}
+async function attachEnglish(places, { lat, lng, contentTypeId, radius, spotName }) {
+  if (LANG !== "en" || places.length === 0) return places;
+  const eng = await tourApiProxyFetch("nearby", { lat: String(lat), lng: String(lng), contentTypeId: String(contentTypeId), radius: String(radius), num: "300", lang: "en", ...localMountainQuery(spotName) }).catch(() => []);
+  const cands = eng.map((it) => ({ ...splitEnTitle(it.title), addr: it.addr1 || "", id: it.contentid, lat: parseFloat(it.mapy), lng: parseFloat(it.mapx) }))
+    .filter((c) => c.ko && c.en)
+    .map((c) => ({ ...c, key: placeKey(c.ko) }));
+  return places.map((p) => {
+    const k = placeKey(p.name);
+    if (k.length < 2) return p;
+    const hit = cands.find((c) => c.key.length >= 2 && enNameMatch(k, c)
+      && (!Number.isFinite(c.lat) || !p.lat || haversineKm(c.lat, c.lng, p.lat, p.lng) < 3));
+    return hit ? { ...p, enName: hit.en, enAddr: hit.addr, enId: hit.id } : p;
+  });
+}
 const I18N_MISSING = new Set(); // 영어 화면에서 번역표에 없던 원문(콘솔에서 [...I18N_MISSING]로 확인)
 function tr(ko, vars) {
   let s = ko;
@@ -2195,7 +2258,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
                 <p className="text-sm font-medium text-[#2B2620] truncate">{s.icon} {s.title}</p>
                 {s.place ? (
                   <p className="text-xs text-[#2B2620] truncate">
-                    <span className="font-bold">{s.place.name}</span>
+                    <span className="font-bold">{placeName(s.place.name, s.place.enName)}</span>
                     {s.place.distanceKm && <span className="text-[#6B5F4F]">{tr(" · 시내에서 {km}km", { km: s.place.distanceKm })}</span>}
                     {s.place.area && <span className="text-[#8C8577]">{tr(" · 이웃 {area}", { area: s.place.area })}</span>}
                   </p>
@@ -2244,7 +2307,7 @@ function DayItinerary({ spot, from, entry, gayoSongs, popSongs, regionSong, onPl
           rel="noreferrer"
           className="block mt-2 text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2"
         >
-          {tr("📅 곧 열려요:")} <span className="font-bold text-[#2B2620]">{plan.upcomingFestival.title}</span> ({plan.upcomingFestival.shortPeriod})
+          {tr("📅 곧 열려요:")} <span className="font-bold text-[#2B2620]">{placeName(plan.upcomingFestival.title, plan.upcomingFestival.enName)}</span> ({plan.upcomingFestival.shortPeriod})
         </a>
       )}
 
@@ -2777,7 +2840,7 @@ async function fetchNearbyTourSpots({ lat, lng, spotName, contentTypeId, radius 
     areaRank(a.addr1, spotName) - areaRank(b.addr1, spotName) ||
     (preferImages ? (b.firstimage ? 1 : 0) - (a.firstimage ? 1 : 0) : 0)
   );
-  return dedupeByName(ordered).slice(0, num).map((it) => ({
+  const places = dedupeByName(ordered).slice(0, num).map((it) => ({
     id: it.contentid,
     name: it.title,
     kind: placeKindOf(it),
@@ -2791,6 +2854,8 @@ async function fetchNearbyTourSpots({ lat, lng, spotName, contentTypeId, radius 
     cafe: isCafeItem(it), // 음식점(39) 안의 '카페/전통찻집' 분류 (옛 cat3 또는 새 lclsSystm3)
     area: neighborArea(it.addr1, spotName), // 이웃 지역이면 그 지역 이름
   }));
+  // 영어판: 영어 관광정보에 같은 곳이 있으면 영어 이름·주소를 붙인다(한국어 화면은 아무것도 더 받지 않음)
+  return LANG === "en" && !jeju ? attachEnglish(places, { lat, lng, contentTypeId, radius, spotName }) : places;
 }
 
 const NOT_ATTRACTION = /화장실|사우나|노인회|경로당|주차장|복지관|주민센터|행정복지/;
@@ -2909,9 +2974,10 @@ function yyyymmdd(d) {
 // 전국 축제 목록은 한 달 단위로 한 번만 받아서 여러 지역이 같이 쓴다 (API 호출 수 절약).
 // 예전에는 가나다순 30개만 받아서 대부분 지역에 축제가 있어도 '없음'으로 나왔다.
 let festivalListCache = { key: null, promise: null };
-function loadFestivalList() {
+function loadFestivalList(lang = "ko") {
   const today = new Date();
   const eventStartDate = `${yyyymmdd(today).slice(0, 6)}01`;
+  if (lang !== "ko") return tourApiProxyFetch("festival", { eventStartDate, numOfRows: "1000", lang }); // 영어판 이름 맞추기용(같은 요청은 tourApiProxyFetch가 나눠 씀)
   if (festivalListCache.key !== eventStartDate || !festivalListCache.promise) {
     const promise = tourApiProxyFetch("festival", { eventStartDate, numOfRows: "1000" });
     festivalListCache = { key: eventStartDate, promise };
@@ -3542,7 +3608,7 @@ function MountainStampList({ query }) {
                   {mine ? <span className="text-base">⛰️</span> : null}
                 </span>
                 <span className="min-w-0">
-                  <p className="text-sm truncate" style={mine ? { color: MOUNTAIN_COLOR, fontWeight: 700 } : { color: "#2B2620" }}>{m.name}</p>
+                  <p className="text-sm truncate" style={mine ? { color: MOUNTAIN_COLOR, fontWeight: 700 } : { color: "#2B2620" }}>{placeName(m.name)}</p>
                   <p className="text-xs text-[#6B5F4F] mt-0.5">
                     {mine ? tr("{date} 올랐어요 · ", { date: formatDate(mine.date) }) : ""}{m.height ? `${Number(m.height).toLocaleString()}m · ` : ""}{(m.regions[0] || m.sido || "").replace(/-.*$/, "")}{memoryKeys.has(`mtn:${m.id}`) ? tr(" · 추억 저장됨") : ""}
                   </p>
@@ -3666,7 +3732,7 @@ function StarStampList({ query }) {
                       {mine ? <span className="text-base font-bold">★</span> : null}
                     </span>
                     <span className="min-w-0">
-                      <p className="text-sm truncate" style={mine ? { color: STAR_COLOR, fontWeight: 700 } : { color: "#2B2620" }}>{s.name}</p>
+                      <p className="text-sm truncate" style={mine ? { color: STAR_COLOR, fontWeight: 700 } : { color: "#2B2620" }}>{placeName(s.name)}</p>
                       <p className="text-xs text-[#6B5F4F] mt-0.5 truncate">
                         {mine ? `${formatDate(mine.date)} 다녀옴 · ` : ""}{s.region.replace(/-.*$/, "")} · {s.desc}{memoryKeys.has(`star:${s.id}`) ? tr(" · 추억 저장됨") : ""}
                       </p>
@@ -4123,7 +4189,7 @@ function WalkStampList({ query }) {
                 return (
                   <li key={c.id} className="flex items-center gap-2 py-1.5">
                     <span className="min-w-0 flex-1">
-                      <p className="text-xs truncate" style={mine ? { color: WALK_COLOR, fontWeight: 700 } : { color: "#2B2620" }}>{mine ? "🥾 " : ""}{c.name}</p>
+                      <p className="text-xs truncate" style={mine ? { color: WALK_COLOR, fontWeight: 700 } : { color: "#2B2620" }}>{mine ? "🥾 " : ""}{placeName(c.name)}</p>
                       <p className="text-[11px] text-[#6B5F4F]">{[c.km ? `${c.km}km` : null, walkMinutesText(c.minutes), c.area, mine ? tr("{date} 걸음", { date: formatDate(mine.date) }) : null, memoryKeys.has(`walk:${key}`) ? tr("추억 저장됨") : null].filter(Boolean).join(" · ")}</p>
                     </span>
                     {mine && (
@@ -4404,7 +4470,7 @@ async function fetchLocalFestivals({ regionKeyword, lat, lng }) {
   // 그래도 없으면 전국 목록을 보여주지 않고 "없음"으로 처리 (엉뚱한 지역 축제가 나오지 않도록)
 
   const fmt = (s) => (s && s.length === 8 ? `${Number(s.slice(4, 6))}.${Number(s.slice(6, 8))}` : "");
-  return picked.slice(0, 5).map(({ it, dist }) => ({
+  const list = picked.slice(0, 5).map(({ it, dist }) => ({
     id: it.contentid,
     title: it.title,
     period: it.eventstartdate && it.eventenddate ? `${it.eventstartdate} ~ ${it.eventenddate}` : tr("일정 미정"),
@@ -4420,6 +4486,15 @@ async function fetchLocalFestivals({ regionKeyword, lat, lng }) {
     image: toHttps(it.firstimage2 || it.firstimage),
     imageLarge: toHttps(it.firstimage), // 작은 사진(firstimage2)이 깨진 경우가 있어 대신 쓸 큰 사진
   }));
+  if (LANG !== "en" || list.length === 0) return list;
+  // 영어판: 영어 축제 목록(한 달에 한 번)에서 같은 축제를 찾아 영어 이름을 붙인다
+  const eng = await loadFestivalList("en").catch(() => []);
+  const cands = eng.map((e) => ({ ...splitEnTitle(e.title), addr: e.addr1 || "", id: e.contentid })).filter((c) => c.ko && c.en).map((c) => ({ ...c, key: placeKey(c.ko) }));
+  return list.map((f) => {
+    const k = placeKey(f.title);
+    const hit = k.length >= 2 && cands.find((c) => c.key.length >= 2 && enNameMatch(k, c));
+    return hit ? { ...f, enName: hit.en, enAddr: hit.addr, enId: hit.id } : f;
+  });
 }
 
 // 서점/카페는 TourAPI 분류에 없어 지도 앱 검색으로 바로 연결만 해준다 (API 호출 없음)
@@ -5463,7 +5538,12 @@ function fetchPlaceDetail(place) {
     placeDetailCache.set(key, promise);
     promise.catch(() => placeDetailCache.delete(key)); // 실패하면 다음에 다시 시도
   }
-  return placeDetailCache.get(key);
+  const ko = placeDetailCache.get(key);
+  if (LANG !== "en" || !place.enId) return ko;
+  // 영어판: 영어 관광정보에 같은 곳이 있으면 소개 글·주소는 영어로(이용 정보·사진은 한국어 자료 그대로). 영어를 못 받으면 한국어 그대로
+  const en = tourApiProxyFetch("detail", { contentId: String(place.enId), ...(place.typeId ? { contentTypeId: String(place.typeId) } : {}), lang: "en" })
+    .then((items) => items[0] || null, () => null);
+  return Promise.all([ko, en]).then(([k, e]) => (e ? { ...k, overview: e.overview || k.overview, addr1: e.addr1 || k.addr1 } : k));
 }
 
 // ---- 앱 안 '문제 알리기' (2026-11-15 형 결정 '3번'): 메일 앱을 열어 형에게 보낸다 ----
@@ -5530,7 +5610,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
     if (tel && !seen.has("📞 문의")) introRows.push(["📞 문의", tel]);
   }
   const homepage = d && homepageUrl(d.homepage);
-  const name = place.name;
+  const name = placeName(place.name, place.enName);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40" onClick={onClose}>
@@ -5558,7 +5638,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
           </div>
           {photos.length > 1 && <p className="text-[11px] font-bold text-[#2F6E68] mt-1">{tr("📷 사진 {n}장 · 옆으로 넘겨 보세요 →", { n: photos.length })}</p>}
           {d && d.photoCredit && <p className="text-[10px] text-[#A6987F] mt-0.5">{tr("사진: {who}", { who: d.photoCredit })}</p>}
-          <p className="text-[11px] text-[#6B5F4F] mt-1.5">{(d && d.addr1) || place.address || place.location}</p>
+          <p className="text-[11px] text-[#6B5F4F] mt-1.5">{(LANG !== "ko" && place.enAddr) || (d && d.addr1) || place.address || place.location}</p>
 
           {state.status === "loading" && (
             <p className="text-xs text-[#A6987F] mt-4 flex items-center gap-1.5"><Loader2 size={13} className="animate-spin" /> {tr("자세한 정보를 불러오는 중…")}</p>
@@ -5738,7 +5818,7 @@ function PlaceCard({ place, emoji }) {
       )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-[#2B2620] truncate">{place.name}</p>
+          <p className="text-sm font-medium text-[#2B2620] truncate">{placeName(place.name, place.enName)}</p>
           {place.kind && (
             <span className="text-[10px] font-bold text-[#B8860B] border border-[#B8860B] rounded-full px-1.5 shrink-0">{tr(place.kind)}</span>
           )}
@@ -5824,14 +5904,14 @@ function PlaceCard({ place, emoji }) {
           if (!place.distanceKm && !place.area) {
             return (
               <p className="text-[11px] mt-0.5 flex items-center justify-between">
-                <span className="text-[#A6987F] truncate min-w-0">{place.address || tr("주소 정보 없음")}</span>
+                <span className="text-[#A6987F] truncate min-w-0">{(LANG !== "ko" && place.enAddr) || place.address || tr("주소 정보 없음")}</span>
                 {directions}
               </p>
             );
           }
           return (
             <>
-              <p className="text-[11px] text-[#A6987F] truncate mt-0.5">{place.address || tr("주소 정보 없음")}</p>
+              <p className="text-[11px] text-[#A6987F] truncate mt-0.5">{(LANG !== "ko" && place.enAddr) || place.address || tr("주소 정보 없음")}</p>
               <p className="text-[11px] mt-0.5 flex items-center justify-between">
                 <span className="text-[#6B5F4F] flex items-center gap-1.5 min-w-0">
                   <span className="whitespace-nowrap">{place.distanceKm ? tr("시내에서 {km}km", { km: place.distanceKm }) : ""}</span>
@@ -5882,7 +5962,7 @@ function FestivalCard({ festival }) {
       )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-[#2B2620] truncate">{festival.title}</p>
+          <p className="text-sm font-medium text-[#2B2620] truncate">{placeName(festival.title, festival.enName)}</p>
         </div>
         <p className="text-[11px] mt-0.5">
           <span
