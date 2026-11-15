@@ -27,6 +27,13 @@ const TOUR_API_BASE = "https://apis.data.go.kr/B551011/KorService2";
 // 🌐 영어판(2026-11-13): lang=en 이면 영문 관광정보(EngService2, 2026-10-19 활용신청·승인)에서 받는다.
 // 영문 서비스는 종류 번호가 다르다 (관광지 12→76, 문화 14→78, 레포츠 28→75, 숙박 32→80, 쇼핑 38→79, 음식점 39→82, 축제 15→85)
 const ENG_API_BASE = "https://apis.data.go.kr/B551011/EngService2";
+// 외국어 관광정보(2026-11-16 일본어·중국어 추가): 언어 → 서비스 주소. 종류 번호는 외국어 서비스끼리 같음(ENG_TYPE_ID)
+const FOREIGN_API_BASE = {
+  en: ENG_API_BASE,
+  ja: "https://apis.data.go.kr/B551011/JpnService2",
+  "zh-CN": "https://apis.data.go.kr/B551011/ChsService2",
+  "zh-TW": "https://apis.data.go.kr/B551011/ChtService2",
+};
 const ENG_TYPE_ID = { "12": "76", "14": "78", "15": "85", "28": "75", "32": "80", "38": "79", "39": "82" };
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)
 const WITH_API_BASE = "https://apis.data.go.kr/B551011/KorWithService2";
@@ -772,8 +779,9 @@ export async function onRequest(context) {
     }
     const serviceKey = normalizeServiceKey(rawServiceKey);
     const base = { serviceKey, MobileOS: "ETC", MobileApp: "BARAM", _type: "json" };
-    const eng = url.searchParams.get("lang") === "en"; // 영어판: nearby·festival·detail만
-    const kindBase = eng ? ENG_API_BASE : TOUR_API_BASE;
+    const foreignBase = FOREIGN_API_BASE[url.searchParams.get("lang") || ""]; // 외국어판: nearby·festival·detail만
+    const eng = !!foreignBase;
+    const kindBase = foreignBase || TOUR_API_BASE;
     const kindId = (id) => (eng ? ENG_TYPE_ID[id] || id : id);
 
     let payload;
