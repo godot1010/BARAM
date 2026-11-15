@@ -33,6 +33,8 @@ const FOREIGN_API_BASE = {
   ja: "https://apis.data.go.kr/B551011/JpnService2",
   "zh-CN": "https://apis.data.go.kr/B551011/ChsService2",
   "zh-TW": "https://apis.data.go.kr/B551011/ChtService2",
+  fr: "https://apis.data.go.kr/B551011/FreService2",
+  es: "https://apis.data.go.kr/B551011/SpnService2",
 };
 const ENG_TYPE_ID = { "12": "76", "14": "78", "15": "85", "28": "75", "32": "80", "38": "79", "39": "82" };
 // 무장애 여행 정보는 같은 공공데이터 키로 쓰는 다른 서비스다 (공공데이터포털에서 따로 활용신청해야 함)

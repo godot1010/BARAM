@@ -34,17 +34,18 @@
 (function () {
   var L = "ko";
   try {
-    var q = (location.search.match(/[?&]lang=(ko|en|ja|zh-CN|zh-TW)(&|$)/) || [])[1];
+    var q = (location.search.match(/[?&]lang=(ko|en|ja|zh-CN|zh-TW|fr|es)(&|$)/) || [])[1];
     var saved = null;
     try { saved = localStorage.getItem("baram_lang"); } catch (e) {}
     var phone = String((navigator.languages && navigator.languages[0]) || navigator.language || "ko").toLowerCase();
     // 폰 언어: 한국어 → ko, 일본어 → ja, 중국어(대만·홍콩·마카오·번체) → zh-TW, 그 밖의 중국어 → zh-CN, 나머지 → 영어 (2026-11-16)
     var auto = phone.indexOf("ko") === 0 ? "ko" : phone.indexOf("ja") === 0 ? "ja"
-      : phone.indexOf("zh") === 0 ? (/hant|tw|hk|mo/.test(phone) ? "zh-TW" : "zh-CN") : "en";
-    L = q || (/^(ko|en|ja|zh-CN|zh-TW)$/.test(saved || "") ? saved : auto);
+      : phone.indexOf("zh") === 0 ? (/hant|tw|hk|mo/.test(phone) ? "zh-TW" : "zh-CN")
+      : phone.indexOf("fr") === 0 ? "fr" : phone.indexOf("es") === 0 ? "es" : "en";
+    L = q || (/^(ko|en|ja|zh-CN|zh-TW|fr|es)$/.test(saved || "") ? saved : auto);
   } catch (e) {}
   window.BARAM_LANG = L;
-  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=9"><\/script>');
+  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=10"><\/script>');
 })();
 </script>
 <style>
@@ -136,9 +137,9 @@ const { useState, useRef, useEffect, useMemo, useContext, createContext } = Reac
 // - 함수 이름을 t가 아니라 tr로 한 까닭: 코드 곳곳에 t라는 지역 이름(테마 등)이 이미 있어 가려지면 오류가 난다.
 // - 번역표 열쇠는 한국어 원문 그대로. 표에 없는 글자는 한국어로 나온다(영어 화면에서 빠진 곳 찾기: I18N_MISSING).
 // ==========================================
-const SUPPORTED_LANGS = ["ko", "en", "ja", "zh-TW", "zh-CN"];
+const SUPPORTED_LANGS = ["ko", "en", "ja", "zh-TW", "zh-CN", "fr", "es"];
 const LANG = SUPPORTED_LANGS.includes(window.BARAM_LANG) ? window.BARAM_LANG : "ko";
-const LANG_TITLES = { en: "BARAM - Travel Roulette", ja: "BARAM - 旅行ルーレット", "zh-TW": "BARAM - 旅行輪盤", "zh-CN": "BARAM - 旅行轮盘" };
+const LANG_TITLES = { en: "BARAM - Travel Roulette", ja: "BARAM - 旅行ルーレット", "zh-TW": "BARAM - 旅行輪盤", "zh-CN": "BARAM - 旅行轮盘", fr: "BARAM - Roulette de voyage", es: "BARAM - Ruleta de viajes" };
 if (LANG !== "ko") { try { document.documentElement.lang = LANG; document.title = LANG_TITLES[LANG] || document.title; } catch {} }
 // 🌐 버튼으로 언어 바꾸기: 폰에 기억하고, 주소의 ?lang= 은 지운 뒤 다시 연다(기록은 그대로)
 function switchLang(code) {
@@ -149,8 +150,8 @@ function switchLang(code) {
     window.location.replace(u.toString());
   } catch { window.location.reload(); }
 }
-const LANG_CHOICES = [["ko", "한국어"], ["en", "English"], ["ja", "日本語"], ["zh-TW", "繁體中文"], ["zh-CN", "简体中文"]];
-const LANG_BADGE = { ko: "KO", en: "EN", ja: "日本", "zh-TW": "繁中", "zh-CN": "简中" };
+const LANG_CHOICES = [["ko", "한국어"], ["en", "English"], ["ja", "日本語"], ["zh-TW", "繁體中文"], ["zh-CN", "简体中文"], ["fr", "Français"], ["es", "Español"]];
+const LANG_BADGE = { ko: "KO", en: "EN", ja: "日本", "zh-TW": "繁中", "zh-CN": "简中", fr: "FR", es: "ES" };
 // 🌐 버튼의 지구본 (2026-11-15 형 요청 '실제 지구본처럼, 방향은 진짜 지구처럼'):
 // 작은 세계 육지 지도(Natural Earth 110m 육지를 128x64 칸으로 줄인 것, 공개 자료)를 공 모양(정사영)으로 그려 돌린다.
 // 진짜 지구처럼 서→동으로 돌아 땅이 왼쪽에서 오른쪽으로 지나간다. 처음엔 한국이 앞에 보이고, 10초에 한 바퀴.
