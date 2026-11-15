@@ -6405,7 +6405,25 @@ function BaramApp() {
     }
   }, [birthInfoRaw]);
   const saju = useMemo(() => (birthInfo ? computeSaju(birthInfo) : null), [birthInfo]);
-  const travelFortune = useMemo(() => (saju ? getTravelFortune(saju) : null), [saju]);
+  // 오늘 날짜(폰 시간). 앱을 닫지 않고 날을 넘겨도 여행운이 어제 것으로 남지 않게,
+  // 앱 화면으로 돌아올 때와 1분마다 날짜를 다시 확인한다 (2026-11-15 형 지적)
+  const [todayKey, setTodayKey] = useState(() => new Date().toDateString());
+  useEffect(() => {
+    const check = () => {
+      const k = new Date().toDateString();
+      setTodayKey((prev) => (prev === k ? prev : k));
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", check);
+    const timer = setInterval(check, 60 * 1000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", check);
+      clearInterval(timer);
+    };
+  }, []);
+  const travelFortune = useMemo(() => (saju ? getTravelFortune(saju) : null), [saju, todayKey]);
 
   function saveBirthInfo(info) {
     setBirthInfoRaw(JSON.stringify(info));
