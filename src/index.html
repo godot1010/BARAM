@@ -221,6 +221,12 @@ function romanizeKo(text) {
   });
   return out.replace(/(^|[\s(\[\-·/])([a-z])/g, (m, a, b) => a + b.toUpperCase());
 }
+// 별미(음식) 이름: 번역표에 있으면 그 영어, 없으면 로마자(예: 돼지국밥 → Dwaejigukbap). 지도 검색에는 한국어 그대로
+function foodName(f) {
+  if (LANG === "ko" || !f) return f || "";
+  const tbl = I18N[LANG];
+  return tbl && Object.prototype.hasOwnProperty.call(tbl, f) ? tbl[f] : romanizeKo(f);
+}
 function placeName(name, enName) {
   if (LANG === "ko" || !name) return name || "";
   if (enName) return enName;
@@ -2074,7 +2080,7 @@ function buildDayPlan({ spot, arrival, data, offsets }) {
   // 지역 별미가 있으면 점심 일정에 '○○ 맛집 찾기'를 붙인다
   const foods = lookupRegion(REGION_FOODS, spot.name);
   const foodLinks = foods
-    ? [{ id: "food", label: tr("🍜 {food} 맛집 찾기", { food: foods[0] }), url: `https://map.kakao.com/?q=${encodeURIComponent(`${spot.name} ${foods[0]}`)}` }]
+    ? [{ id: "food", label: tr("🍜 {food} 맛집 찾기", { food: foodName(foods[0]) }), url: `https://map.kakao.com/?q=${encodeURIComponent(`${spot.name} ${foods[0]}`)}` }]
     : null;
   const festivalStep = festival && {
     icon: "🎉", title: tr("축제 즐기기"), place: { ...festival, name: festival.title }, highlight: true,
@@ -6341,7 +6347,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
             className="block text-sm font-bold text-[#2B2620] border border-[#B8860B] rounded-lg px-3 py-2.5"
             style={{ background: "#FFF4D6" }}
           >
-            {tr("🍜 {name} 별미 「{foods}」 맛집 찾기 ↗", { name: spot.name, foods: foods.join(" · ") })}
+            {tr("🍜 {name} 별미 「{foods}」 맛집 찾기 ↗", { name: spot.name, foods: foods.map(foodName).join(" · ") })}
           </a>
         )}
         {tab === "pet" && entry && entry.status === "success" && (
@@ -7518,7 +7524,7 @@ function BaramApp() {
             <p className="text-[#6B5F4F] mt-1" style={{ fontSize: 13 }}>{result.description}</p>{/* 14→13px: 한 줄에 들어가게 (2026-11-07 형 요청) */}
             {regionFoods && (
               <p className="inline-block mt-2 text-xs font-bold text-[#2B2620] border border-[#B8860B] rounded-full px-2.5 py-1" style={{ background: "#FFF4D6" }}>
-                {tr("🍜 {name} 별미: {foods}", { name: result.name, foods: regionFoods.join(" · ") })}
+                {tr("🍜 {name} 별미: {foods}", { name: result.name, foods: regionFoods.map(foodName).join(" · ") })}
               </p>
             )}
             <BenefitBadges spot={result} />
