@@ -175,8 +175,10 @@ function placeName(name, enName) {
   return /[가-힣]/.test(name) ? `${romanizeKo(name)} (${name})` : name;
 }
 // 영어 관광정보 목록에서 같은 곳 찾아 붙이기: 영어 제목 끝 괄호의 한국어 이름(예: 'Bosingak Belfry (보신각 종)')이 같거나,
-// 우리 이름 안에 그 이름(3글자 이상)이 들어 있고 3km 안. 영어 쪽 이름이 더 긴 경우는 안 맞춤('쌈지길' ≠ '하이드앤시크 쌈지길점' 가게)
-const enNameMatch = (k, c) => c.key === k || (c.key.length >= 3 && k.includes(c.key));
+// 우리 이름 안에 그 이름(3글자 이상, 우리 이름의 60% 이상 — '강릉 경포대' = '경포대', '청사포기찻길' ≠ '청사포')이 들어 있고 3km 안.
+// 영어 쪽 이름이 더 긴 경우는 안 맞춤('쌈지길' ≠ '하이드앤시크 쌈지길점' 가게). 여럿이면 가장 긴 이름
+const enNameMatch = (k, c) => c.key === k || (c.key.length >= 3 && c.key.length >= k.length * 0.6 && k.includes(c.key));
+const bestEnMatch = (k, cands, ok = () => true) => cands.filter((c) => c.key.length >= 2 && enNameMatch(k, c) && ok(c)).sort((a, b) => b.key.length - a.key.length)[0];
 function splitEnTitle(title) {
   const m = String(title || "").match(/^(.*?)\s*\(([^()]*[가-힣][^()]*)\)\s*$/);
   return m ? { en: m[1].trim(), ko: m[2].trim() } : { en: String(title || "").trim(), ko: "" };
@@ -190,8 +192,7 @@ async function attachEnglish(places, { lat, lng, contentTypeId, radius, spotName
   return places.map((p) => {
     const k = placeKey(p.name);
     if (k.length < 2) return p;
-    const hit = cands.find((c) => c.key.length >= 2 && enNameMatch(k, c)
-      && (!Number.isFinite(c.lat) || !p.lat || haversineKm(c.lat, c.lng, p.lat, p.lng) < 3));
+    const hit = bestEnMatch(k, cands, (c) => !Number.isFinite(c.lat) || !p.lat || haversineKm(c.lat, c.lng, p.lat, p.lng) < 3);
     return hit ? { ...p, enName: hit.en, enAddr: hit.addr, enId: hit.id } : p;
   });
 }
@@ -4492,7 +4493,7 @@ async function fetchLocalFestivals({ regionKeyword, lat, lng }) {
   const cands = eng.map((e) => ({ ...splitEnTitle(e.title), addr: e.addr1 || "", id: e.contentid })).filter((c) => c.ko && c.en).map((c) => ({ ...c, key: placeKey(c.ko) }));
   return list.map((f) => {
     const k = placeKey(f.title);
-    const hit = k.length >= 2 && cands.find((c) => c.key.length >= 2 && enNameMatch(k, c));
+    const hit = k.length >= 2 && bestEnMatch(k, cands);
     return hit ? { ...f, enName: hit.en, enAddr: hit.addr, enId: hit.id } : f;
   });
 }
@@ -5543,7 +5544,12 @@ function fetchPlaceDetail(place) {
   // 영어판: 영어 관광정보에 같은 곳이 있으면 소개 글·주소는 영어로(이용 정보·사진은 한국어 자료 그대로). 영어를 못 받으면 한국어 그대로
   const en = tourApiProxyFetch("detail", { contentId: String(place.enId), ...(place.typeId ? { contentTypeId: String(place.typeId) } : {}), lang: "en" })
     .then((items) => items[0] || null, () => null);
-  return Promise.all([ko, en]).then(([k, e]) => (e ? { ...k, overview: e.overview || k.overview, addr1: e.addr1 || k.addr1 } : k));
+  return Promise.all([ko, en]).then(([k, e]) => {
+    if (!e) return k;
+    // 이용 정보도 영어 값이 있는 칸만 영어로(빈 칸은 한국어 그대로)
+    const enIntro = Object.fromEntries(Object.entries(e.intro || {}).filter(([, v]) => v && String(v).trim()));
+    return { ...k, overview: e.overview || k.overview, addr1: e.addr1 || k.addr1, intro: { ...(k.intro || {}), ...enIntro } };
+  });
 }
 
 // ---- 앱 안 '문제 알리기' (2026-11-15 형 결정 '3번'): 메일 앱을 열어 형에게 보낸다 ----
