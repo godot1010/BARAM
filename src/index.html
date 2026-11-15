@@ -143,45 +143,76 @@ function switchLang(code) {
   } catch { window.location.reload(); }
 }
 const LANG_CHOICES = [["ko", "한국어"], ["en", "English"]];
-// 🌐 버튼의 지구본: 경선(세로줄)이 오른쪽에서 왼쪽으로 천천히 흘러 지구가 도는 것처럼 보인다 (2026-11-15 형 요청)
-// 앞쪽 반구의 경선만 그린다(가운데 x = R·sin(각도)). 12초에 한 바퀴. 움직임 줄이기 설정 폰은 멈춘 그림.
-function GlobeIcon({ size = 18, color = "#1B4B91" }) {
-  const R = 8;
-  const refs = useRef([]);
+// 🌐 버튼의 지구본 (2026-11-15 형 요청 '실제 지구본처럼, 방향은 진짜 지구처럼'):
+// 작은 세계 육지 지도(Natural Earth 110m 육지를 128x64 칸으로 줄인 것, 공개 자료)를 공 모양(정사영)으로 그려 돌린다.
+// 진짜 지구처럼 서→동으로 돌아 땅이 왼쪽에서 오른쪽으로 지나간다. 처음엔 한국이 앞에 보이고, 10초에 한 바퀴.
+// 움직임 줄이기 설정 폰은 멈춘 그림.
+const GLOBE_LAND_B64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH4H/AAAAAAAAAAAAAAAAA////8AHAAAAYAAAAAAABA/z//+ABAAAAAwAAAAAAA8L8B//gAAAGAH/AGAAAAAP7vwP/wAAABD///18AAf///dvB/4AA/gH///////n////58fw4A//////////B////yODgAA//////////wf///4OAYAAPP///////ngBwP/+D8AAAhz//////8DAAAB//+/wAAcf//////+BwAAAP///8AAD////////4AAAAB///5gAAf///////+AAAAAP///AAAH//9////+AAAAAD//+AAAH+8O/////IAAAAA///AAAB4X/3////AAAAAAP//gAAAcFf9///+xAAAAAB//4AAAD8Af////lwAAAAAP/8AAAB/mP////4gAAAAAA/yAAAA///////+AAAAAAAfwQAAAf//ff///gAAAAAAA4AAAAP///+P//wAAAAAAAPIgAAD//+/h+fwAAAAAAAB+CAAA///3wPHwAAAAAAAABwAAAP//9wDg+AAAAAAAAAEAAAD///wAYHhAAAAAAAAAnwAAf///AGBQIAAAAAAAAD+AAD///wAgQCAAAAAAAAA/8AAA//4AAKMAAAAAAAAAP/AAAH/8AABnAAAAAAAAAH/8AAB/+AAAJ4QAAAAAAAB//4AAP/AAADDDwAAAAAAAf//AAD/wAAAMAeAAAAAAAD//gAAf8AAAAAAgAAAAAAAf/4AAH/gAAAAOgAAAAAAAH/8AAD/zAAAAPsAAAAAAAAf/AAA/4wAAAH/AAAAAAAAH/wAAH+YAAAH/4AAAAAAAB/wAAB/mAAAD//AAAAAAAAf4AAAfwAAAA//4AAAAAAAP8AAAD4AAAAH/+AAAAAAAD/AAAA8AAAAB5/AAAAAAAA/AAAAAAAAAAAHwAAAAAAAPwAAAAAAAAAAA4AgAAAAADwAAAAAAAAAAAAAYAAAAAA4AAAAAAAAAAAAAIAAAAAAcAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAwAAmDgAAAAAAAAIAAAAAL/4////8AAAAACAPAAA//////////+AAB/5//wAA//////////+AA/////AAP///////////gAF////wHH///////////gAB//////////////////+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+let globeLand = null;
+function globeLandBits() {
+  if (!globeLand) {
+    const bin = atob(GLOBE_LAND_B64);
+    globeLand = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) globeLand[i] = bin.charCodeAt(i);
+  }
+  return globeLand;
+}
+function GlobeIcon({ size = 20 }) {
+  const canvasRef = useRef(null);
   useEffect(() => {
-    const N = 4; // 45도 간격
-    const draw = (t) => {
-      for (let i = 0; i < N; i++) {
-        const el = refs.current[i];
-        if (!el) continue;
-        // 각도: 시간이 갈수록 커짐 → x = R·cos(각도)가 +R(오른쪽)에서 -R(왼쪽)으로 이동
-        let a = ((i * 180) / N + (t / 12000) * 360) % 180;
-        if (a < 0) a += 180;
-        const x = R * Math.cos((a * Math.PI) / 180); // +R(오른쪽 끝) → -R(왼쪽 끝)
-        const rx = Math.max(Math.abs(x), 0.01);
-        el.setAttribute("d", `M0,${-R} A${rx.toFixed(2)},${R} 0 0 ${x >= 0 ? 1 : 0} 0,${R}`);
-        el.setAttribute("opacity", (0.35 + 0.65 * (1 - Math.abs(x) / R)).toFixed(2)); // 가장자리는 옅게
+    const cv = canvasRef.current;
+    if (!cv) return undefined;
+    const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+    const N = Math.round(size * dpr);
+    cv.width = N; cv.height = N;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return undefined;
+    const land = globeLandBits();
+    const img = ctx.createImageData(N, N);
+    const r = N / 2 - 0.5;
+    const tilt = (20 * Math.PI) / 180; // 북쪽을 조금 더 보이게
+    // 픽셀마다 위도·경도 차이와 밝기를 미리 계산(돌 때는 경도만 바뀐다)
+    const px = [];
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        const nx = (x + 0.5 - N / 2) / r, ny = -(y + 0.5 - N / 2) / r;
+        const rho = Math.hypot(nx, ny);
+        if (rho > 1) continue;
+        const c = Math.asin(Math.min(1, rho));
+        const lat = rho === 0 ? tilt : Math.asin(Math.cos(c) * Math.sin(tilt) + (ny * Math.sin(c) * Math.cos(tilt)) / rho);
+        const dlon = rho === 0 ? 0 : Math.atan2(nx * Math.sin(c), rho * Math.cos(c) * Math.cos(tilt) - ny * Math.sin(c) * Math.sin(tilt));
+        const z = Math.sqrt(Math.max(0, 1 - rho * rho));
+        const light = 0.55 + 0.45 * Math.max(0, z * 0.85 - nx * 0.25 + ny * 0.3); // 왼쪽 위에서 빛
+        const edge = rho > 0.92 ? Math.min(1, (1 - rho) / 0.08 + 0.15) : 1; // 테두리 부드럽게
+        px.push([(y * N + x) * 4, Math.round(((90 - (lat * 180) / Math.PI) / 180) * 63.999), (dlon * 180) / Math.PI, light, edge]);
       }
+    }
+    const draw = (lon0) => {
+      const d = img.data;
+      for (const [i, v, dl, light, edge] of px) {
+        let lon = lon0 + dl;
+        lon = ((((lon + 180) % 360) + 360) % 360);
+        const u = Math.min(127, Math.floor((lon / 360) * 128));
+        const vv = Math.max(0, Math.min(63, v));
+        const isLand = (land[vv * 16 + (u >> 3)] >> (7 - (u & 7))) & 1;
+        const [R, G, Bc] = isLand ? [96, 168, 84] : [52, 120, 196];
+        d[i] = R * light; d[i + 1] = G * light; d[i + 2] = Bc * light; d[i + 3] = 255 * edge;
+      }
+      ctx.putImageData(img, 0, 0);
     };
     let reduce = false;
     try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch {}
-    if (reduce) { draw(0); return undefined; }
-    let raf = 0;
-    const tick = (t) => { draw(t); raf = requestAnimationFrame(tick); };
+    const START = 127; // 한국 경도
+    if (reduce) { draw(START); return undefined; }
+    let raf = 0, last = -1;
+    const tick = (t) => {
+      if (t - last > 33) { last = t; draw(START - (t / 10000) * 360); } // 경도 중심이 서쪽으로 → 땅은 왼쪽→오른쪽
+      raf = requestAnimationFrame(tick);
+    };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
-  return (
-    <svg width={size} height={size} viewBox="-10 -10 20 20" aria-hidden="true" style={{ display: "block" }}>
-      <circle r={R} fill="#E6EEF9" stroke={color} strokeWidth="1.4" />
-      <line x1={-R} y1="0" x2={R} y2="0" stroke={color} strokeWidth="1" />
-      <path d={`M${-R * 0.87},-4 Q0,-5.2 ${R * 0.87},-4`} fill="none" stroke={color} strokeWidth="0.8" opacity="0.7" />
-      <path d={`M${-R * 0.87},4 Q0,5.2 ${R * 0.87},4`} fill="none" stroke={color} strokeWidth="0.8" opacity="0.7" />
-      {[0, 1, 2, 3].map((i) => (
-        <path key={i} ref={(el) => { refs.current[i] = el; }} fill="none" stroke={color} strokeWidth="1" />
-      ))}
-    </svg>
-  );
+  }, [size]);
+  return <canvas ref={canvasRef} aria-hidden="true" style={{ width: size, height: size, display: "block", borderRadius: "50%", boxShadow: "inset 0 0 0 1px rgba(27,75,145,.55)" }} />;
 }
 function LangButton() {
   const [open, setOpen] = useState(false);
@@ -193,7 +224,7 @@ function LangButton() {
         style={{ background: "#FFFDF8", padding: "5px 8px", gap: 1, minWidth: 40 }}
         aria-label="Language / 언어"
       >
-        <GlobeIcon size={18} />
+        <GlobeIcon size={20} />
         <span className="text-[10px] font-bold text-[#2B2620]" style={{ letterSpacing: ".06em" }}>{LANG === "ko" ? "KO" : "EN"}</span>
       </button>
       {open && (
