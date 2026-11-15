@@ -1,3 +1,5 @@
 tools/node_modules/
 tools/i18n-new-keys.json
 tools/i18n-mixed.json
+tools/monitor/node_modules/
+tools/monitor/.wrangler/

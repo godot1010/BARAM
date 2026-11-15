@@ -1,0 +1,15 @@
+# BARAM 자동 점검 Worker (Pages와 따로 있는 Worker — Pages에는 정해진 시간 실행이 없어서)
+# 올리기: cd tools/monitor && npx wrangler deploy
+# 비밀 값 KAKAO_REST_KEY는 형이 Cloudflare 화면(Workers > baram-monitor > 설정 > 변수 및 비밀)에서 직접 넣는다.
+name = "baram-monitor"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+preview_urls = false
+
+[triggers]
+crons = ["5 * * * *"]  # 매시 5분 (UTC 기준이지만 한 시간마다라 상관없음)
+
+[[kv_namespaces]]
+binding = "MONITOR"
+id = "cd97cfde4b2948f4b61bd772c0deac63"
