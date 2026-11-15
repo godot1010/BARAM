@@ -34,14 +34,17 @@
 (function () {
   var L = "ko";
   try {
-    var q = (location.search.match(/[?&]lang=(ko|en)(&|$)/) || [])[1];
+    var q = (location.search.match(/[?&]lang=(ko|en|ja|zh-CN|zh-TW)(&|$)/) || [])[1];
     var saved = null;
     try { saved = localStorage.getItem("baram_lang"); } catch (e) {}
     var phone = String((navigator.languages && navigator.languages[0]) || navigator.language || "ko").toLowerCase();
-    L = q || (saved === "ko" || saved === "en" ? saved : (phone.indexOf("ko") === 0 ? "ko" : "en"));
+    // 폰 언어: 한국어 → ko, 일본어 → ja, 중국어(대만·홍콩·마카오·번체) → zh-TW, 그 밖의 중국어 → zh-CN, 나머지 → 영어 (2026-11-16)
+    var auto = phone.indexOf("ko") === 0 ? "ko" : phone.indexOf("ja") === 0 ? "ja"
+      : phone.indexOf("zh") === 0 ? (/hant|tw|hk|mo/.test(phone) ? "zh-TW" : "zh-CN") : "en";
+    L = q || (/^(ko|en|ja|zh-CN|zh-TW)$/.test(saved || "") ? saved : auto);
   } catch (e) {}
   window.BARAM_LANG = L;
-  if (L === "en") document.write('<script src="/i18n/en.js?v=8"><\/script>');
+  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=9"><\/script>');
 })();
 </script>
 <style>
@@ -133,9 +136,10 @@ const { useState, useRef, useEffect, useMemo, useContext, createContext } = Reac
 // - 함수 이름을 t가 아니라 tr로 한 까닭: 코드 곳곳에 t라는 지역 이름(테마 등)이 이미 있어 가려지면 오류가 난다.
 // - 번역표 열쇠는 한국어 원문 그대로. 표에 없는 글자는 한국어로 나온다(영어 화면에서 빠진 곳 찾기: I18N_MISSING).
 // ==========================================
-const SUPPORTED_LANGS = ["ko", "en"];
+const SUPPORTED_LANGS = ["ko", "en", "ja", "zh-TW", "zh-CN"];
 const LANG = SUPPORTED_LANGS.includes(window.BARAM_LANG) ? window.BARAM_LANG : "ko";
-if (LANG !== "ko") { try { document.documentElement.lang = LANG; document.title = "BARAM - Travel Roulette"; } catch {} }
+const LANG_TITLES = { en: "BARAM - Travel Roulette", ja: "BARAM - 旅行ルーレット", "zh-TW": "BARAM - 旅行輪盤", "zh-CN": "BARAM - 旅行轮盘" };
+if (LANG !== "ko") { try { document.documentElement.lang = LANG; document.title = LANG_TITLES[LANG] || document.title; } catch {} }
 // 🌐 버튼으로 언어 바꾸기: 폰에 기억하고, 주소의 ?lang= 은 지운 뒤 다시 연다(기록은 그대로)
 function switchLang(code) {
   try { window.localStorage.setItem("baram_lang", code); } catch {}
@@ -145,7 +149,8 @@ function switchLang(code) {
     window.location.replace(u.toString());
   } catch { window.location.reload(); }
 }
-const LANG_CHOICES = [["ko", "한국어"], ["en", "English"]];
+const LANG_CHOICES = [["ko", "한국어"], ["en", "English"], ["ja", "日本語"], ["zh-TW", "繁體中文"], ["zh-CN", "简体中文"]];
+const LANG_BADGE = { ko: "KO", en: "EN", ja: "日本", "zh-TW": "繁中", "zh-CN": "简中" };
 // 🌐 버튼의 지구본 (2026-11-15 형 요청 '실제 지구본처럼, 방향은 진짜 지구처럼'):
 // 작은 세계 육지 지도(Natural Earth 110m 육지를 128x64 칸으로 줄인 것, 공개 자료)를 공 모양(정사영)으로 그려 돌린다.
 // 진짜 지구처럼 서→동으로 돌아 땅이 왼쪽에서 오른쪽으로 지나간다. 처음엔 한국이 앞에 보이고, 10초에 한 바퀴.
@@ -234,7 +239,7 @@ function LangButton() {
           <span key={i} className="baram-star-tw" style={{ left: `${l}%`, top: `${t}%`, width: sz, height: sz, animationDelay: `${delay}s` }} />
         ))}
         <span className="relative"><GlobeIcon size={20} /></span>
-        <span className="relative text-[10px] font-bold" style={{ letterSpacing: ".06em", color: "#F6F1E7" }}>{LANG === "ko" ? "KO" : "EN"}</span>
+        <span className="relative text-[10px] font-bold" style={{ letterSpacing: ".06em", color: "#F6F1E7" }}>{LANG_BADGE[LANG] || "KO"}</span>
       </button>
       {open && (
         <>
@@ -257,7 +262,8 @@ function LangButton() {
   );
 }
 // 번역표는 언어마다 따로 파일(/i18n/en.js)이고 그 언어일 때만 받는다(머리 <head>의 불러오기). 한국어는 표가 없다.
-const I18N = { en: window.BARAM_I18N_EN || {} };
+// 번역표: en.js는 BARAM_I18N_EN, 일본어·중국어 파일은 BARAM_I18N_TABLE에 넣는다
+const I18N = { [LANG]: (LANG === "en" ? window.BARAM_I18N_EN : window.BARAM_I18N_TABLE) || {} };
 // 지역 이름 검색: 한국어 이름에 들어 있거나, 영어 등에서는 번역된 이름(대소문자·띄어쓰기 무시)에 들어 있으면 맞음
 function nameMatches(name, q) {
   if (name.replace(/\s/g, "").includes(q)) return true;
@@ -317,13 +323,27 @@ function placeName(name, enName) {
 // 영어 쪽 이름이 더 긴 경우는 안 맞춤('쌈지길' ≠ '하이드앤시크 쌈지길점' 가게). 여럿이면 가장 긴 이름
 const enNameMatch = (k, c) => c.key === k || (c.key.length >= 3 && c.key.length >= k.length * 0.6 && k.includes(c.key));
 const bestEnMatch = (k, cands, ok = () => true) => cands.filter((c) => c.key.length >= 2 && enNameMatch(k, c) && ok(c)).sort((a, b) => b.key.length - a.key.length)[0];
+// 외국어 제목 → { en: 외국어 이름, ko: 한국어 이름 }. 'Bosingak Belfry (보신각 종)', '光化門（광화문）'(전각 괄호),
+// '(社)大韓… ((사)대한…)'(괄호 안 괄호), '光化门광화문'(괄호 없이 붙음) 모두 처리 (2026-11-16 일본어·중국어 자료 보고 넓힘)
 function splitEnTitle(title) {
-  const m = String(title || "").match(/^(.*?)\s*\(([^()]*[가-힣][^()]*)\)\s*$/);
-  return m ? { en: m[1].trim(), ko: m[2].trim() } : { en: String(title || "").trim(), ko: "" };
+  const t = String(title || "").replace(/（/g, "(").replace(/）/g, ")").replace(/[\s　]+$/, "").trim();
+  if (t.endsWith(")")) {
+    let depth = 0;
+    for (let i = t.length - 1; i >= 0; i--) {
+      if (t[i] === ")") depth++;
+      else if (t[i] === "(" && --depth === 0) {
+        const ko = t.slice(i + 1, -1).trim(), en = t.slice(0, i).trim();
+        if (/[가-힣]/.test(ko) && en) return { en, ko };
+        break;
+      }
+    }
+  }
+  const m = t.match(/^(.*?[^가-힣\s])\s*([가-힣][가-힣\s]*)$/);
+  return m ? { en: m[1].trim(), ko: m[2].trim() } : { en: t, ko: "" };
 }
 async function attachEnglish(places, { lat, lng, contentTypeId, radius, spotName }) {
-  if (LANG !== "en" || places.length === 0) return places;
-  const eng = await tourApiProxyFetch("nearby", { lat: String(lat), lng: String(lng), contentTypeId: String(contentTypeId), radius: String(radius), num: "300", lang: "en", ...localMountainQuery(spotName) }).catch(() => []);
+  if (LANG === "ko" || places.length === 0) return places;
+  const eng = await tourApiProxyFetch("nearby", { lat: String(lat), lng: String(lng), contentTypeId: String(contentTypeId), radius: String(radius), num: "300", lang: LANG, ...localMountainQuery(spotName) }).catch(() => []);
   const cands = eng.map((it) => ({ ...splitEnTitle(it.title), addr: it.addr1 || "", id: it.contentid, lat: parseFloat(it.mapy), lng: parseFloat(it.mapx) }))
     .filter((c) => c.ko && c.en)
     .map((c) => ({ ...c, key: placeKey(c.ko) }));
@@ -1123,7 +1143,8 @@ const STAR_BADGES = [[10, "⭐", tr("첫 10곳")], [30, "💜", tr("30곳")], [5
 const STAR_MEMBERS = ["BTS", "RM", "진", "슈가", "제이홉", "지민", "뷔", "정국"];
 // 멤버 이름 화면 표시(영어판). tr을 쓰지 않는 까닭: '진'이 여행운 글자(辰 → Dragon)와 겹친다
 const STAR_MEMBER_EN = { BTS: "Group", RM: "RM", 진: "Jin", 슈가: "Suga", 제이홉: "j-hope", 지민: "Jimin", 뷔: "V", 정국: "Jung Kook" };
-const starMemberName = (m) => (m === "BTS" ? (LANG === "ko" ? "단체" : STAR_MEMBER_EN.BTS) : LANG === "ko" ? m : STAR_MEMBER_EN[m] || m);
+// 단체 이름은 언어마다 tr("단체"), 멤버 이름은 외국어 화면이면 모두 영어 표기(널리 쓰임)
+const starMemberName = (m) => (m === "BTS" ? tr("단체") : LANG === "ko" ? m : STAR_MEMBER_EN[m] || m);
 function readStarStamps() {
   try {
     const v = JSON.parse(window.localStorage.getItem(STAR_STAMPS_KEY) || "{}");
@@ -2995,7 +3016,7 @@ async function fetchNearbyTourSpots({ lat, lng, spotName, contentTypeId, radius 
     area: neighborArea(it.addr1, spotName), // 이웃 지역이면 그 지역 이름
   }));
   // 영어판: 영어 관광정보에 같은 곳이 있으면 영어 이름·주소를 붙인다(한국어 화면은 아무것도 더 받지 않음)
-  return LANG === "en" && !jeju ? attachEnglish(places, { lat, lng, contentTypeId, radius, spotName }) : places;
+  return LANG !== "ko" && !jeju ? attachEnglish(places, { lat, lng, contentTypeId, radius, spotName }) : places;
 }
 
 const NOT_ATTRACTION = /화장실|사우나|노인회|경로당|주차장|복지관|주민센터|행정복지/;
@@ -4640,9 +4661,9 @@ async function fetchLocalFestivals({ regionKeyword, lat, lng }) {
     image: toHttps(it.firstimage2 || it.firstimage),
     imageLarge: toHttps(it.firstimage), // 작은 사진(firstimage2)이 깨진 경우가 있어 대신 쓸 큰 사진
   }));
-  if (LANG !== "en" || list.length === 0) return list;
+  if (LANG === "ko" || list.length === 0) return list;
   // 영어판: 영어 축제 목록(한 달에 한 번)에서 같은 축제를 찾아 영어 이름을 붙인다
-  const eng = await loadFestivalList("en").catch(() => []);
+  const eng = await loadFestivalList(LANG).catch(() => []);
   const cands = eng.map((e) => ({ ...splitEnTitle(e.title), addr: e.addr1 || "", id: e.contentid })).filter((c) => c.ko && c.en).map((c) => ({ ...c, key: placeKey(c.ko) }));
   return list.map((f) => {
     const k = placeKey(f.title);
@@ -5693,9 +5714,9 @@ function fetchPlaceDetail(place) {
     promise.catch(() => placeDetailCache.delete(key)); // 실패하면 다음에 다시 시도
   }
   const ko = placeDetailCache.get(key);
-  if (LANG !== "en" || !place.enId) return ko;
+  if (LANG === "ko" || !place.enId) return ko;
   // 영어판: 영어 관광정보에 같은 곳이 있으면 소개 글·주소는 영어로(이용 정보·사진은 한국어 자료 그대로). 영어를 못 받으면 한국어 그대로
-  const en = tourApiProxyFetch("detail", { contentId: String(place.enId), ...(place.typeId ? { contentTypeId: String(place.typeId) } : {}), lang: "en" })
+  const en = tourApiProxyFetch("detail", { contentId: String(place.enId), ...(place.typeId ? { contentTypeId: String(place.typeId) } : {}), lang: LANG })
     .then((items) => items[0] || null, () => null);
   return Promise.all([ko, en]).then(([k, e]) => {
     if (!e) return k;

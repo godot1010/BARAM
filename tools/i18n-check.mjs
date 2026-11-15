@@ -13,9 +13,11 @@ traverse(ast, { CallExpression(p) {
   const a = p.node.arguments[0];
   if (a && a.type === "StringLiteral") used.add(a.value); else dynamic.push(p.node.loc.start.line);
 } });
-const enSrc = readFileSync(new URL("../i18n/en.js", import.meta.url), "utf8");
+// 사용: node i18n-check.mjs [en|ja|zh-TW|zh-CN] (기본 en)
+const lang = process.argv[2] || "en";
+const enSrc = readFileSync(new URL(`../i18n/${lang}.js`, import.meta.url), "utf8");
 const window = {}; eval(enSrc);
-const en = window.BARAM_I18N_EN;
+const en = window.BARAM_I18N_EN || window.BARAM_I18N_TABLE;
 // '// @동적' 줄 아래 열쇠는 그릴 때 tr(값)으로 쓰는 데이터 값이라 코드에 글자로 안 나온다 → '안 쓰는 열쇠'에서 뺀다
 const dynKeys = new Set(enSrc.includes("// @동적") ? [...enSrc.slice(enSrc.indexOf("// @동적")).matchAll(/^\s*("(?:[^"\\]|\\.)*"):/gm)].map((m) => JSON.parse(m[1])) : []);
 const missing = [...used].filter((k) => !(k in en)), unused = Object.keys(en).filter((k) => !used.has(k) && !dynKeys.has(k));
