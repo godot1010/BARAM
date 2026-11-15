@@ -512,6 +512,8 @@ window.BARAM_I18N_EN = {
   "50곳": "50 spots",
   "전부": "All",
   "전체 {n}": "All {n}",
+  "한국어만 있어요": "Korean only",
+  "🇰🇷 아래 자세한 정보는 한국어만 있어요 (한국 공공데이터).": "🇰🇷 Details below are in Korean only (Korean public data).",
   // @동적 ── 그릴 때 tr(값)으로 번역하는 데이터 값(장소 종류·지수 등). 이 줄 아래 열쇠는 점검 도구가 '안 쓰는 열쇠'로 보지 않음 ──
   "한식": "Korean",
   "양식": "Western",
