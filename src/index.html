@@ -244,13 +244,15 @@ function LangButton() {
       {open && (
         <>
           <div className="fixed inset-0" style={{ zIndex: 69 }} onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-1 rounded-xl border border-[#D9CBB0] bg-[#FFFDF8] overflow-hidden" style={{ zIndex: 70, minWidth: 128, boxShadow: "0 6px 18px rgba(43,38,32,.18)" }}>
+          {/* 바탕색은 style로(bg-[#FFFDF8]이 미리 빌드된 Tailwind에 없어 목록이 비쳐 보였음, 2026-11-16 형 지적) */}
+          <div className="absolute right-0 mt-1 rounded-xl border border-[#D9CBB0] overflow-hidden" style={{ zIndex: 70, minWidth: 120, background: "#FFFDF8", boxShadow: "0 6px 18px rgba(43,38,32,.22)" }}>
             {LANG_CHOICES.map(([code, label]) => (
               <button
                 key={code}
+                lang={code}
                 onClick={() => { setOpen(false); if (code !== LANG) switchLang(code); }}
-                className="w-full flex items-center justify-between text-left text-sm px-3 py-2.5"
-                style={{ color: code === LANG ? "#1B4B91" : "#2B2620", fontWeight: code === LANG ? 700 : 500, background: code === LANG ? "#1B4B9114" : "transparent" }}
+                className="w-full flex items-center justify-between text-left text-sm"
+                style={{ padding: "6px 12px", lineHeight: 1.3, color: code === LANG ? "#1B4B91" : "#2B2620", fontWeight: code === LANG ? 700 : 500, background: code === LANG ? "#E8EEF7" : "#FFFDF8" }}
               >
                 {label}{code === LANG && <span>✓</span>}
               </button>
