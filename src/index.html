@@ -143,6 +143,46 @@ function switchLang(code) {
   } catch { window.location.reload(); }
 }
 const LANG_CHOICES = [["ko", "한국어"], ["en", "English"]];
+// 🌐 버튼의 지구본: 경선(세로줄)이 오른쪽에서 왼쪽으로 천천히 흘러 지구가 도는 것처럼 보인다 (2026-11-15 형 요청)
+// 앞쪽 반구의 경선만 그린다(가운데 x = R·sin(각도)). 12초에 한 바퀴. 움직임 줄이기 설정 폰은 멈춘 그림.
+function GlobeIcon({ size = 18, color = "#1B4B91" }) {
+  const R = 8;
+  const refs = useRef([]);
+  useEffect(() => {
+    const N = 4; // 45도 간격
+    const draw = (t) => {
+      for (let i = 0; i < N; i++) {
+        const el = refs.current[i];
+        if (!el) continue;
+        // 각도: 시간이 갈수록 커짐 → x = R·cos(각도)가 +R(오른쪽)에서 -R(왼쪽)으로 이동
+        let a = ((i * 180) / N + (t / 12000) * 360) % 180;
+        if (a < 0) a += 180;
+        const x = R * Math.cos((a * Math.PI) / 180); // +R(오른쪽 끝) → -R(왼쪽 끝)
+        const rx = Math.max(Math.abs(x), 0.01);
+        el.setAttribute("d", `M0,${-R} A${rx.toFixed(2)},${R} 0 0 ${x >= 0 ? 1 : 0} 0,${R}`);
+        el.setAttribute("opacity", (0.35 + 0.65 * (1 - Math.abs(x) / R)).toFixed(2)); // 가장자리는 옅게
+      }
+    };
+    let reduce = false;
+    try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch {}
+    if (reduce) { draw(0); return undefined; }
+    let raf = 0;
+    const tick = (t) => { draw(t); raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return (
+    <svg width={size} height={size} viewBox="-10 -10 20 20" aria-hidden="true" style={{ display: "block" }}>
+      <circle r={R} fill="#E6EEF9" stroke={color} strokeWidth="1.4" />
+      <line x1={-R} y1="0" x2={R} y2="0" stroke={color} strokeWidth="1" />
+      <path d={`M${-R * 0.87},-4 Q0,-5.2 ${R * 0.87},-4`} fill="none" stroke={color} strokeWidth="0.8" opacity="0.7" />
+      <path d={`M${-R * 0.87},4 Q0,5.2 ${R * 0.87},4`} fill="none" stroke={color} strokeWidth="0.8" opacity="0.7" />
+      {[0, 1, 2, 3].map((i) => (
+        <path key={i} ref={(el) => { refs.current[i] = el; }} fill="none" stroke={color} strokeWidth="1" />
+      ))}
+    </svg>
+  );
+}
 function LangButton() {
   const [open, setOpen] = useState(false);
   return (
@@ -153,7 +193,7 @@ function LangButton() {
         style={{ background: "#FFFDF8", padding: "5px 8px", gap: 1, minWidth: 40 }}
         aria-label="Language / 언어"
       >
-        <span style={{ fontSize: 17, lineHeight: "18px" }}>🌐</span>
+        <GlobeIcon size={18} />
         <span className="text-[10px] font-bold text-[#2B2620]" style={{ letterSpacing: ".06em" }}>{LANG === "ko" ? "KO" : "EN"}</span>
       </button>
       {open && (
