@@ -6,7 +6,7 @@ window.BARAM_I18N_EN = {
   // ── 첫 화면 ──
   "여행 룰렛 바람": "Travel Roulette",
   "✦ 생년월일을 입력하고 나만의 여행운 보기": "✦ Enter your birthday for today's travel luck",
-  "몰라!! 돌려서 나오는 데로 갈꺼야! ({n}개 지역)": "Who knows! I'll go wherever it lands! ({n} areas)",
+  "몰라!! 돌려서 나오는 데로 갈꺼야! ({n}개 지역)": "Can't decide? Let the wheel pick! ({n} areas)",
   "감성 여행": "Relaxed trip",
   "활기찬 여행이 빚어내는 마법 속으로...": "Active trip — let the magic begin...",
   "어디?": "Where?",
