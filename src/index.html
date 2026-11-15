@@ -73,7 +73,10 @@
   .baram-pin-drop { animation: baram-pin-drop 3.2s ease-in-out infinite; }
   .baram-step { animation: baram-step 3.2s ease-in-out infinite; }
   .baram-twinkle { animation: baram-twinkle 3.2s ease-in-out infinite; }
-  @media (prefers-reduced-motion: reduce) { .baram-press, .baram-ink, .baram-icon-bob, .baram-chev-nod, .baram-pin-drop, .baram-step, .baram-twinkle { animation: none; } }
+  /* 🌐 언어 버튼 우주 바탕의 별 반짝임 (2026-11-15 형 요청) */
+  @keyframes baram-star-tw { 0%, 100% { opacity: .25; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.15); } }
+  .baram-star-tw { position: absolute; border-radius: 50%; background: #fff; box-shadow: 0 0 3px 1px rgba(255,255,255,.7); animation: baram-star-tw 2.4s ease-in-out infinite; pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { .baram-press, .baram-ink, .baram-icon-bob, .baram-chev-nod, .baram-pin-drop, .baram-step, .baram-twinkle, .baram-star-tw { animation: none; } }
   body { font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif; }
 </style>
 <script>
@@ -214,18 +217,24 @@ function GlobeIcon({ size = 20 }) {
   }, [size]);
   return <canvas ref={canvasRef} aria-hidden="true" style={{ width: size, height: size, display: "block", borderRadius: "50%", boxShadow: "inset 0 0 0 1px rgba(27,75,145,.55)" }} />;
 }
+// [왼쪽 %, 위 %, 크기 px, 시작 지연 초]
+const LANG_STARS = [[10, 12, 1.5, 0], [82, 9, 2, 0.8], [88, 42, 1.2, 1.6], [7, 48, 1.2, 0.4], [16, 80, 1.5, 1.2], [86, 76, 1.2, 2.0], [50, 6, 1, 1.0], [64, 88, 1, 0.6]];
 function LangButton() {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex flex-col items-center rounded-xl border border-[#D9CBB0] text-[#6B5F4F]"
-        style={{ background: "#FFFDF8", padding: "5px 8px", gap: 1, minWidth: 40 }}
+        className="relative flex flex-col items-center rounded-xl overflow-hidden"
+        style={{ background: "radial-gradient(circle at 35% 30%, #1E2F63 0%, #0D1636 55%, #050915 100%)", border: "1px solid #2A3A6E", padding: "5px 8px", gap: 1, minWidth: 40 }}
         aria-label="Language / 언어"
       >
-        <GlobeIcon size={20} />
-        <span className="text-[10px] font-bold text-[#2B2620]" style={{ letterSpacing: ".06em" }}>{LANG === "ko" ? "KO" : "EN"}</span>
+        {/* 우주 바탕의 별: 크기·자리·반짝이는 때를 조금씩 다르게 */}
+        {LANG_STARS.map(([l, t, sz, delay], i) => (
+          <span key={i} className="baram-star-tw" style={{ left: `${l}%`, top: `${t}%`, width: sz, height: sz, animationDelay: `${delay}s` }} />
+        ))}
+        <span className="relative"><GlobeIcon size={20} /></span>
+        <span className="relative text-[10px] font-bold" style={{ letterSpacing: ".06em", color: "#F6F1E7" }}>{LANG === "ko" ? "KO" : "EN"}</span>
       </button>
       {open && (
         <>
