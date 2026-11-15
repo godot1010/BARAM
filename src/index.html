@@ -252,7 +252,7 @@ function LangButton() {
                 lang={code}
                 onClick={() => { setOpen(false); if (code !== LANG) switchLang(code); }}
                 className="w-full flex items-center justify-between text-left text-sm"
-                style={{ padding: "6px 12px", lineHeight: 1.3, color: code === LANG ? "#1B4B91" : "#2B2620", fontWeight: code === LANG ? 700 : 500, background: code === LANG ? "#E8EEF7" : "#FFFDF8" }}
+                style={{ padding: "4px 12px", lineHeight: 1.3, fontSize: 13, color: code === LANG ? "#1B4B91" : "#2B2620", fontWeight: code === LANG ? 700 : 500, background: code === LANG ? "#E8EEF7" : "#FFFDF8" }}
               >
                 {label}{code === LANG && <span>✓</span>}
               </button>
