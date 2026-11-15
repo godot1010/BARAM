@@ -5402,7 +5402,7 @@ function fetchPlaceDetail(place) {
 // ---- 앱 안 '문제 알리기' (2026-11-15 형 결정 '3번'): 메일 앱을 열어 형에게 보낸다 ----
 // 사용자가 보내기 전에 내용을 보고 고치거나 지울 수 있다. 서버로 따로 보내는 것은 없다.
 // 자동으로 넣는 것: 여행지·장소 이름, 앱/웹, 날짜, 오늘 이 폰이 만난 오류 종류(baram_err_sent) — 이름·위치·기기 정보는 넣지 않는다.
-const REPORT_EMAIL = "a01083252780@gmail.com"; // privacy.html에 공개한 문의 메일과 같음
+const REPORT_EMAIL = "baram261115@gmail.com"; // 앱 전용 문의 메일 (2026-11-15 형이 새로 만듦, privacy.html과 같음 — 형 개인 메일은 쓰지 않는다)
 function reportProblemHref({ spotName = "", placeName = "", placeAddr = "" } = {}) {
   const now = new Date(Date.now() + 9 * 3600 * 1000);
   const today = now.toISOString().slice(0, 10);
