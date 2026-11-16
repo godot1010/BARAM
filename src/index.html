@@ -45,7 +45,7 @@
     L = q || (/^(ko|en|ja|zh-CN|zh-TW|fr|es)$/.test(saved || "") ? saved : auto);
   } catch (e) {}
   window.BARAM_LANG = L;
-  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=10"><\/script>');
+  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=11"><\/script>');
 })();
 </script>
 <style>
@@ -5646,12 +5646,17 @@ const DETAIL_INTRO_LABELS = [
 
 // 관광정보 글에는 <br>, &nbsp; 같은 HTML 조각이 섞여 온다 → 보통 글자로
 function cleanTourText(text) {
-  return (text || "")
+  const out = (text || "")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+  // 외국어 자료는 &eacute; 같은 문자 기호가 섞여 옴(프랑스어·스페인어, 2026-11-16) → 글자로 바꾼다. 한국어 화면은 예전 그대로
+  return LANG === "ko" || !/&[#\w]+;/.test(out) ? out : decodeHtmlEntities(out);
+}
+function decodeHtmlEntities(s) {
+  try { const t = document.createElement("textarea"); t.innerHTML = s; return t.value; } catch { return s; }
 }
 // 홈페이지 칸은 <a href="…">처럼 HTML로 올 때가 많다 → 주소만 꺼낸다
 function homepageUrl(html) {
