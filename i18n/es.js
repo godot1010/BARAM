@@ -513,7 +513,7 @@ window.BARAM_I18N_TABLE = {
   "명소": "Sitios",
   "문화": "Cultura",
   "레포츠": "Deportes de ocio",
-  "숙소": "Hoteles",
+  "숙소": "Hotel",
   "쇼핑": "Compras",
   "음식점": "Restaurante",
   "오토캠핑": "Autocaravana",
