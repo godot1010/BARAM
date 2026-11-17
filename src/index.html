@@ -5737,8 +5737,9 @@ function fetchPlaceDetail(place) {
 // ---- 앱 안 '문제 알리기' (2026-11-15 형 결정 '3번'): 메일 앱을 열어 형에게 보낸다 ----
 // 사용자가 보내기 전에 내용을 보고 고치거나 지울 수 있다. 서버로 따로 보내는 것은 없다.
 // 자동으로 넣는 것: 여행지·장소 이름, 앱/웹, 날짜, 오늘 이 폰이 만난 오류 종류(baram_err_sent) — 이름·위치·기기 정보는 넣지 않는다.
-// 사용법 영상(유튜브 재생목록, 2026-11-18 형 결정: 첫 화면 아래 버튼 하나). 언어마다 재생목록이 있을 때만 버튼을 보인다 — 영어 재생목록이 생기면 en 추가.
-const HOWTO_PLAYLISTS = { ko: "https://www.youtube.com/playlist?list=PLewt6yh6Su90" };
+// 사용법 영상(유튜브 재생목록, 2026-11-18 형 결정: 첫 화면 아래 버튼 하나). 한국어 = 한국어 재생목록, 그 밖의 언어 = 영어 재생목록.
+const HOWTO_PLAYLISTS = { ko: "https://www.youtube.com/playlist?list=PLewt6yh6Su90", en: "https://www.youtube.com/playlist?list=PLNsC_m9Q46hI" };
+const HOWTO_PLAYLIST = HOWTO_PLAYLISTS[LANG] || HOWTO_PLAYLISTS.en; // 일본어·중국어·프랑스어·스페인어 화면은 영어 재생목록 (형 결정: 영상은 영어로만)
 const REPORT_EMAIL = "baram261115@gmail.com"; // 앱 전용 문의 메일 (2026-11-15 형이 새로 만듦, privacy.html과 같음 — 형 개인 메일은 쓰지 않는다)
 function reportProblemHref({ spotName = "", placeName = "", placeAddr = "" } = {}) {
   const now = new Date(Date.now() + 9 * 3600 * 1000);
@@ -7604,10 +7605,10 @@ function BaramApp() {
           <Search size={15} /> {tr("가고 싶은 곳이 있나요? 직접 찾기")}
         </button>
 
-        {/* 사용법 영상: 유튜브 재생목록으로 이동 (그 언어 재생목록이 있을 때만) */}
-        {HOWTO_PLAYLISTS[LANG] && (
+        {/* 사용법 영상: 유튜브 재생목록으로 이동 (한국어 외에는 영어 재생목록) */}
+        {HOWTO_PLAYLIST && (
           <a
-            href={HOWTO_PLAYLISTS[LANG]}
+            href={HOWTO_PLAYLIST}
             target="_blank"
             rel="noopener noreferrer"
             style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 6, margin: "8px auto 0", fontSize: 12, fontWeight: 700, color: "#6B5F4F", textDecoration: "underline", textUnderlineOffset: 2 }}
