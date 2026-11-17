@@ -7,6 +7,7 @@ window.BARAM_I18N_TABLE = {
   "활기찬 여행이 빚어내는 마법 속으로...": "Voyage actif — que la magie commence...",
   "어디?": "Où ?",
   "가고 싶은 곳이 있나요? 직접 찾기": "Une idée de destination ? Recherchez-la",
+  "사용법 영상 보기 (천천히 따라 하기)": "Vidéos tutoriels (en anglais)",
   "STAMP TOUR 열기": "Ouvrir le STAMP TOUR",
   "해당 조건의 미정복 도시를\n모두 탐험하셨습니다!": "Vous avez exploré toutes les régions\\npour ce filtre !",
   "여행 전 신청 필수 · 사는 곳과 이웃 지역은 제외 · 조건은 공식 페이지에서 확인": "Inscription avant le voyage · Hors de votre région et des régions voisines · Conditions sur le site officiel",
