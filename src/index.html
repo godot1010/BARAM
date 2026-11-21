@@ -2239,19 +2239,13 @@ function buildPlanShareText({ spot, from, travel, plan }) {
   if (travel.mode === "island") lines.push(tr("⛴️✈️ 배·비행기 시간을 먼저 확인하세요"));
   else lines.push(tr("🚗 {from}에서 {dep} 출발 → {arr} 도착 (약 {d})", { from: from.name, dep: fmtClock(travel.departure), arr: fmtClock(travel.arrival), d: fmtDuration(travel.travel) }));
   lines.push("");
+  // 2026-11-21 형 요청 '복잡해 보인다' → 한 칸에 한 줄: 시간 · 아이콘 · 장소 이름(없으면 할 일 이름)만.
+  // 주소·설명 줄과 '길찾기는 앱에서' 줄은 뺐다(주소가 길어 카톡에서 두세 줄로 접혔음).
   plan.steps.forEach((st) => {
-    const head = `${fmtClock(st.time)} ${st.icon} ${st.title}`;
-    if (st.place) {
-      lines.push(`${head}: ${st.place.name}`);
-      if (st.note) lines.push(`   ${st.note}`);
-      // 길찾기 링크는 카톡에서 아주 길게 보여서(한글이 %EC…로 바뀜) 주소만 적는다. 길찾기는 앱에서
-      const addr = st.place.address || st.place.location;
-      if (addr && addr !== "위치 정보 없음") lines.push(`   📍 ${addr}`);
-    } else {
-      lines.push(`${head} — ${st.fallback}`);
-    }
+    const what = st.place ? placeName(st.place.name, st.place.enName) : st.title;
+    lines.push(`${fmtClock(st.time)} ${st.icon} ${what}`);
   });
-  lines.push("", tr("🧭 길찾기는 BARAM 앱에서 일정을 열고 '길찾기'를 눌러 주세요"), tr("룰렛이 정해 준 여행, BARAM 👉 https://baram-bh4.pages.dev"));
+  lines.push("", tr("룰렛이 정해 준 여행, BARAM 👉 https://baram-bh4.pages.dev"));
   return lines.join("\n");
 }
 

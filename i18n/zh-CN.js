@@ -346,7 +346,6 @@ window.BARAM_I18N_TABLE = {
   "해 질 무렵 한 번 더 걸어보세요.": "黄昏时分再走一走。",
   "🎡 BARAM 여행 일정 — {name} ({m}월 {d}일)": "🎡 BARAM 旅行行程 — {name}（{m}月{d}日）",
   "🚗 {from}에서 {dep} 출발 → {arr} 도착 (약 {d})": "🚗 {dep} 从{from}出发 → {arr} 抵达（约 {d}）",
-  "🧭 길찾기는 BARAM 앱에서 일정을 열고 '길찾기'를 눌러 주세요": "🧭 导航请在 BARAM App 打开行程并点击「路线导航」",
   "룰렛이 정해 준 여행, BARAM 👉 https://baram-bh4.pages.dev": "让轮盘决定旅程，BARAM 👉 https://baram-bh4.pages.dev/?lang=zh-CN",
   "일정을 복사했어요. 카톡이나 메모에 붙여 넣으세요.": "已复制行程，请贴到聊天或备忘录。",
   "이 기기에서는 공유할 수 없어요.": "这个设备无法分享。",
