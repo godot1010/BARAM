@@ -2291,9 +2291,11 @@ function SharePlanButton({ spot, from, travel, plan }) {
     <div className="mt-3">
       <button
         onClick={share}
-        className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-bold text-[#2F6E68] border border-[#2F6E68] bg-white/50"
+        // 카카오톡 노란색(2026-11-21 형 요청 '잘 안 보여') — 노란 테두리만으로는 밝은 바탕에서 더 흐려서 바탕을 채움
+        className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-bold"
+        style={{ background: "#FEE500", color: "#191919", border: "1px solid #E6CF00" }}
       >
-        {tr("📤 일정 저장·공유")} <span className="text-[11px] font-normal text-[#6B5F4F]">{tr("(카톡·메모로 보내기)")}</span>
+        {tr("📤 일정 저장·공유")} <span className="text-[11px] font-normal" style={{ color: "#4A3F00" }}>{tr("(카톡·메모로 보내기)")}</span>
       </button>
       {notice && <p className="text-[11px] text-[#2F6E68] text-center mt-1">{notice}</p>}
     </div>
