@@ -2233,6 +2233,19 @@ function buildDayPlan({ spot, arrival, data, offsets }) {
 // 오늘의 일정 저장·공유 (2026-10-18 테스터 의견: "해남 코스를 저장하고 싶다")
 // 일정표를 읽기 쉬운 글로 만들어 폰의 공유 창(카톡·메모·문자)으로 보낸다. 공유 창이 없으면 복사한다.
 // ==========================================
+// 보내기 글의 주소를 짧게: 맨 앞 시·도 이름만 줄임(충청남도 → 충남, 서울특별시 → 서울). 내비는 줄인 이름도 찾는다.
+const SIDO_SHORT = [
+  [/^서울특별시/, "서울"], [/^부산광역시/, "부산"], [/^대구광역시/, "대구"], [/^인천광역시/, "인천"],
+  [/^광주광역시/, "광주"], [/^대전광역시/, "대전"], [/^울산광역시/, "울산"], [/^세종특별자치시/, "세종"],
+  [/^경기도/, "경기"], [/^강원(특별자치)?도/, "강원"], [/^충청북도/, "충북"], [/^충청남도/, "충남"],
+  [/^전북특별자치도|^전라북도/, "전북"], [/^전라남도/, "전남"], [/^경상북도/, "경북"], [/^경상남도/, "경남"],
+  [/^제주특별자치도/, "제주"],
+];
+function shortSidoAddr(addr) {
+  for (const [re, s] of SIDO_SHORT) if (re.test(addr)) return addr.replace(re, s);
+  return addr;
+}
+
 function buildPlanShareText({ spot, from, travel, plan }) {
   const d = new Date();
   const lines = [tr("🎡 BARAM 여행 일정 — {name} ({m}월 {d}일)", { name: spot.name, m: d.getMonth() + 1, d: d.getDate() })];
@@ -2244,6 +2257,10 @@ function buildPlanShareText({ spot, from, travel, plan }) {
   plan.steps.forEach((st) => {
     const what = st.place ? placeName(st.place.name, st.place.enName) : st.title;
     lines.push(`${fmtClock(st.time)} ${st.icon} ${what}`);
+    // 주소는 아이콘 바로 아래에서 시작(2026-11-21 형: 차 2대로 나눠 갈 때 내비에 넣기 좋게).
+    // 숫자 폭 빈칸(U+2007) 4개 + 쌍점 폭 빈칸(U+2008) + 빈칸 = '10:30 ' 너비
+    const addr = st.place && (st.place.address || st.place.location);
+    if (addr && addr !== "위치 정보 없음") lines.push(`      ${shortSidoAddr(addr)}`);
   });
   lines.push("", tr("룰렛이 정해 준 여행, BARAM 👉 https://baram-bh4.pages.dev"));
   return lines.join("\n");
