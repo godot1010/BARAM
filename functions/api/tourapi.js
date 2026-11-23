@@ -794,6 +794,12 @@ export async function onRequest(context) {
     const kindId = (id) => (eng ? ENG_TYPE_ID[id] || id : id);
 
     let payload;
+    if (action === "upstreamProbe") { // 점검용(잠깐): 관광공사 서버가 몇 초 만에 답하는지 (25초까지 기다림)
+      const t0 = Date.now();
+      const res = await fetch(`${TOUR_API_BASE}/areaBasedList2?${new URLSearchParams({ ...base, lDongRegnCd: "51", lDongSignguCd: "150", contentTypeId: "12", numOfRows: "5", pageNo: "1" })}`, { signal: AbortSignal.timeout(25000) }).catch((e) => ({ status: "ERR " + e.name }));
+      const text = res.text ? await res.text() : "";
+      return json({ status: res.status, sec: (Date.now() - t0) / 1000, head: text.slice(0, 160).replace(/serviceKey=[^&"]+/g, "") }, 200);
+    }
     if (action === "nearby") {
       const lat = url.searchParams.get("lat");
       const lng = url.searchParams.get("lng");
