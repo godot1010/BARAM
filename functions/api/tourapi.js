@@ -427,6 +427,8 @@ async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido
   });
   out.sort((p, q) => p._km - q._km);
   return {
+    // 점검용(주소에 dbg=1일 때만 응답에 남김): 위치 검색·지역 목록이 각각 어떻게 됐는지
+    _dbg: { loc: a.status === "fulfilled" ? a.value.items.length : String(a.reason && (a.reason.payload?.error || a.reason.message)), area: b.status === "fulfilled" ? b.value.length : String(b.reason && (b.reason.payload?.error || b.reason.message)) },
     items: out.slice(0, Number(num) || 50).map(({ _km, ...it }) => it),
     incomplete: a.status === "rejected" || b.status === "rejected", // 한쪽만 받은 결과는 저장하지 않는다
   };
@@ -958,6 +960,10 @@ export async function onRequest(context) {
       return json({ error: "INVALID_ACTION", message: "action은 nearby, festival, pet, petNearby, detail, barrierFree, barrierFreeDetail, camping, mountains 중 하나여야 해요." }, 400);
     }
 
+    if (payload && payload._dbg) {
+      if (url.searchParams.get("dbg") === "1") return json(payload._dbg, 200);
+      delete payload._dbg;
+    }
     // 일부만 받은 결과는 저장하지 않는다. 지난 저장본이 있으면 그쪽이 더 완전하다
     if (payload.incomplete) {
       if (stale) return staleResponse();
