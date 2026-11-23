@@ -808,24 +808,6 @@ export async function onRequest(context) {
       stale = hit;
     }
 
-    // 점검용(잠깐): Cloudflare에서 공공데이터 서버까지 https·http로 각각 닿는지. 키는 응답에 넣지 않는다
-    if (action === "gwProbe") {
-      const key = normalizeServiceKey(env.TOUR_API_SERVICE_KEY || "");
-      const q = new URLSearchParams({ serviceKey: key, MobileOS: "ETC", MobileApp: "BARAM", _type: "json", numOfRows: "1" });
-      const tries = [
-        ["https", `https://apis.data.go.kr/B551011/KorService2/areaCode2?${q}`],
-        ["http", `http://apis.data.go.kr/B551011/KorService2/areaCode2?${q}`],
-        ["https 키 없이", "https://apis.data.go.kr/B551011/KorService2/areaCode2?MobileOS=ETC&MobileApp=T"],
-        ["http 키 없이", "http://apis.data.go.kr/B551011/KorService2/areaCode2?MobileOS=ETC&MobileApp=T"],
-      ];
-      const out = await Promise.all(tries.map(async ([name, u]) => {
-        const s = Date.now();
-        try { const r = await fetch(u, { signal: AbortSignal.timeout(8000) }); await r.text(); return { name, status: r.status, ms: Date.now() - s }; }
-        catch (e) { return { name, error: String(e && e.name), ms: Date.now() - s }; }
-      }));
-      return json({ colo: request.cf && request.cf.colo, out }, 200);
-    }
-
     const rawServiceKey = env.TOUR_API_SERVICE_KEY;
     if (!rawServiceKey) {
       return json({ error: "SERVER_NO_KEY", message: "서버에 TOUR_API_SERVICE_KEY 환경변수가 설정되지 않았어요." }, 500);
