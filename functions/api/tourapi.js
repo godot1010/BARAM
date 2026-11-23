@@ -808,23 +808,6 @@ export async function onRequest(context) {
       stale = hit;
     }
 
-    // 점검용(잠깐): Cloudflare 서버에서 공공데이터 서버까지 닿는지. 키는 응답에 넣지 않는다
-    if (action === "gwProbe") {
-      const key = normalizeServiceKey(env.TOUR_API_SERVICE_KEY || "");
-      const tries = [
-        ["키 없이 areaCode2", `${TOUR_API_BASE}/areaCode2?MobileOS=ETC&MobileApp=T&_type=json`],
-        ["키 넣고 areaCode2", `${TOUR_API_BASE}/areaCode2?${new URLSearchParams({ serviceKey: key, MobileOS: "ETC", MobileApp: "BARAM", _type: "json", numOfRows: "1" })}`],
-        ["키 넣고 areaCode2(2)", `${TOUR_API_BASE}/areaCode2?${new URLSearchParams({ serviceKey: key, MobileOS: "ETC", MobileApp: "BARAM", _type: "json", numOfRows: "2" })}`],
-        ["data.go.kr 홈", "https://www.data.go.kr/"],
-      ];
-      const out = await Promise.all(tries.map(async ([name, u]) => {
-        const s = Date.now();
-        try { const r = await fetch(u, { signal: AbortSignal.timeout(15000) }); const t = await r.text(); return { name, status: r.status, ms: Date.now() - s, head: t.slice(0, 80).split(key).join("(키)") }; }
-        catch (e) { return { name, error: String(e && e.name), ms: Date.now() - s }; }
-      }));
-      return json({ colo: request.cf && request.cf.colo, out }, 200);
-    }
-
     const rawServiceKey = env.TOUR_API_SERVICE_KEY;
     if (!rawServiceKey) {
       return json({ error: "SERVER_NO_KEY", message: "서버에 TOUR_API_SERVICE_KEY 환경변수가 설정되지 않았어요." }, 500);
