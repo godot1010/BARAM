@@ -792,6 +792,11 @@ export async function onRequest(context) {
     const kindId = (id) => (eng ? ENG_TYPE_ID[id] || id : id);
 
     let payload;
+    if (action === "ldongProbe") { // 점검용(잠깐): 법정동 코드 목록 모양
+      const list = await getLdongIndex(base);
+      const raw = await callTourApi("ldongCode2", { ...base, lDongListYn: "Y", numOfRows: "5", pageNo: "1" }).catch((e) => ({ err: e.payload || e.message }));
+      return json({ n: list.length, sample: list.slice(0, 5), raw }, 200);
+    }
     if (action === "nearby") {
       const lat = url.searchParams.get("lat");
       const lng = url.searchParams.get("lng");
