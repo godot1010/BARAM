@@ -398,11 +398,14 @@ async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido
   // 위치 검색이 달라는 수만큼 다 주면(맛집처럼 고장 나지 않은 종류) 지역 목록은 받지 않는다 → 처음 여는 지역이 빨라진다 (2026-11-14 점검: 16초 → )
   const first = await located.then((r) => r, () => null);
   if (first && first.items.length >= Number(num)) return { items: first.items, incomplete: false };
+  const areaInfo = {};
   const areaPart = (async () => {
     const codes = await ldongCodesFor(base, sido, sgg);
+    areaInfo.codes = codes.slice(0, 6).map((c) => `${c.r}-${c.s}`).join(",");
     const lists = await Promise.all(codes.slice(0, 6).map(async (c) => {
       const p = { ...base, lDongRegnCd: c.r, lDongSignguCd: c.s, ...(contentTypeId ? { contentTypeId } : {}), arrange: "A", numOfRows: String(AREA_PAGE) };
       const first = await callTourApi("areaBasedList2", { ...p, pageNo: "1" }, apiBase);
+      areaInfo.total = (areaInfo.total || 0) + first.totalCount;
       const pages = Math.min(Math.ceil(first.totalCount / AREA_PAGE), maxPages); // 큰 도시 맛집은 1,000곳이 넘는다 (최대 3,000곳)
       const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => callTourApi("areaBasedList2", { ...p, pageNo: String(i + 2) }, apiBase).catch(() => ({ items: [] }))));
       return [first, ...rest].flatMap((r) => r.items);
@@ -428,7 +431,7 @@ async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido
   out.sort((p, q) => p._km - q._km);
   return {
     // 점검용(주소에 dbg=1일 때만 응답에 남김): 위치 검색·지역 목록이 각각 어떻게 됐는지
-    _dbg: { loc: a.status === "fulfilled" ? a.value.items.length : String(a.reason && (a.reason.payload?.error || a.reason.message)), area: b.status === "fulfilled" ? b.value.length : String(b.reason && (b.reason.payload?.error || b.reason.message)) },
+    _dbg: { loc: a.status === "fulfilled" ? a.value.items.length : String(a.reason && (a.reason.payload?.error || a.reason.message)), area: b.status === "fulfilled" ? b.value.length : String(b.reason && (b.reason.payload?.error || b.reason.message)), ...areaInfo },
     items: out.slice(0, Number(num) || 50).map(({ _km, ...it }) => it),
     incomplete: a.status === "rejected" || b.status === "rejected", // 한쪽만 받은 결과는 저장하지 않는다
   };
