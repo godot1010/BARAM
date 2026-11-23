@@ -396,7 +396,9 @@ const AREA_PAGE = 1000;
 async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido, sgg, maxPages = 3 }, apiBase = TOUR_API_BASE) {
   const located = callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, ...(contentTypeId ? { contentTypeId } : {}), numOfRows: num, pageNo: "1" }, apiBase);
   // 위치 검색이 달라는 수만큼 다 주면(맛집처럼 고장 나지 않은 종류) 지역 목록은 받지 않는다 → 처음 여는 지역이 빨라진다 (2026-11-14 점검: 16초 → )
-  const first = await located.then((r) => r, () => null);
+  // 위치 검색이 1.5초 안에 답하지 않으면 지역 목록도 바로 같이 부른다(2026-11-23: 공공데이터가 느릴 때
+  // 위치 검색 8초 + 지역 목록 8초 = 16초가 걸려, 12초에 포기하는 앱에는 '불러오기 실패'로 보였음)
+  const first = await Promise.race([located.then((r) => r, () => null), new Promise((r) => setTimeout(() => r(undefined), 1500))]);
   if (first && first.items.length >= Number(num)) return { items: first.items, incomplete: false };
   const areaInfo = {};
   const areaPart = (async () => {
@@ -792,11 +794,6 @@ export async function onRequest(context) {
     const kindId = (id) => (eng ? ENG_TYPE_ID[id] || id : id);
 
     let payload;
-    if (action === "ldongProbe") { // 점검용(잠깐): 법정동 코드 목록 모양
-      const list = await getLdongIndex(base);
-      const raw = await callTourApi("ldongCode2", { ...base, lDongListYn: "Y", numOfRows: "5", pageNo: "1" }).catch((e) => ({ err: e.payload || e.message }));
-      return json({ n: list.length, sample: list.slice(0, 5), raw }, 200);
-    }
     if (action === "nearby") {
       const lat = url.searchParams.get("lat");
       const lng = url.searchParams.get("lng");
