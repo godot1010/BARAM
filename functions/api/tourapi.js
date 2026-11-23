@@ -169,14 +169,21 @@ class TourApiError extends Error {
 // 공공데이터 서버가 멈춘 듯 느릴 때 오래 기다리지 않는다 (2026-11-14 점검: 522일 때 20초 가까이 기다렸다가 지난 저장본을 줘서,
 // 12초에 포기하는 앱은 저장본이 있어도 오류를 봤다). 8초가 지나면 끊고, 저장본이 있으면 그걸 돌려준다
 // 2026-11-23 점검: 공공데이터 서버는 0.1초 만에 답하거나, 연결이 멈춰 19초 뒤 522를 낸다(중간이 거의 없음).
-// 그래서 오래 기다리지 않고 4초에 끊고 한 번 더 보낸다(예전: 8초 한 번 → 실패가 잦았음). 최대 약 8초.
-const UPSTREAM_TIMEOUT_MS = 4000;
-const UPSTREAM_TRIES = 2;
+// 그래서 오래 기다리지 않고 4초에 끊고 한 번 더 보냈다(예전: 8초 한 번 → 실패가 잦았음).
+// 2026-11-23 저녁 다시 점검: Cloudflare(서울)에서 apis.data.go.kr로 가는 연결이 절반 넘게 멈춘다(키 없이 불러도 같음, 형 PC에서는 12번 모두 0.1초).
+// 정상이면 0.1초 만에 답이 오므로 2초 안에 답(머리)이 없으면 끊고 다시 묻는다. 모두 합쳐 8초 안에서만(최대 4번)(앱은 12초에 포기).
+// 본문 받기는 따로 8초까지 기다린다(1,000곳짜리 목록은 받는 데 시간이 걸릴 수 있음).
+const UPSTREAM_TIMEOUT_MS = 2000;
+const UPSTREAM_BODY_MS = 8000;
+const UPSTREAM_TRIES = 5;
+const UPSTREAM_BUDGET_MS = 8000;
 async function fetchUpstreamOnce(url) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+  let timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
   try {
     const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    timer = setTimeout(() => controller.abort(), UPSTREAM_BODY_MS);
     const bodyText = await res.text();
     return { res, bodyText };
   } catch (err) {
@@ -188,14 +195,18 @@ async function fetchUpstreamOnce(url) {
 }
 async function callTourApi(path, params, apiBase = TOUR_API_BASE) {
   const qs = new URLSearchParams(params).toString();
+  const startedAt = Date.now();
   let res, bodyText;
   for (let i = 1; ; i++) {
+    let more = false;
     try {
       ({ res, bodyText } = await fetchUpstreamOnce(`${apiBase}/${path}?${qs}`));
-      if ([502, 503, 504, 520, 522, 524].includes(res.status) && i < UPSTREAM_TRIES) continue; // 연결 문제면 한 번 더
+      more = i < UPSTREAM_TRIES && Date.now() - startedAt + UPSTREAM_TIMEOUT_MS <= UPSTREAM_BUDGET_MS; // 한 번 더 해도 시간 안에 끝나는지
+      if ([502, 503, 504, 520, 522, 524].includes(res.status) && more) continue; // 연결 문제면 다시
       break;
     } catch (err) {
-      if (i >= UPSTREAM_TRIES) throw err;
+      more = i < UPSTREAM_TRIES && Date.now() - startedAt + UPSTREAM_TIMEOUT_MS <= UPSTREAM_BUDGET_MS;
+      if (!more) throw err;
     }
   }
 

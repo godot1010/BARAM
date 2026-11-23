@@ -82,14 +82,23 @@ async function fetchForecast(serviceKey, base, grid) {
     serviceKey, pageNo: "1", numOfRows: "1000", dataType: "JSON",
     base_date: base.date, base_time: base.time, nx: String(grid.nx), ny: String(grid.ny),
   });
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000);
+  // 2026-11-23: Cloudflare에서 apis.data.go.kr 연결이 자주 멈춤 → 2초 안에 답(머리)이 없으면 끊고 다시(8초 안에서만, 최대 4번)
+  const startedAt = Date.now();
   let text;
-  try {
-    const res = await fetch(`${KMA_BASE}?${qs}`, { signal: controller.signal });
-    text = await res.text();
-  } finally {
-    clearTimeout(timer);
+  for (let i = 1; ; i++) {
+    const controller = new AbortController();
+    let timer = setTimeout(() => controller.abort(), 2000);
+    try {
+      const res = await fetch(`${KMA_BASE}?${qs}`, { signal: controller.signal });
+      clearTimeout(timer);
+      timer = setTimeout(() => controller.abort(), 6000);
+      text = await res.text();
+      if (![502, 503, 504, 520, 522, 524].includes(res.status) || i >= 4 || Date.now() - startedAt + 2000 > 8000) break;
+    } catch (err) {
+      if (i >= 4 || Date.now() - startedAt + 2000 > 8000) throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   }
   let data;
   try {
