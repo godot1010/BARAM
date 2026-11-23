@@ -168,20 +168,35 @@ class TourApiError extends Error {
 
 // 공공데이터 서버가 멈춘 듯 느릴 때 오래 기다리지 않는다 (2026-11-14 점검: 522일 때 20초 가까이 기다렸다가 지난 저장본을 줘서,
 // 12초에 포기하는 앱은 저장본이 있어도 오류를 봤다). 8초가 지나면 끊고, 저장본이 있으면 그걸 돌려준다
-const UPSTREAM_TIMEOUT_MS = 8000;
-async function callTourApi(path, params, apiBase = TOUR_API_BASE) {
-  const qs = new URLSearchParams(params).toString();
+// 2026-11-23 점검: 공공데이터 서버는 0.1초 만에 답하거나, 연결이 멈춰 19초 뒤 522를 낸다(중간이 거의 없음).
+// 그래서 오래 기다리지 않고 4초에 끊고 한 번 더 보낸다(예전: 8초 한 번 → 실패가 잦았음). 최대 약 8초.
+const UPSTREAM_TIMEOUT_MS = 4000;
+const UPSTREAM_TRIES = 2;
+async function fetchUpstreamOnce(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
-  let res, bodyText;
   try {
-    res = await fetch(`${apiBase}/${path}?${qs}`, { signal: controller.signal });
-    bodyText = await res.text();
+    const res = await fetch(url, { signal: controller.signal });
+    const bodyText = await res.text();
+    return { res, bodyText };
   } catch (err) {
     if (controller.signal.aborted) throw new TourApiError({ error: "UPSTREAM_TIMEOUT", message: "공공데이터 서버가 응답하지 않아요. 잠시 뒤 다시 시도해 주세요." }, 504);
     throw err;
   } finally {
     clearTimeout(timer);
+  }
+}
+async function callTourApi(path, params, apiBase = TOUR_API_BASE) {
+  const qs = new URLSearchParams(params).toString();
+  let res, bodyText;
+  for (let i = 1; ; i++) {
+    try {
+      ({ res, bodyText } = await fetchUpstreamOnce(`${apiBase}/${path}?${qs}`));
+      if ([502, 503, 504, 520, 522, 524].includes(res.status) && i < UPSTREAM_TRIES) continue; // 연결 문제면 한 번 더
+      break;
+    } catch (err) {
+      if (i >= UPSTREAM_TRIES) throw err;
+    }
   }
 
   if (!res.ok) {
@@ -794,12 +809,6 @@ export async function onRequest(context) {
     const kindId = (id) => (eng ? ENG_TYPE_ID[id] || id : id);
 
     let payload;
-    if (action === "upstreamProbe") { // 점검용(잠깐): 관광공사 서버가 몇 초 만에 답하는지 (25초까지 기다림)
-      const t0 = Date.now();
-      const res = await fetch(`${TOUR_API_BASE}/areaBasedList2?${new URLSearchParams({ ...base, lDongRegnCd: "51", lDongSignguCd: "150", contentTypeId: "12", numOfRows: "5", pageNo: "1" })}`, { signal: AbortSignal.timeout(25000) }).catch((e) => ({ status: "ERR " + e.name }));
-      const text = res.text ? await res.text() : "";
-      return json({ status: res.status, sec: (Date.now() - t0) / 1000, head: text.slice(0, 160).replace(/serviceKey=[^&"]+/g, "") }, 200);
-    }
     if (action === "nearby") {
       const lat = url.searchParams.get("lat");
       const lng = url.searchParams.get("lng");
