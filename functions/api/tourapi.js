@@ -224,20 +224,32 @@ async function fetchViaRelay(target, ms) {
   }
 }
 // 바로 묻기 → (실패하면) 중계 또는 한 번 더. 모두 합쳐 8초 안에서만(앱은 12초에 포기)
+// 2026-11-24 실제 사이트 점검: 바로 묻기가 막힐 때는 연달아 막혀서, 매번 3초를 버리고 중계로 가면 한 화면(여러 번 묻기)이 8~11초 걸렸다.
+// → 바로 묻기가 막히고 중계가 되면 2분 동안은 중계를 먼저 쓴다(같은 서버 안에서만 기억). 2분 뒤엔 다시 바로 묻기부터.
+const DIRECT_PAUSE_MS = 2 * 60 * 1000;
+let DIRECT_BAD_UNTIL = 0;
 async function fetchUpstream(target) {
   const startedAt = Date.now();
-  let res = null, bodyText, lastErr;
+  const relayFirst = !!RELAY_TOKEN && (FORCE_RELAY || Date.now() < DIRECT_BAD_UNTIL);
+  let res = null, bodyText, lastErr, directFailed = false;
   for (let i = 1; i <= UPSTREAM_TRIES; i++) {
-    const viaRelay = !!RELAY_TOKEN && (i > 1 || FORCE_RELAY);
+    const viaRelay = !!RELAY_TOKEN && (i === 1 ? relayFirst : !relayFirst);
     const left = UPSTREAM_BUDGET_MS - (Date.now() - startedAt);
     if (i > 1 && left < (viaRelay ? 1500 : UPSTREAM_TIMEOUT_MS)) break; // 한 번 더 해도 시간 안에 못 끝남
     try {
-      ({ res, bodyText } = viaRelay ? await fetchViaRelay(target, left) : await fetchUpstreamOnce(target));
+      // 중계가 먼저일 때는 5초까지만 기다려 바로 묻기에도 기회를 남긴다
+      ({ res, bodyText } = viaRelay ? await fetchViaRelay(target, i === 1 ? Math.min(left, 5000) : left) : await fetchUpstreamOnce(target));
       lastErr = null;
-      if (!RETRY_STATUS.includes(res.status)) break; // 연결 문제가 아니면 끝
+      if (!RETRY_STATUS.includes(res.status)) {
+        if (viaRelay && directFailed) DIRECT_BAD_UNTIL = Date.now() + DIRECT_PAUSE_MS; // 바로 묻기는 막혔고 중계는 됨
+        if (!viaRelay) DIRECT_BAD_UNTIL = 0; // 바로 묻기가 다시 됨
+        break; // 연결 문제가 아니면 끝
+      }
+      if (!viaRelay) directFailed = true;
     } catch (err) {
       lastErr = err;
       res = null;
+      if (!viaRelay) directFailed = true;
     }
   }
   if (!res) throw lastErr;

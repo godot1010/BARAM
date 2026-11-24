@@ -9,6 +9,7 @@ const KMA_BASE = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getV
 // 구글 클라우드 서울 중계(코드 tools/relay, tourapi.js와 같은 것). 비밀 암호는 Cloudflare 비밀 RELAY_TOKEN
 const RELAY_URL = "https://baram-relay-643807720039.asia-northeast3.run.app/";
 let RELAY_TOKEN = "";
+let DIRECT_BAD_UNTIL = 0;
 const CACHE_SECONDS = 3 * 60 * 60; // 발표 시각이 키에 들어가므로, 새 발표가 나오면 자동으로 새로 받는다
 const memoryCache = new Map();
 
@@ -92,12 +93,15 @@ async function fetchForecast(serviceKey, base, grid) {
   const startedAt = Date.now();
   let text = null;
   let lastErr;
+  let directFailed = false;
+  // 바로 묻기가 막히고 중계가 되면 2분 동안은 중계를 먼저(tourapi.js와 같은 방식)
+  const relayFirst = !!RELAY_TOKEN && Date.now() < DIRECT_BAD_UNTIL;
   for (let i = 1; i <= 2; i++) {
-    const viaRelay = i > 1 && !!RELAY_TOKEN;
+    const viaRelay = !!RELAY_TOKEN && (i === 1 ? relayFirst : !relayFirst);
     const left = 8000 - (Date.now() - startedAt);
     if (i > 1 && left < (viaRelay ? 1500 : 3000)) break;
     const controller = new AbortController();
-    let timer = setTimeout(() => controller.abort(), viaRelay ? left : 3000);
+    let timer = setTimeout(() => controller.abort(), viaRelay ? (i === 1 ? Math.min(left, 5000) : left) : 3000);
     try {
       const res = viaRelay
         ? await fetch(RELAY_URL, { method: "POST", signal: controller.signal, headers: { "content-type": "application/json", "x-relay-token": RELAY_TOKEN }, body: JSON.stringify({ url: target }) })
@@ -108,10 +112,16 @@ async function fetchForecast(serviceKey, base, grid) {
       }
       text = await res.text();
       lastErr = null;
-      if (![502, 503, 504, 520, 522, 524].includes(res.status)) break;
+      if (![502, 503, 504, 520, 522, 524].includes(res.status)) {
+        if (viaRelay && directFailed) DIRECT_BAD_UNTIL = Date.now() + 2 * 60 * 1000;
+        if (!viaRelay) DIRECT_BAD_UNTIL = 0;
+        break;
+      }
+      if (!viaRelay) directFailed = true;
     } catch (err) {
       lastErr = err;
       text = null;
+      if (!viaRelay) directFailed = true;
     } finally {
       clearTimeout(timer);
     }
