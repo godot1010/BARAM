@@ -195,22 +195,58 @@ async function fetchUpstreamOnce(url) {
     clearTimeout(timer);
   }
 }
-async function callTourApi(path, params, apiBase = TOUR_API_BASE) {
-  const qs = new URLSearchParams(params).toString();
+// 2026-11-24: 공공데이터포털이 해외 IP를 막는 것으로 보인다(해외 서버 7곳 중 6곳 연결 안 됨, Cloudflare는 바깥 주소 일부가 해외로 잡혀 절반쯤 멈춤).
+// 그래서 바로 묻기가 3초 안에 답이 없거나 연결 오류면, 두 번째는 구글 클라우드 서울 중계(Cloud Run baram-relay, 한국 IP, 코드 tools/relay)로 묻는다.
+// 중계는 받은 주소를 대신 불러 줄 뿐이고(키는 주소 안에, 중계에 저장 안 함), Cloudflare 비밀 RELAY_TOKEN이 있어야만 쓴다(없으면 예전처럼 바로 한 번 더).
+const RELAY_URL = "https://baram-relay-643807720039.asia-northeast3.run.app/";
+const RETRY_STATUS = [502, 503, 504, 520, 522, 524];
+let RELAY_TOKEN = ""; // 요청마다 onRequest에서 env로 채움
+let FORCE_RELAY = false; // 미리보기 시험용(dbg=1&relay=1): 바로 묻기를 건너뜀
+let RELAY_USED = 0; // 이번 요청에서 중계를 쓴 횟수(dbg 확인용)
+async function fetchViaRelay(target, ms) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    RELAY_USED++;
+    const r = await fetch(RELAY_URL, {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "content-type": "application/json", "x-relay-token": RELAY_TOKEN },
+      body: JSON.stringify({ url: target }),
+    });
+    const bodyText = await r.text();
+    return { res: { status: r.status, ok: r.ok }, bodyText };
+  } catch (err) {
+    if (controller.signal.aborted) throw new TourApiError({ error: "UPSTREAM_TIMEOUT", message: "공공데이터 서버가 응답하지 않아요. 잠시 뒤 다시 시도해 주세요." }, 504);
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+// 바로 묻기 → (실패하면) 중계 또는 한 번 더. 모두 합쳐 8초 안에서만(앱은 12초에 포기)
+async function fetchUpstream(target) {
   const startedAt = Date.now();
-  let res, bodyText;
-  for (let i = 1; ; i++) {
-    let more = false;
+  let res = null, bodyText, lastErr;
+  for (let i = 1; i <= UPSTREAM_TRIES; i++) {
+    const viaRelay = !!RELAY_TOKEN && (i > 1 || FORCE_RELAY);
+    const left = UPSTREAM_BUDGET_MS - (Date.now() - startedAt);
+    if (i > 1 && left < (viaRelay ? 1500 : UPSTREAM_TIMEOUT_MS)) break; // 한 번 더 해도 시간 안에 못 끝남
     try {
-      ({ res, bodyText } = await fetchUpstreamOnce(`${apiBase}/${path}?${qs}`));
-      more = i < UPSTREAM_TRIES && Date.now() - startedAt + UPSTREAM_TIMEOUT_MS <= UPSTREAM_BUDGET_MS; // 한 번 더 해도 시간 안에 끝나는지
-      if ([502, 503, 504, 520, 522, 524].includes(res.status) && more) continue; // 연결 문제면 다시
-      break;
+      ({ res, bodyText } = viaRelay ? await fetchViaRelay(target, left) : await fetchUpstreamOnce(target));
+      lastErr = null;
+      if (!RETRY_STATUS.includes(res.status)) break; // 연결 문제가 아니면 끝
     } catch (err) {
-      more = i < UPSTREAM_TRIES && Date.now() - startedAt + UPSTREAM_TIMEOUT_MS <= UPSTREAM_BUDGET_MS;
-      if (!more) throw err;
+      lastErr = err;
+      res = null;
     }
   }
+  if (!res) throw lastErr;
+  return { res, bodyText };
+}
+
+async function callTourApi(path, params, apiBase = TOUR_API_BASE) {
+  const qs = new URLSearchParams(params).toString();
+  const { res, bodyText } = await fetchUpstream(`${apiBase}/${path}?${qs}`);
 
   if (!res.ok) {
     throw new TourApiError({ error: "UPSTREAM_ERROR", status: res.status, upstreamBody: bodyText.slice(0, 500), message: `TourAPI 응답 오류 (HTTP ${res.status})` }, 502);
@@ -823,9 +859,13 @@ export async function onRequest(context) {
     const url = new URL(request.url);
     const action = url.searchParams.get("action");
     const ttl = CACHE_SECONDS[action];
+    RELAY_TOKEN = env.RELAY_TOKEN || "";
+    RELAY_USED = 0;
+    // 중계 시험(미리보기 주소에서만): dbg=1&relay=1이면 저장본·바로 묻기를 건너뛰고 중계로만 묻는다
+    FORCE_RELAY = url.hostname !== "baram-bh4.pages.dev" && url.searchParams.get("dbg") === "1" && url.searchParams.get("relay") === "1";
 
     // 저장해 둔 결과가 새것이면 공공데이터 서버에 묻지 않고 바로 돌려준다
-    const cacheKey = ttl ? cacheKeyFor(url) : null;
+    const cacheKey = ttl && !FORCE_RELAY ? cacheKeyFor(url) : null;
     if (cacheKey) {
       const hit = await cacheGet(cacheKey);
       if (hit && isFresh(hit, ttl)) return json(JSON.parse(hit.body), 200, { "x-baram-cache": hit.source });
@@ -1029,7 +1069,7 @@ export async function onRequest(context) {
 
     // 성공한 결과만 저장한다
     if (cacheKey) await cachePut(cacheKey, JSON.stringify(payload));
-    return json(payload, 200, { "x-baram-cache": "MISS" });
+    return json(payload, 200, { "x-baram-cache": "MISS", "x-baram-relay": String(RELAY_USED) });
   } catch (err) {
     // 공공데이터 서버가 고장이면(522 등) 지난 저장본이라도 돌려준다
     if (stale) return staleResponse();

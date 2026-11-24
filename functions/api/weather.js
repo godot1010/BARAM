@@ -6,6 +6,9 @@
 // - 실패하면 { error } 를 돌려주고, 앱은 날씨 줄을 조용히 숨긴다.
 
 const KMA_BASE = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst";
+// 구글 클라우드 서울 중계(코드 tools/relay, tourapi.js와 같은 것). 비밀 암호는 Cloudflare 비밀 RELAY_TOKEN
+const RELAY_URL = "https://baram-relay-643807720039.asia-northeast3.run.app/";
+let RELAY_TOKEN = "";
 const CACHE_SECONDS = 3 * 60 * 60; // 발표 시각이 키에 들어가므로, 새 발표가 나오면 자동으로 새로 받는다
 const memoryCache = new Map();
 
@@ -83,23 +86,37 @@ async function fetchForecast(serviceKey, base, grid) {
     base_date: base.date, base_time: base.time, nx: String(grid.nx), ny: String(grid.ny),
   });
   // 2026-11-23: Cloudflare에서 apis.data.go.kr 연결이 자주 멈춤 → 2초 안에 답(머리)이 없으면 끊고 다시(8초 안에서만, 최대 4번)
+  // 2026-11-24: 공공데이터포털이 해외 IP를 막는 것으로 보여, 바로 묻기가 3초 안에 답이 없으면 구글 클라우드 서울 중계(baram-relay)로 한 번 더.
+  //   (관광정보 tourapi.js와 같은 방식. Cloudflare 비밀 RELAY_TOKEN이 없으면 예전처럼 바로 한 번 더, 최대 2번)
+  const target = `${KMA_BASE}?${qs}`;
   const startedAt = Date.now();
-  let text;
-  for (let i = 1; ; i++) {
+  let text = null;
+  let lastErr;
+  for (let i = 1; i <= 2; i++) {
+    const viaRelay = i > 1 && !!RELAY_TOKEN;
+    const left = 8000 - (Date.now() - startedAt);
+    if (i > 1 && left < (viaRelay ? 1500 : 3000)) break;
     const controller = new AbortController();
-    let timer = setTimeout(() => controller.abort(), 2000);
+    let timer = setTimeout(() => controller.abort(), viaRelay ? left : 3000);
     try {
-      const res = await fetch(`${KMA_BASE}?${qs}`, { signal: controller.signal });
-      clearTimeout(timer);
-      timer = setTimeout(() => controller.abort(), 6000);
+      const res = viaRelay
+        ? await fetch(RELAY_URL, { method: "POST", signal: controller.signal, headers: { "content-type": "application/json", "x-relay-token": RELAY_TOKEN }, body: JSON.stringify({ url: target }) })
+        : await fetch(target, { signal: controller.signal });
+      if (!viaRelay) {
+        clearTimeout(timer);
+        timer = setTimeout(() => controller.abort(), 6000);
+      }
       text = await res.text();
-      if (![502, 503, 504, 520, 522, 524].includes(res.status) || i >= 4 || Date.now() - startedAt + 2000 > 8000) break;
+      lastErr = null;
+      if (![502, 503, 504, 520, 522, 524].includes(res.status)) break;
     } catch (err) {
-      if (i >= 4 || Date.now() - startedAt + 2000 > 8000) throw err;
+      lastErr = err;
+      text = null;
     } finally {
       clearTimeout(timer);
     }
   }
+  if (text === null) throw lastErr || new Error("기상청 응답 없음");
   let data;
   try {
     data = JSON.parse(text);
@@ -180,6 +197,7 @@ export async function onRequest({ request, env }) {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return json({ error: "BAD_REQUEST", message: "lat/lng가 필요해요." }, 400);
     if (!env.TOUR_API_SERVICE_KEY) return json({ error: "SERVER_NO_KEY", message: "서버에 공공데이터 키가 없어요." }, 500);
     const serviceKey = normalizeServiceKey(env.TOUR_API_SERVICE_KEY);
+    RELAY_TOKEN = env.RELAY_TOKEN || "";
 
     const grid = toGrid(lat, lng);
     const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
