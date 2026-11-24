@@ -101,8 +101,9 @@ function memorySet(key, body, savedAt) {
 
 // 저장해 둔 문자열을 찾는다. 결과: { body, savedAt, source } 또는 null
 // (7일 안의 것이면 오래됐어도 돌려준다. 새것인지는 isFresh로 따로 본다)
-async function cacheGet(key) {
-  const fromMemory = memoryGet(key);
+// big: 큰 목록(지역 목록 1,000곳 등)은 메모리에 두지 않는다(서버 메모리 한도 128MB)
+async function cacheGet(key, big = false) {
+  const fromMemory = big ? null : memoryGet(key);
   if (fromMemory) return { ...fromMemory, source: "HIT-MEMORY" };
   try {
     const fromEdge = await caches.default.match(key);
@@ -111,7 +112,7 @@ async function cacheGet(key) {
       // 저장 시각이 없는 옛 저장본은 오래된 것으로 본다 (새로 받아 보고, 실패하면 이걸 쓴다)
       const savedAt = Number(fromEdge.headers.get("x-baram-saved-at")) || 0;
       if (savedAt && Date.now() - savedAt > STALE_SECONDS * 1000) return null; // 7일이 지난 것은 쓰지 않는다
-      memorySet(key, body, savedAt);
+      if (!big) memorySet(key, body, savedAt);
       return { body, savedAt, source: "HIT-EDGE" };
     }
   } catch {
@@ -124,9 +125,9 @@ function isFresh(hit, seconds) {
   return Date.now() - hit.savedAt < seconds * 1000;
 }
 
-async function cachePut(key, body) {
+async function cachePut(key, body, big = false) {
   const savedAt = Date.now();
-  memorySet(key, body, savedAt);
+  if (!big) memorySet(key, body, savedAt);
   try {
     await caches.default.put(
       key,
@@ -173,9 +174,10 @@ class TourApiError extends Error {
 // 2026-11-23 저녁 다시 점검: Cloudflare(서울)에서 apis.data.go.kr로 가는 연결이 절반 넘게 멈춘다(키 없이 불러도 같음, 형 PC에서는 12번 모두 0.1초).
 // 정상이면 0.1초 만에 답이 오므로 2초 안에 답(머리)이 없으면 끊고 다시 묻는다. 모두 합쳐 8초 안에서만(최대 4번)(앱은 12초에 포기).
 // 본문 받기는 따로 8초까지 기다린다(1,000곳짜리 목록은 받는 데 시간이 걸릴 수 있음).
-const UPSTREAM_TIMEOUT_MS = 2000;
+// 2026-11-24: 관광공사 안내 "1,000건 넘는 자료를 짧은 시간에 과도하게 부르면 크롤링으로 보고 차단할 수 있음" → 다시 묻기는 한 번만(최대 2번), 3초씩
+const UPSTREAM_TIMEOUT_MS = 3000;
 const UPSTREAM_BODY_MS = 8000;
-const UPSTREAM_TRIES = 5;
+const UPSTREAM_TRIES = 2;
 const UPSTREAM_BUDGET_MS = 8000;
 async function fetchUpstreamOnce(url) {
   const controller = new AbortController();
@@ -268,11 +270,11 @@ async function getPetIndex(base) {
 async function buildPetIndex(base) {
   const first = await callTourApi("detailPetTour2", { ...base, numOfRows: String(PET_PAGE_SIZE), pageNo: "1" });
   const pages = Math.ceil(first.totalCount / PET_PAGE_SIZE);
-  const rest = await Promise.all(
-    Array.from({ length: Math.max(0, pages - 1) }, (_, i) =>
-      callTourApi("detailPetTour2", { ...base, numOfRows: String(PET_PAGE_SIZE), pageNo: String(i + 2) })
-    )
-  );
+  // 10쪽 가까이를 한꺼번에 부르지 않고 한 쪽씩 차례로 (2026-11-24, 과도한 호출로 보이지 않게)
+  const rest = [];
+  for (let i = 2; i <= pages; i++) {
+    rest.push(await callTourApi("detailPetTour2", { ...base, numOfRows: String(PET_PAGE_SIZE), pageNo: String(i) }));
+  }
 
   const conds = [];
   const condIndex = new Map();
@@ -418,6 +420,30 @@ async function ldongCodesFor(base, sido, sgg) {
 // 위치 검색 + (sido/sgg가 있으면) 그 시·군·구 지역 목록을 합쳐 가까운 순으로. 결과 모양은 locationBasedList2와 같다 (dist 칸 포함)
 // 지역 목록이 실패해도 위치 검색 결과는 돌려준다. 둘 다 실패하면 오류
 const AREA_PAGE = 1000;
+// 지역 목록은 시·군·구·종류마다 5일 동안 새것으로 쓴다(2026-11-24). 장소 목록은 자주 바뀌지 않고, 1,000건짜리 큰 요청이라
+// 하루마다 다시 받으면 '과도한 호출'로 보일 수 있다. 쪽은 한꺼번에 부르지 않고 한 쪽씩 차례로 받는다.
+async function getAreaList(base, c, contentTypeId, maxPages, apiBase) {
+  const key = `https://baram-cache.internal/area-v1/${encodeURIComponent(apiBase)}/${c.r}-${c.s}/${contentTypeId || "all"}/p${maxPages}`;
+  const hit = await cacheGet(key, true);
+  if (hit && isFresh(hit, 5 * DAY)) return JSON.parse(hit.body); // 5일이 지나면 새로 받고, 실패하면 7일까지는 지난 목록
+  try {
+    const p = { ...base, lDongRegnCd: c.r, lDongSignguCd: c.s, ...(contentTypeId ? { contentTypeId } : {}), arrange: "A", numOfRows: String(AREA_PAGE) };
+    const first = await callTourApi("areaBasedList2", { ...p, pageNo: "1" }, apiBase);
+    const pages = Math.min(Math.ceil(first.totalCount / AREA_PAGE), maxPages); // 큰 도시 맛집은 1,000곳이 넘는다 (최대 3,000곳)
+    const items = [...first.items];
+    for (let i = 2; i <= pages; i++) {
+      const r = await callTourApi("areaBasedList2", { ...p, pageNo: String(i) }, apiBase).catch(() => null);
+      if (!r) return { items, total: first.totalCount, partial: true }; // 일부만 받은 건 저장하지 않는다
+      items.push(...r.items);
+    }
+    const out = { items, total: first.totalCount };
+    await cachePut(key, JSON.stringify(out), true);
+    return out;
+  } catch (err) {
+    if (hit) return JSON.parse(hit.body); // 공공데이터가 고장이면 지난 목록(7일 안)이라도
+    throw err;
+  }
+}
 // apiBase: 영어판은 ENG_API_BASE(영문 관광정보도 위치 검색이 같은 고장이라 지역 목록을 합친다, 2026-11-15)
 async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido, sgg, maxPages = 3 }, apiBase = TOUR_API_BASE) {
   const located = callTourApi("locationBasedList2", { ...base, arrange: "E", mapX: lng, mapY: lat, radius, ...(contentTypeId ? { contentTypeId } : {}), numOfRows: num, pageNo: "1" }, apiBase);
@@ -430,15 +456,13 @@ async function nearbyWithArea(base, { lat, lng, radius, contentTypeId, num, sido
   const areaPart = (async () => {
     const codes = await ldongCodesFor(base, sido, sgg);
     areaInfo.codes = codes.slice(0, 6).map((c) => `${c.r}-${c.s}`).join(",");
-    const lists = await Promise.all(codes.slice(0, 6).map(async (c) => {
-      const p = { ...base, lDongRegnCd: c.r, lDongSignguCd: c.s, ...(contentTypeId ? { contentTypeId } : {}), arrange: "A", numOfRows: String(AREA_PAGE) };
-      const first = await callTourApi("areaBasedList2", { ...p, pageNo: "1" }, apiBase);
-      areaInfo.total = (areaInfo.total || 0) + first.totalCount;
-      const pages = Math.min(Math.ceil(first.totalCount / AREA_PAGE), maxPages); // 큰 도시 맛집은 1,000곳이 넘는다 (최대 3,000곳)
-      const rest = await Promise.all(Array.from({ length: Math.max(0, pages - 1) }, (_, i) => callTourApi("areaBasedList2", { ...p, pageNo: String(i + 2) }, apiBase).catch(() => ({ items: [] }))));
-      return [first, ...rest].flatMap((r) => r.items);
-    }));
-    return lists.flat();
+    const all = [];
+    for (const c of codes.slice(0, 6)) { // 청주시처럼 구가 여럿인 시도 한 구씩 차례로
+      const r = await getAreaList(base, c, contentTypeId, maxPages, apiBase);
+      areaInfo.total = (areaInfo.total || 0) + r.total;
+      all.push(...r.items);
+    }
+    return all;
   })();
   const [a, b] = await Promise.allSettled([located, areaPart]);
   if (a.status === "rejected" && b.status === "rejected") throw a.reason;
