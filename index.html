@@ -81,17 +81,17 @@
   .baram-star-tw { position: absolute; border-radius: 50%; background: #fff; box-shadow: 0 0 3px 1px rgba(255,255,255,.7); animation: baram-star-tw 2.4s ease-in-out infinite; pointer-events: none; }
   /* 룰렛 가운데 버튼 움직임 (2026-11-25 형 요청): START 두근두근 + 물결 고리, STOP 빠르게 콩콩, 어디? 두리번.
      버튼은 translate로 가운데 맞춤이라 transform 대신 scale 속성을 움직인다 */
-  @keyframes baram-start-beat { 0%, 56%, 100% { scale: 1; } 12% { scale: 1.09; } 24% { scale: .98; } 36% { scale: 1.06; } }
-  @keyframes baram-start-ring { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.85), 0 0 0 0 rgba(220,38,38,.5); } 70%, 100% { box-shadow: 0 0 0 10px rgba(255,255,255,0), 0 0 0 20px rgba(220,38,38,0); } }
+  @keyframes baram-start-beat { 0%, 56%, 100% { scale: 1; } 12% { scale: 1.045; } 24% { scale: .99; } 36% { scale: 1.03; } }
+  @keyframes baram-start-ring { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.85), 0 0 0 0 rgba(220,38,38,.5); } 70%, 100% { box-shadow: 0 0 0 5px rgba(255,255,255,0), 0 0 0 11px rgba(220,38,38,0); } }
   .baram-start { animation: baram-start-beat 1.6s ease-in-out infinite, baram-start-ring 1.6s ease-out infinite; }
-  @keyframes baram-start-txt { 0%, 56%, 100% { letter-spacing: 0; } 12% { letter-spacing: .08em; } 36% { letter-spacing: .04em; } }
+  @keyframes baram-start-txt { 0%, 56%, 100% { letter-spacing: 0; } 12% { letter-spacing: .04em; } 36% { letter-spacing: .02em; } }
   .baram-start-txt { display: inline-block; animation: baram-start-txt 1.6s ease-in-out infinite; }
-  @keyframes baram-stop-beat { 0%, 100% { scale: 1; } 50% { scale: 1.1; } }
-  @keyframes baram-stop-ring { 0% { box-shadow: 0 0 0 0 rgba(255,214,74,.9); } 100% { box-shadow: 0 0 0 14px rgba(255,214,74,0); } }
+  @keyframes baram-stop-beat { 0%, 100% { scale: 1; } 50% { scale: 1.05; } }
+  @keyframes baram-stop-ring { 0% { box-shadow: 0 0 0 0 rgba(255,214,74,.9); } 100% { box-shadow: 0 0 0 7px rgba(255,214,74,0); } }
   .baram-stop { animation: baram-stop-beat .55s ease-in-out infinite, baram-stop-ring .55s ease-out infinite; }
-  @keyframes baram-stop-txt { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-1.5px) rotate(-3deg); } 75% { transform: translateX(1.5px) rotate(3deg); } }
+  @keyframes baram-stop-txt { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-.8px) rotate(-1.5deg); } 75% { transform: translateX(.8px) rotate(1.5deg); } }
   .baram-stop-txt { display: inline-block; animation: baram-stop-txt .28s linear infinite; }
-  @keyframes baram-where-txt { 0%, 100% { transform: rotate(0) scale(1); } 20% { transform: rotate(-14deg) scale(1.08); } 45% { transform: rotate(12deg) scale(1.08); } 65% { transform: rotate(-6deg); } 80% { transform: rotate(3deg); } }
+  @keyframes baram-where-txt { 0%, 100% { transform: rotate(0) scale(1); } 20% { transform: rotate(-7deg) scale(1.03); } 45% { transform: rotate(6deg) scale(1.03); } 65% { transform: rotate(-3deg); } 80% { transform: rotate(1.5deg); } }
   .baram-where-txt { display: inline-block; animation: baram-where-txt 1.1s ease-in-out infinite; }
   @media (prefers-reduced-motion: reduce) { .baram-press, .baram-ink, .baram-icon-bob, .baram-chev-nod, .baram-pin-drop, .baram-step, .baram-twinkle, .baram-star-tw, .baram-start, .baram-start-txt, .baram-stop, .baram-stop-txt, .baram-where-txt { animation: none; } }
   body { font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif; }
