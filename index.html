@@ -81,11 +81,11 @@
   .baram-star-tw { position: absolute; border-radius: 50%; background: #fff; box-shadow: 0 0 3px 1px rgba(255,255,255,.7); animation: baram-star-tw 2.4s ease-in-out infinite; pointer-events: none; }
   /* 룰렛 가운데 버튼 움직임 (2026-11-25 형 요청): START 두근두근 + 물결 고리, STOP 빠르게 콩콩, 어디? 두리번.
      버튼은 translate로 가운데 맞춤이라 transform 대신 scale 속성을 움직인다 */
-  @keyframes baram-start-beat { 0%, 56%, 100% { scale: 1; } 12% { scale: 1.045; } 24% { scale: .99; } 36% { scale: 1.03; } }
-  @keyframes baram-start-ring { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.85), 0 0 0 0 rgba(220,38,38,.5); } 70%, 100% { box-shadow: 0 0 0 5px rgba(255,255,255,0), 0 0 0 11px rgba(220,38,38,0); } }
-  .baram-start { animation: baram-start-beat 1.6s ease-in-out infinite, baram-start-ring 1.6s ease-out infinite; }
+  @keyframes baram-start-beat { 0%, 56%, 100% { scale: 1; } 12% { scale: 1.025; } 24% { scale: .995; } 36% { scale: 1.015; } }
+  @keyframes baram-start-ring { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.85), 0 0 0 0 rgba(220,38,38,.5); } 70%, 100% { box-shadow: 0 0 0 10px rgba(255,255,255,0), 0 0 0 20px rgba(220,38,38,0); } }
+  .baram-start { animation: baram-start-beat 2.4s ease-in-out infinite, baram-start-ring 2.4s ease-out infinite; }
   @keyframes baram-start-txt { 0%, 56%, 100% { letter-spacing: 0; } 12% { letter-spacing: .04em; } 36% { letter-spacing: .02em; } }
-  .baram-start-txt { display: inline-block; animation: baram-start-txt 1.6s ease-in-out infinite; }
+  .baram-start-txt { display: inline-block; animation: baram-start-txt 2.4s ease-in-out infinite; }
   @keyframes baram-stop-beat { 0%, 100% { scale: 1; } 50% { scale: 1.05; } }
   @keyframes baram-stop-ring { 0% { box-shadow: 0 0 0 0 rgba(255,214,74,.9); } 100% { box-shadow: 0 0 0 7px rgba(255,214,74,0); } }
   .baram-stop { animation: baram-stop-beat .55s ease-in-out infinite, baram-stop-ring .55s ease-out infinite; }
