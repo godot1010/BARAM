@@ -82,6 +82,9 @@
   /* 🌐 언어 버튼 우주 바탕의 별 반짝임 (2026-11-15 형 요청) */
   @keyframes baram-star-tw { 0%, 100% { opacity: .25; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.15); } }
   .baram-star-tw { position: absolute; border-radius: 50%; background: #fff; box-shadow: 0 0 3px 1px rgba(255,255,255,.7); animation: baram-star-tw 2.4s ease-in-out infinite; pointer-events: none; }
+  /* 첫 화면 공연 칸의 반짝이는 별 (2026-11-27 형 요청) */
+  .baram-perf-star { position: absolute; line-height: 1; pointer-events: none; animation: baram-star-tw 2.6s ease-in-out infinite; text-shadow: 0 0 4px rgba(255,255,255,.9); }
+  @media (prefers-reduced-motion: reduce) { .baram-perf-star { animation: none; } }
   /* 룰렛 가운데 버튼 움직임 (2026-11-25 형 요청): START 두근두근 + 물결 고리, STOP 빠르게 콩콩, 어디? 두리번.
      버튼은 translate로 가운데 맞춤이라 transform 대신 scale 속성을 움직인다 */
   @keyframes baram-start-beat { 0%, 56%, 100% { scale: 1; } 12% { scale: 1.025; } 24% { scale: .995; } 36% { scale: 1.015; } }
@@ -6436,6 +6439,8 @@ function PerfInfo({ d }) {
 // 첫 화면 '내 위치 주변 공연' 한 줄 (2026-11-27 형 요청: 사용법 영상이 있던 자리). 같은 15개·40km 규칙.
 // 내 위치를 바꾸면 다시 받고, 공연이 없거나 못 받으면 숨김. 누르면 아래에서 공연 목록 창.
 const homePerfCache = new Map(); // 지역 이름 → Promise (같은 지역은 한 번만)
+// 공연 칸의 별: [왼쪽 %, 위 %, 크기 px, 시작 지연 초, 색] — 글자가 적은 오른쪽·가장자리 위주, 금색과 공연 색을 섞음
+const PERF_STARS = [[58, 6, 9, "0", "#D4A93A"], [71, 58, 7, "0.6", PERF_COLOR], [80, 10, 6, "1.3", "#D4A93A"], [91, 62, 9, "0.3", "#D4A93A"], [96, 8, 6, "1.8", PERF_COLOR], [47, 64, 6, "2.1", "#D4A93A"], [1.5, 58, 6, "1.0", "#D4A93A"]];
 function HomePerfLine({ location }) {
   const [state, setState] = useState(null); // { name, list }
   const [open, setOpen] = useState(false);
@@ -6459,13 +6464,17 @@ function HomePerfLine({ location }) {
         className="baram-homeperf block w-full text-left border min-w-0"
         // 2026-11-27 형 요청: 네모난 칸 + 두 줄, '직접 찾기'와 10px. 아래 결과 카드와도 10px(CSS .baram-homeperf + .baram-resultcard)
         // 두 줄 사이 2→5px, 칸 높이는 그대로가 되게 위아래 여백 7→5.5px (2026-11-27 형 요청)
-        style={{ marginTop: 10, padding: "5.5px 12px", borderRadius: 10, borderColor: PERF_COLOR, background: `${PERF_COLOR}12` }}
+        style={{ position: "relative", overflow: "hidden", marginTop: 10, padding: "5.5px 12px", borderRadius: 10, borderColor: PERF_COLOR, background: `${PERF_COLOR}12` }}
       >
-        <span className="flex items-center text-xs font-bold min-w-0" style={{ color: PERF_COLOR, gap: 4 }}>
+        {/* 반짝이는 별 (2026-11-27 형 요청): 글자 뒤에 작게, 차례로 반짝. 움직임 줄이기 설정이면 멈춤 */}
+        {PERF_STARS.map(([l, t, sz, delay, c], i) => (
+          <span key={i} className="baram-perf-star" aria-hidden="true" style={{ left: `${l}%`, top: `${t}%`, fontSize: sz, color: c, animationDelay: `${delay}s` }}>✦</span>
+        ))}
+        <span className="flex items-center text-xs font-bold min-w-0" style={{ position: "relative", color: PERF_COLOR, gap: 4 }}>
           <span className="truncate min-w-0">🎭 {tr("{name} 주변 공연 {n}개", { name: place, n: list.length })} <span className="font-normal">{tr("(2주 안)")}</span></span>
           <span className="shrink-0" style={{ marginLeft: "auto" }}>{tr("보기 ›")}</span>
         </span>
-        <span className="block truncate text-[11px] text-[#6B5F4F]" style={{ marginTop: 5 }}>{tr("{t} 외", { t: first })}</span>
+        <span className="block truncate text-[11px] text-[#6B5F4F]" style={{ position: "relative", marginTop: 5 }}>{tr("{t} 외", { t: first })}</span>
       </button>
       {open && <PerfListSheet title={tr("{name} 주변 공연 (2주 안)", { name: place })} list={list} hasNeighbors={own < list.length} onClose={() => setOpen(false)} />}
     </>
