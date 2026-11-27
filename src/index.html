@@ -83,7 +83,7 @@
   @keyframes baram-star-tw { 0%, 100% { opacity: .25; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.15); } }
   .baram-star-tw { position: absolute; border-radius: 50%; background: #fff; box-shadow: 0 0 3px 1px rgba(255,255,255,.7); animation: baram-star-tw 2.4s ease-in-out infinite; pointer-events: none; }
   /* 첫 화면 공연 칸의 반짝이는 별 (2026-11-27 형 요청) */
-  .baram-perf-star { position: absolute; line-height: 1; pointer-events: none; animation: baram-star-tw 2.6s ease-in-out infinite; text-shadow: 0 0 4px rgba(255,255,255,.9); }
+  .baram-perf-star { position: absolute; line-height: 1; pointer-events: none; animation: baram-star-tw 2.6s ease-in-out infinite; text-shadow: 0 0 2px rgba(163,36,94,.55), 0 0 5px rgba(163,36,94,.35); }
   @media (prefers-reduced-motion: reduce) { .baram-perf-star { animation: none; } }
   /* 룰렛 가운데 버튼 움직임 (2026-11-25 형 요청): START 두근두근 + 물결 고리, STOP 빠르게 콩콩, 어디? 두리번.
      버튼은 translate로 가운데 맞춤이라 transform 대신 scale 속성을 움직인다 */
@@ -6439,8 +6439,8 @@ function PerfInfo({ d }) {
 // 첫 화면 '내 위치 주변 공연' 한 줄 (2026-11-27 형 요청: 사용법 영상이 있던 자리). 같은 15개·40km 규칙.
 // 내 위치를 바꾸면 다시 받고, 공연이 없거나 못 받으면 숨김. 누르면 아래에서 공연 목록 창.
 const homePerfCache = new Map(); // 지역 이름 → Promise (같은 지역은 한 번만)
-// 공연 칸의 별: [왼쪽 %, 위 %, 크기 px, 시작 지연 초, 색] — 글자가 적은 오른쪽·가장자리 위주, 금색과 공연 색을 섞음
-const PERF_STARS = [[58, 6, 9, "0", "#D4A93A"], [71, 58, 7, "0.6", PERF_COLOR], [80, 10, 6, "1.3", "#D4A93A"], [91, 62, 9, "0.3", "#D4A93A"], [96, 8, 6, "1.8", PERF_COLOR], [47, 64, 6, "2.1", "#D4A93A"], [1.5, 58, 6, "1.0", "#D4A93A"]];
+// 공연 칸의 별: [왼쪽 %, 위 %, 크기 px, 시작 지연 초] — 흰 별 10개(형 요청 '흰색, 3개 더'), 글자가 적은 오른쪽·가장자리 위주
+const PERF_STARS = [[58, 6, 9, "0"], [71, 58, 7, "0.6"], [80, 10, 6, "1.3"], [91, 62, 9, "0.3"], [96, 8, 6, "1.8"], [47, 64, 6, "2.1"], [1.5, 58, 6, "1.0"], [66, 22, 6, "1.6"], [85, 40, 7, "0.9"], [38, 8, 5, "2.4"]].map((s) => [...s, "#FFFFFF"]);
 function HomePerfLine({ location }) {
   const [state, setState] = useState(null); // { name, list }
   const [open, setOpen] = useState(false);
