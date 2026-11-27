@@ -5860,7 +5860,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
         {photos.length > 0 && (
           <div className="flex overflow-x-auto snap-x snap-mandatory rounded-t-2xl" style={{ scrollbarWidth: "none" }}>
             {photos.map((src, i) => (
-              <img key={i} src={src} alt="" loading="lazy" className="w-full shrink-0 snap-center object-cover" style={{ height: 210 }} />
+              <img key={i} src={src} alt="" loading="lazy" className="w-full shrink-0 snap-center object-cover" style={place.perf ? { height: 260, objectFit: "contain", background: "#2B2620" } : { height: 210 }} />
             ))}
           </div>
         )}
@@ -5931,7 +5931,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
 
           <div className="grid grid-cols-2 gap-2 mt-3">
             <a
-              href={kakaoDirectionsUrl(place.searchName || name, place.lat, place.lng)}
+              href={kakaoDirectionsUrl(place.searchName || name, place.lat || (d && d.perf && d.perf.lat), place.lng || (d && d.perf && d.perf.lng))}
               target="_blank" rel="noreferrer"
               className="flex items-center justify-center gap-1 rounded-lg py-2 text-xs font-bold text-[#F6F1E7]"
               style={{ background: "#2F6E68" }}
