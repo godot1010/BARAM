@@ -6456,7 +6456,7 @@ function HomePerfLine({ location }) {
         onClick={() => setOpen(true)}
         className="block w-full text-left border min-w-0"
         // 2026-11-27 형 요청: 네모난 칸 + 두 줄, '직접 찾기'와 더 붙게(18 → 10px)
-        style={{ marginTop: 10, padding: "7px 12px", borderRadius: 10, borderColor: PERF_COLOR, background: `${PERF_COLOR}12` }}
+        style={{ marginTop: 5, padding: "7px 12px", borderRadius: 10, borderColor: PERF_COLOR, background: `${PERF_COLOR}12` }}
       >
         <span className="flex items-center text-xs font-bold min-w-0" style={{ color: PERF_COLOR, gap: 4 }}>
           <span className="truncate min-w-0">🎭 {tr("{name} 주변 공연 {n}개", { name: place, n: list.length })} <span className="font-normal">{tr("(2주 안)")}</span></span>
