@@ -6460,7 +6460,7 @@ function HomePerfLine({ location }) {
       >
         <span className="flex items-center text-xs font-bold min-w-0" style={{ color: PERF_COLOR, gap: 4 }}>
           <span className="truncate min-w-0">🎭 {tr("{name} 주변 공연 {n}개", { name: place, n: list.length })} <span className="font-normal">{tr("(2주 안)")}</span></span>
-          <span className="shrink-0 ml-auto">{tr("보기 ›")}</span>
+          <span className="shrink-0" style={{ marginLeft: "auto" }}>{tr("보기 ›")}</span>
         </span>
         <span className="block truncate text-[11px] text-[#6B5F4F] mt-0.5">{tr("{t} 외", { t: first })}</span>
       </button>
@@ -6522,7 +6522,7 @@ function PerfLine({ spot, cache, setCache, onOpen }) {
     >
       <span className="shrink-0">🎭 {tr("2주 안 공연 {n}개", { n: list.length })}{own < list.length ? tr(" (이웃 포함)") : ""}</span>
       <span className="truncate min-w-0 font-normal text-[#6B5F4F]">· {tr("{t} 외", { t: first })}</span>
-      <span className="shrink-0 ml-auto">↓</span>
+      <span className="shrink-0" style={{ marginLeft: "auto" }}>↓</span>
     </button>
   );
 }
