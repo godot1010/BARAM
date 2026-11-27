@@ -45,7 +45,7 @@
     L = q || (/^(ko|en|ja|zh-CN|zh-TW|fr|es)$/.test(saved || "") ? saved : auto);
   } catch (e) {}
   window.BARAM_LANG = L;
-  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=14"><\/script>');
+  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=15"><\/script>');
 })();
 </script>
 <style>
@@ -5710,6 +5710,15 @@ function phoneNumber(text) {
 
 const placeDetailCache = new Map(); // 장소 id → Promise (같은 장소는 한 번만 받는다)
 function fetchPlaceDetail(place) {
+  // 🎭 공연은 KOPIS 상세(공연장 주소·좌표·예매처 포함, 2026-11-27)
+  if (place.perf) {
+    return fetch(`/api/kopis?action=detail&id=${encodeURIComponent(place.perf.id)}`)
+      .then((r) => { if (!r.ok) throw new Error(tr("자세한 정보를 불러오지 못했어요.")); return r.json(); })
+      .then((d) => ({
+        addr1: d.address || place.address, intro: {}, perf: d,
+        images: [d.poster, ...(d.images || [])].filter(Boolean).map((url) => ({ url })),
+      }));
+  }
   // 캠핑장은 목록에 이미 소개·전화·홈페이지가 있다 (관광정보 상세가 없는 다른 자료)
   if (place.star && !/^\d+$/.test(String(place.id))) {
     return Promise.resolve({ addr1: place.address, intro: {}, images: place.imageLarge ? [{ url: place.imageLarge }] : [] });
@@ -5885,6 +5894,7 @@ function PlaceDetailSheet({ place, mood, onClose }) {
           {place.walk && <WalkInfo place={place} />}
           {place.bike && <BikeInfo place={place} />}
           {place.star && <StarInfo place={place} />}
+          {place.perf && d && <PerfInfo d={d.perf} />}
 
           {overview && (
             <div className="mt-3">
@@ -5936,7 +5946,9 @@ function PlaceDetailSheet({ place, mood, onClose }) {
               {tr("네이버 지도")} <ExternalLink size={12} className="text-[#2F6E68]" />
             </a>
           </div>
-          {!place.mountain && !place.walk && <p className="text-[10px] text-[#A6987F] mt-2">{tr("정보 출처: {src}. 이용 시간과 요금은 바뀔 수 있으니 방문 전에 확인하세요.", { src: place.vj ? tr("제주관광공사 VISIT JEJU") : tr("한국관광공사") })}</p>}
+          {place.perf ? (
+            <p className="text-[10px] text-[#A6987F] mt-2">{tr("출처: (재)예술경영지원센터 공연예술통합전산망(www.kopis.or.kr)")}</p>
+          ) : !place.mountain && !place.walk && <p className="text-[10px] text-[#A6987F] mt-2">{tr("정보 출처: {src}. 이용 시간과 요금은 바뀔 수 있으니 방문 전에 확인하세요.", { src: place.vj ? tr("제주관광공사 VISIT JEJU") : tr("한국관광공사") })}</p>}
           {/* 2026-11-15 형 결정 3번: 장소 정보가 틀렸을 때 메일로 알리기 */}
           <a
             href={reportProblemHref({ placeName: place.name || place.title || "", placeAddr: place.address || place.addr || place.addr1 || "" })}
@@ -6243,6 +6255,135 @@ function MapLinkList({ links }) {
 // 무장애 탭·무장애 정보 색 (초록)
 const BARRIER_FREE_COLOR = "#2E7D5B";
 
+// ==========================================
+// 🎭 공연 (2026-11-27 형 요청 '문화 탭에서 지역별 공연 소개'): 공연예술통합전산망(KOPIS) 자료.
+// 서버 /api/kopis 가 그 구·군 공연장에서 오늘부터 2주 안에 하는 공연을 돌려준다(6시간 저장).
+// 출처 표시 필수: (재)예술경영지원센터 공연예술통합전산망(www.kopis.or.kr) — 안 하면 서비스가 끊길 수 있음.
+// KOPIS 지역 코드 = 행정표준코드 앞 4자리(KOPIS 공통코드 PDF + 실제 자료로 확인). 2026 개편: 전남광주통합특별시는 12xx,
+// 인천 제물포구 2812·영종구 2815·서해구 2827·검단구 2829. 증평군은 영동군과 같은 4자리(4374)라 뺌.
+// 구례 1273·화순 1276·함평 1282·신안 1287은 순서로 짐작(확인 때 공연이 없었음).
+// ==========================================
+const PERF_COLOR = "#A3245E";
+const KOPIS_CODES = Object.fromEntries("서울 종로구:1111|서울 중구:1114|서울 용산구:1117|서울 성동구:1120|서울 광진구:1121|서울 동대문구:1123|서울 중랑구:1126|서울 성북구:1129|서울 강북구:1130|서울 도봉구:1132|서울 노원구:1135|서울 은평구:1138|서울 서대문구:1141|서울 마포구:1144|서울 양천구:1147|서울 강서구:1150|서울 구로구:1153|서울 금천구:1154|서울 영등포구:1156|서울 동작구:1159|서울 관악구:1162|서울 서초구:1165|서울 강남구:1168|서울 송파구:1171|서울 강동구:1174|수원시:4111|성남시:4113|의정부시:4115|안양시:4117|부천시:4119|광명시:4121|평택시:4122|동두천시:4125|안산시:4127|고양시:4128|과천시:4129|구리시:4131|남양주시:4136|오산시:4137|시흥시:4139|군포시:4141|의왕시:4143|하남시:4145|용인시:4146|파주시:4148|이천시:4150|안성시:4155|김포시:4157|화성시:4159|광주시:4161|포천시:4165|연천군:4180|가평군:4182|양평군:4183|인천 중구:2812,2815|인천 동구:2812|인천 미추홀구:2817|인천 연수구:2818|인천 남동구:2820|인천 부평구:2823|인천 계양구:2824|인천 서구:2827,2829|제주 제주시내:5011|제주 서귀포시내:5013|춘천시:5111|원주시:5113|강릉시:5115|동해시:5117|태백시:5119|속초시:5121|삼척시:5123|홍천군:5172|횡성군:5173|영월군:5175|평창군:5176|정선군:5177|철원군:5178|화천군:5179|양구군:5180|인제군:5181|고성군-강원:5182|양양군:5183|청주시:4311|충주시:4313|제천시:4315|보은군:4372|옥천군:4373|영동군:4374|진천군:4375|괴산군:4376|음성군:4377|단양군:4380|천안시:4413|공주시:4415|보령시:4418|아산시:4420|서산시:4421|논산시:4423|계룡시:4425|당진시:4427|금산군:4471|부여군:4476|서천군:4477|청양군:4479|홍성군:4480|예산군:4481|태안군:4482|대전 동구:3011|대전 중구:3014|대전 서구:3017|대전 유성구:3020|대전 대덕구:3023|세종시:3611|포항시:4711|경주시:4713|김천시:4715|안동시:4717|구미시:4719|영주시:4721|영천시:4723|상주시:4725|문경시:4728|경산시:4729|의성군:4773|청송군:4775|영양군:4776|영덕군:4777|청도군:4782|고령군:4783|성주군:4784|칠곡군:4785|예천군:4790|봉화군:4792|울진군:4793|울릉군:4794|대구 중구:2711|대구 동구:2714|대구 서구:2717|대구 남구:2720|대구 북구:2723|대구 수성구:2726|대구 달서구:2729|군위군:2772|부산 중구:2611|부산 서구:2614|부산 동구:2617|부산 영도구:2620|부산 부산진구:2623|부산 동래구:2626|부산 남구:2629|부산 북구:2632|부산 해운대구:2635|부산 사하구:2638|부산 금정구:2641|부산 강서구:2644|부산 연제구:2647|부산 수영구:2650|부산 사상구:2653|울산 중구:3111|울산 남구:3114|울산 동구:3117|울산 북구:3120|창원시:4812|진주시:4817|통영시:4822|사천시:4824|김해시:4825|밀양시:4827|거제시:4831|양산시:4833|의령군:4872|함안군:4873|창녕군:4874|고성군-경남:4882|남해군:4884|하동군:4885|산청군:4886|함양군:4887|거창군:4888|합천군:4889|전주시:4511|군산시:4513|익산시:4514|정읍시:4518|남원시:4519|김제시:4521|완주군:4571|진안군:4572|무주군:4573|장수군:4574|임실군:4575|순창군:4577|고창군:4579|부안군:4580|목포시:1211|여수시:1213|순천시:1215|나주시:1217|광양시:1219|담양군:1271|곡성군:1272|구례군:1273|고흥군:1274|보성군:1275|화순군:1276|장흥군:1277|강진군:1278|해남군:1279|영암군:1280|무안군:1281|함평군:1282|영광군:1283|장성군:1284|완도군:1285|진도군:1286|신안군:1287|광주 동구:1221|광주 서구:1224|광주 남구:1227|광주 북구:1230|광주 광산구:1233|양주시:4163|여주시:4167|강화군:2871|옹진군:2872|달성군:2771|기장군:2671|울주군:3171".split("|").map((x) => { const [k, v] = x.split(":"); return [k, v.split(",")]; }));
+function kopisCodesFor(spotName) {
+  if (KOPIS_CODES[spotName]) return KOPIS_CODES[spotName];
+  const jeju = JEJU_AREAS[spotName];
+  if (jeju) return jeju.city === "서귀포시" ? ["5013"] : ["5011"];
+  return [];
+}
+// "2026.11.26" → Date
+function perfDate(s) {
+  const m = String(s || "").match(/(\d{4})\.(\d{1,2})\.(\d{1,2})/);
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
+// 짧은 기간 글자: 11.26 ~ 1.17 / 12.5 하루
+function perfPeriod(p) {
+  const a = perfDate(p.from), b = perfDate(p.to);
+  if (!a) return "";
+  const md = (d) => `${d.getMonth() + 1}.${d.getDate()}`;
+  if (!b || a.getTime() === b.getTime()) return tr("{d} 하루", { d: md(a) });
+  return `${md(a)} ~ ${md(b)}`;
+}
+async function fetchPerformances(spotName) {
+  const codes = kopisCodesFor(spotName);
+  if (codes.length === 0) return [];
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch(`/api/kopis?action=list&codes=${codes.join(",")}`, { signal: ctrl.signal });
+    if (!res.ok) throw Object.assign(new Error(tr("공연 정보를 불러오지 못했어요.")), { code: "HTTP_ERROR" });
+    const data = await res.json();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const startOf = (p) => Math.max((perfDate(p.from) || today).getTime(), today.getTime());
+    return (data.items || [])
+      .filter((p) => p.id && p.title)
+      .map((p) => ({ ...p, startAt: startOf(p) }))
+      // 가까운 날 먼저, 끝없이 하는 공연(오픈런)은 뒤로
+      .sort((a, b) => (a.openrun ? 1 : 0) - (b.openrun ? 1 : 0) || a.startAt - b.startAt || String(a.title).localeCompare(String(b.title)));
+  } catch (err) {
+    if (err && err.name === "AbortError") throw Object.assign(new Error(tr("공연 정보가 늦게 와요.")), { code: "HTTP_ERROR" });
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function PerfCard({ perf }) {
+  const openDetail = useContext(PlaceDetailContext);
+  const [broken, setBroken] = useState(false);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const days = Math.round((perf.startAt - today.getTime()) / 86400000);
+  const badge = days <= 0 ? tr("공연 중") : `D-${days}`;
+  const venue = String(perf.venue || "").replace(/\s*\(.*$/, "");
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => openDetail({ id: `perf_${perf.id}`, name: perf.title, image: perf.poster, searchName: venue, address: perf.venue, perf })}
+      className="cursor-pointer flex gap-3 border rounded-lg p-2"
+      style={{ background: "rgba(255,255,255,.5)", borderColor: `${PERF_COLOR}66` }}
+    >
+      {perf.poster && !broken ? (
+        <img src={perf.poster} alt="" loading="lazy" onError={() => setBroken(true)} className="rounded-md object-cover shrink-0" style={{ width: 52, height: 70 }} />
+      ) : (
+        <span className="rounded-md shrink-0 flex items-center justify-center text-xl" style={{ width: 52, height: 70, background: "#F3E6C4" }}>🎭</span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-[#2B2620]" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35 }}>{perf.title}</p>
+        <p className="text-[11px] mt-0.5">
+          <span className="font-bold rounded-full px-1.5 mr-1" style={{ background: days <= 0 ? PERF_COLOR : "#2F6E68", color: "#F6F1E7" }}>{badge}</span>
+          <span className="font-bold mr-1" style={{ color: PERF_COLOR }}>{tr(perf.genre)}</span>
+          <span className="text-[#6B5F4F]">{perf.openrun ? tr("{p} (계속 공연)", { p: perfPeriod(perf) }) : perfPeriod(perf)}</span>
+        </p>
+        <p className="text-[11px] text-[#A6987F] truncate mt-0.5">📍 {perf.venue}</p>
+      </div>
+    </div>
+  );
+}
+// 공연 정보 창 안의 내용 (PlaceDetailSheet 에서 place.perf 일 때)
+function PerfInfo({ d }) {
+  if (!d) return null;
+  const rows = [
+    ["기간", [d.from, d.to].filter(Boolean).join(" ~ ")],
+    ["공연 시간", d.times],
+    ["공연장", d.venueName || d.venue],
+    ["출연", d.cast],
+    ["관람 연령", d.age],
+    ["공연 길이", d.runtime],
+    ["가격", d.price],
+  ].filter(([, v]) => v && String(v).trim());
+  return (
+    <div className="mt-3">
+      {d.genre && <p className="text-xs font-bold" style={{ color: PERF_COLOR }}>🎭 {tr(d.genre)}{d.state ? ` · ${tr(d.state)}` : ""}</p>}
+      {rows.length > 0 && (
+        <div className="mt-2 bg-white/50 border border-[#D9CBB0] rounded-lg divide-y divide-[#E9DFCC]">
+          {rows.map(([label, value]) => (
+            <div key={label} className="flex gap-2 px-3 py-1.5 text-[11px]">
+              <span className="shrink-0 text-[#6B5F4F] w-20">{tr(label)}</span>
+              <span className="text-[#2B2620] whitespace-pre-line min-w-0" style={{ wordBreak: "keep-all" }}>{value}</span>
+            </div>
+          ))}
+          {d.tel && phoneNumber(d.tel) && (
+            <div className="flex gap-2 px-3 py-1.5 text-[11px]">
+              <span className="shrink-0 text-[#6B5F4F] w-20">{tr("📞 문의")}</span>
+              <a href={`tel:${phoneNumber(d.tel)}`} className="font-bold text-[#2F6E68] underline min-w-0">{d.tel}</a>
+            </div>
+          )}
+        </div>
+      )}
+      {d.links && d.links.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {d.links.map((l) => (
+            <a key={l.url} href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold" style={{ background: PERF_COLOR, color: "#F6F1E7" }}>
+              🎟 {l.name ? tr("{name} 예매", { name: l.name }) : tr("예매하기")} <ExternalLink size={11} />
+            </a>
+          ))}
+        </div>
+      )}
+      <p className="text-[10px] text-[#A6987F] mt-2">{tr("예매·시간은 바뀔 수 있으니 예매처에서 꼭 확인하세요.")}</p>
+    </div>
+  );
+}
+
 // 탭 구성. source = 관광정보에서 받아 올 종류(같은 source는 한 번만 받아 여러 탭이 나눠 쓴다),
 // pick = 받아 온 목록에서 이 탭에 보여줄 것만 고르기
 const TAB_CONFIG = {
@@ -6269,7 +6410,12 @@ const TAB_CONFIG = {
     pick: (list) => [...list.filter((p) => p.kind !== "모텔"), ...list.filter((p) => p.kind === "모텔")],
   },
   culture: {
-    label: tr("문화"), icon: Museum, color: "#2B4C7E", emoji: "🖼️", source: "ct14",
+    label: tr("문화"), chip: tr("문화시설"), icon: Museum, color: "#2B4C7E", emoji: "🖼️", source: "ct14",
+    pick: (list) => list,
+  },
+  // 🎭 공연 (2026-11-27): 문화 탭 안의 칩 (sub: "culture")
+  perf: {
+    label: tr("공연"), icon: Museum, color: PERF_COLOR, emoji: "🎭", source: "perf", sub: "culture",
     pick: (list) => list,
   },
   // theme: true → 탭 줄에는 '테마' 하나만 두고, 그 안에서 칩으로 고른다 (2026-11-04 형 결정 A안: 테마가 늘어도 탭은 7개)
@@ -6342,6 +6488,7 @@ const SOURCE_FETCHERS = {
   star: (spot) => fetchStarNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
   fishing: (spot) => fetchFishingNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
   sea: (spot) => fetchSeasideNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
+  perf: (spot) => fetchPerformances(spot.name),
 };
 
 const PAGE_SIZE = 5;
@@ -6411,6 +6558,16 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cfg.theme, spot.id]);
 
+  // '문화' 탭을 열면 🎭 공연 칩 자료도 받아 개수를 보여 준다 (2026-11-27)
+  const cultureGroup = tab === "culture" || cfg.sub === "culture";
+  useEffect(() => {
+    if (!cultureGroup) return;
+    ["culture", "perf"].forEach((key) => {
+      if (!cache[`${spot.id}:${TAB_CONFIG[key].source}`]) loadSource(TAB_CONFIG[key].source);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cultureGroup, spot.id]);
+
   // 칩에 붙일 장소 수 (아직 못 받았으면 null)
   function themeCount(key) {
     const e = cache[`${spot.id}:${TAB_CONFIG[key].source}`];
@@ -6440,9 +6597,9 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
   return (
     <div>{/* 위 여백은 '더 알아보기' 제목 아래 10px로 (2026-11-07 간격 정리) */}
       <div className="flex gap-1 bg-white/40 rounded-lg p-1 overflow-x-auto">
-        {Object.entries(TAB_CONFIG).filter(([, t]) => !t.theme).map(([key, t], i) => {
+        {Object.entries(TAB_CONFIG).filter(([, t]) => !t.theme && !t.sub).map(([key, t], i) => {
           const Icon = t.icon;
-          const active = tab === key;
+          const active = tab === key || cfg.sub === key;
           // minWidth: 0 → 탭 7개가 한 줄 너비를 똑같이 나눠 쓴다 (최소 너비가 있으면 폰에서 마지막 탭이 잘림)
           return (
             <button
@@ -6474,6 +6631,30 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
           {tr("테마")}
         </button>
       </div>
+
+      {/* 문화 탭 안 칩: 🖼️ 문화시설 / 🎭 공연 (공연이 0개면 공연 칩은 숨김) */}
+      {cultureGroup && (
+        <div className="mt-2 flex" style={{ gap: 5 }}>
+          {["culture", "perf"].filter((key) => key === tab || themeCount(key) !== 0).map((key) => {
+            const t = TAB_CONFIG[key];
+            const n = themeCount(key);
+            const on = key === tab;
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  if (on && entry && entry.status === "error") setRetry((r) => r + 1);
+                  setTab(key);
+                }}
+                className="font-bold rounded-full border whitespace-nowrap"
+                style={{ flex: "1 1 0", padding: "5px 5px", fontSize: 12, textAlign: "center", color: t.color, borderColor: on ? t.color : "#D9CBB0", background: on ? `${t.color}1F` : "#FFFDF8" }}
+              >
+                <span style={{ marginRight: 3 }}>{t.emoji}</span>{t.chip || t.label}{n !== null ? ` ${n}` : ""}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {cfg.theme && (
         <div className="mt-2 flex" style={{ flexWrap: "wrap", gap: 5 }}>
@@ -6563,6 +6744,12 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
             {" "}{tr("정보: 국립해양조사원·한국관광공사.")}
           </p>
         )}
+        {tab === "perf" && entry && entry.status === "success" && (
+          <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
+            {tr("🎭 이 지역 공연장에서 오늘부터 2주 안에 하는 연극·뮤지컬·콘서트·클래식·국악 공연이에요")}{items.length > 0 ? tr(" ({n}개)", { n: items.length }) : ""}{tr(". 누르면 공연 시간·가격·예매처를 볼 수 있어요.")}
+            {" "}{tr("출처: (재)예술경영지원센터 공연예술통합전산망(www.kopis.or.kr)")}
+          </p>
+        )}
         {tab === "lodging" && overnight && (
           <p className="text-xs text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
             {tr("🛏️ 오늘 일정은 1박 2일을 추천해요. 묵을 곳을 미리 확인해 보세요.")}
@@ -6580,12 +6767,12 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
           tab === "cafe" ? (
             <MapLinkList links={buildMapSearchLinks(spot, "카페")} />
           ) : (
-            <StatusBlock status="empty" emptyText={tab === "festival" ? tr("가까운 곳에 열리는 축제가 없어요.") : tab === "pet" ? tr("이 지역은 반려동물 동반 정보가 아직 없어요.") : tab === "barrierFree" ? tr("이 지역 주변에는 무장애 여행 정보가 아직 없어요.") : tab === "camping" ? tr("이 지역 주변 20km 안에는 등록된 캠핑장이 없어요.") : tab === "mountain" ? tr("이 지역의 산 정보가 아직 없어요.") : tab === "walk" ? tr("이 지역의 걷기길 정보가 아직 없어요.") : tab === "star" ? tr("이 지역에는 STAR 장소가 아직 없어요.") : tab === "bike" ? tr("이 지역에는 등록된 자전거길이 아직 없어요.") : tab === "fishing" ? tr("이 지역 주변에는 낚시 정보가 아직 없어요.") : tab === "sea" ? tr("이 지역 주변 20km 안에는 해변 정보가 없어요.") : tr("검색된 정보가 없어요.")} />
+            <StatusBlock status="empty" emptyText={tab === "festival" ? tr("가까운 곳에 열리는 축제가 없어요.") : tab === "pet" ? tr("이 지역은 반려동물 동반 정보가 아직 없어요.") : tab === "barrierFree" ? tr("이 지역 주변에는 무장애 여행 정보가 아직 없어요.") : tab === "camping" ? tr("이 지역 주변 20km 안에는 등록된 캠핑장이 없어요.") : tab === "mountain" ? tr("이 지역의 산 정보가 아직 없어요.") : tab === "walk" ? tr("이 지역의 걷기길 정보가 아직 없어요.") : tab === "star" ? tr("이 지역에는 STAR 장소가 아직 없어요.") : tab === "bike" ? tr("이 지역에는 등록된 자전거길이 아직 없어요.") : tab === "fishing" ? tr("이 지역 주변에는 낚시 정보가 아직 없어요.") : tab === "sea" ? tr("이 지역 주변 20km 안에는 해변 정보가 없어요.") : tab === "perf" ? tr("앞으로 2주 동안 이 지역에 등록된 공연이 없어요.") : tr("검색된 정보가 없어요.")} />
           )
         ) : (
           <>
             {items.slice(0, shown).map((p) =>
-              tab === "festival" ? <FestivalCard key={p.id} festival={p} /> : <PlaceCard key={p.id} place={p} emoji={cfg.emoji} />
+              tab === "festival" ? <FestivalCard key={p.id} festival={p} /> : tab === "perf" ? <PerfCard key={p.id} perf={p} /> : <PlaceCard key={p.id} place={p} emoji={cfg.emoji} />
             )}
             {items.length > shown && (
               <button
