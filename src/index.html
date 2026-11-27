@@ -45,7 +45,7 @@
     L = q || (/^(ko|en|ja|zh-CN|zh-TW|fr|es)$/.test(saved || "") ? saved : auto);
   } catch (e) {}
   window.BARAM_LANG = L;
-  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=15"><\/script>');
+  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=16"><\/script>');
 })();
 </script>
 <style>
@@ -5716,7 +5716,8 @@ function fetchPlaceDetail(place) {
       .then((r) => { if (!r.ok) throw new Error(tr("자세한 정보를 불러오지 못했어요.")); return r.json(); })
       .then((d) => ({
         addr1: d.address || place.address, intro: {}, perf: d,
-        images: [d.poster, ...(d.images || [])].filter(Boolean).map((url) => ({ url })),
+        // 맨 위에는 포스터만. 위아래로 긴 소개 그림(팸플릿)은 PerfInfo 아래에 화면 너비로 크게 (2026-11-27 형 '너무 작아')
+        images: [d.poster || (d.images || [])[0]].filter(Boolean).map((url) => ({ url })),
       }));
   }
   // 캠핑장은 목록에 이미 소개·전화·홈페이지가 있다 (관광정보 상세가 없는 다른 자료)
@@ -6380,6 +6381,19 @@ function PerfInfo({ d }) {
         </div>
       )}
       <p className="text-[10px] text-[#A6987F] mt-2">{tr("예매·시간은 바뀔 수 있으니 예매처에서 꼭 확인하세요.")}</p>
+      {d.poster && d.images && d.images.length > 0 && (
+        <div className="mt-3">
+          <p className="text-[11px] font-bold text-[#2B2620] mb-1">{tr("📄 공연 소개 ({n}장)", { n: d.images.length })}</p>
+          <p className="text-[10px] text-[#6B5F4F] mb-1.5">{tr("그림을 누르면 원본이 열려요. 손가락으로 벌려 크게 보세요.")}</p>
+          <div className="space-y-2">
+            {d.images.map((src) => (
+              <a key={src} href={src} target="_blank" rel="noreferrer" className="block">
+                <img src={src} alt="" loading="lazy" className="w-full rounded-md border border-[#D9CBB0]" style={{ height: "auto", display: "block" }} />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

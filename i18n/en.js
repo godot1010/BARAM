@@ -516,6 +516,8 @@ window.BARAM_I18N_EN = {
   "🇰🇷 아래 자세한 정보는 한국어만 있어요 (한국 공공데이터).": "🇰🇷 Details below are in Korean only (Korean public data).",
   "단체": "Group",
   // 🎭 공연(KOPIS, 2026-11-27)
+  "📄 공연 소개 ({n}장)": "📄 Show details ({n})",
+  "그림을 누르면 원본이 열려요. 손가락으로 벌려 크게 보세요.": "Tap an image to open the original, then pinch to zoom.",
   "자세한 정보를 불러오지 못했어요.": "Couldn't load the details.",
   "출처: (재)예술경영지원센터 공연예술통합전산망(www.kopis.or.kr)": "Source: Korea Arts Management Service, KOPIS (www.kopis.or.kr)",
   "{d} 하루": "{d} only",
