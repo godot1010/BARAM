@@ -6458,13 +6458,14 @@ function HomePerfLine({ location }) {
         onClick={() => setOpen(true)}
         className="baram-homeperf block w-full text-left border min-w-0"
         // 2026-11-27 형 요청: 네모난 칸 + 두 줄, '직접 찾기'와 10px. 아래 결과 카드와도 10px(CSS .baram-homeperf + .baram-resultcard)
-        style={{ marginTop: 10, padding: "7px 12px", borderRadius: 10, borderColor: PERF_COLOR, background: `${PERF_COLOR}12` }}
+        // 두 줄 사이 2→5px, 칸 높이는 그대로가 되게 위아래 여백 7→5.5px (2026-11-27 형 요청)
+        style={{ marginTop: 10, padding: "5.5px 12px", borderRadius: 10, borderColor: PERF_COLOR, background: `${PERF_COLOR}12` }}
       >
         <span className="flex items-center text-xs font-bold min-w-0" style={{ color: PERF_COLOR, gap: 4 }}>
           <span className="truncate min-w-0">🎭 {tr("{name} 주변 공연 {n}개", { name: place, n: list.length })} <span className="font-normal">{tr("(2주 안)")}</span></span>
           <span className="shrink-0" style={{ marginLeft: "auto" }}>{tr("보기 ›")}</span>
         </span>
-        <span className="block truncate text-[11px] text-[#6B5F4F] mt-0.5">{tr("{t} 외", { t: first })}</span>
+        <span className="block truncate text-[11px] text-[#6B5F4F]" style={{ marginTop: 5 }}>{tr("{t} 외", { t: first })}</span>
       </button>
       {open && <PerfListSheet title={tr("{name} 주변 공연 (2주 안)", { name: place })} list={list} hasNeighbors={own < list.length} onClose={() => setOpen(false)} />}
     </>
