@@ -6388,7 +6388,7 @@ function PerfInfo({ d }) {
           <div className="space-y-2">
             {d.images.map((src) => (
               <a key={src} href={src} target="_blank" rel="noreferrer" className="block">
-                <img src={src} alt="" loading="lazy" className="w-full rounded-md border border-[#D9CBB0]" style={{ height: "auto", display: "block" }} />
+                <img src={src} alt="" loading="lazy" className="w-full rounded-md border border-[#D9CBB0]" style={{ height: "auto", display: "block", minHeight: 120, background: "#ECE8E1" }} />
               </a>
             ))}
           </div>
