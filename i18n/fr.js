@@ -477,6 +477,8 @@ window.BARAM_I18N_TABLE = {
   "🇰🇷 아래 자세한 정보는 한국어만 있어요 (한국 공공데이터).": "🇰🇷 Les détails ci-dessous sont uniquement en coréen (données publiques coréennes).",
   "단체": "Groupe",
   // 🎭 공연(KOPIS, 2026-11-27)
+  "(2주 안)": "(2 semaines)",
+  "보기 ›": "Voir ›",
   "사용법 영상 보기": "Vidéos tutoriels",
   "{name} 주변 공연 {n}개": "Spectacles près de {name} : {n}",
   "{name} 주변 공연 (2주 안)": "Spectacles près de {name} (2 semaines)",

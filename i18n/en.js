@@ -515,6 +515,8 @@ window.BARAM_I18N_EN = {
   "🇰🇷 아래 자세한 정보는 한국어만 있어요 (한국 공공데이터).": "🇰🇷 Details below are in Korean only (Korean public data).",
   "단체": "Group",
   // 🎭 공연(KOPIS, 2026-11-27)
+  "(2주 안)": "(next 2 weeks)",
+  "보기 ›": "See ›",
   "사용법 영상 보기": "How-to videos",
   "{name} 주변 공연 {n}개": "Shows near {name}: {n}",
   "{name} 주변 공연 (2주 안)": "Shows near {name} (next 2 weeks)",
