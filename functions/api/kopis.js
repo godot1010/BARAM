@@ -39,6 +39,10 @@ function tag(block, name) {
 function dbs(text) {
   return [...String(text).matchAll(/<db>([\s\S]*?)<\/db>/g)].map((m) => m[1]);
 }
+// 포스터 주소: http·www 주소는 https://kopis.or.kr 로 넘겨지므로(301) 처음부터 그 주소로
+function fixImg(u) {
+  return String(u || "").trim().replace(/^https?:\/\/(www\.)?kopis\.or\.kr\//, "https://kopis.or.kr/");
+}
 
 async function cacheGet(key, seconds) {
   const m = memoryCache.get(key);
@@ -67,13 +71,22 @@ async function cachePut(key, body, seconds) {
   } catch {}
 }
 
-async function kopis(path, params, key) {
+async function kopisOnce(path, params, key) {
   const q = new URLSearchParams({ service: key, ...params });
-  const res = await fetch(KOPIS_BASE + path + "?" + q.toString(), { signal: AbortSignal.timeout(8000) });
+  const res = await fetch(KOPIS_BASE + path + "?" + q.toString(), { signal: AbortSignal.timeout(6000) });
   if (!res.ok) throw new Error("KOPIS " + res.status);
   const text = await res.text();
   if (/<returncode>|<errmsg>/i.test(text) && !/<db>/.test(text)) throw new Error("KOPIS error");
   return text;
+}
+// 한꺼번에 많이 부르면 가끔 실패해서 한 번 더 물어본다
+async function kopis(path, params, key) {
+  try {
+    return await kopisOnce(path, params, key);
+  } catch {
+    await new Promise((r) => setTimeout(r, 500));
+    return kopisOnce(path, params, key);
+  }
 }
 
 // 구·군 하나의 2주 공연 목록 (최대 3쪽 × 100)
@@ -91,7 +104,7 @@ async function listForCode(code, key) {
         from: tag(b, "prfpdfrom"),
         to: tag(b, "prfpdto"),
         venue: tag(b, "fcltynm"),
-        poster: tag(b, "poster").replace(/^http:\/\//, "https://"),
+        poster: fixImg(tag(b, "poster")),
         genre: tag(b, "genrenm"),
         state: tag(b, "prfstate"),
         openrun: tag(b, "openrun") === "Y",
@@ -108,7 +121,7 @@ async function handleList(url, key) {
   if (codes.length === 0) return json({ error: "codes" }, 400);
   const day = kstYmd(0);
   const results = await Promise.all(codes.map(async (code) => {
-    const ck = `https://baram-cache.internal/kopis/list/v1/${code}/${day}`;
+    const ck = `https://baram-cache.internal/kopis/list/v2/${code}/${day}`;
     const hit = await cacheGet(ck, LIST_SECONDS);
     if (hit) return JSON.parse(hit);
     const list = await listForCode(code, key);
@@ -128,7 +141,7 @@ async function handleList(url, key) {
 async function handleDetail(url, key) {
   const id = String(url.searchParams.get("id") || "");
   if (!/^PF\d{4,}$/.test(id)) return json({ error: "id" }, 400);
-  const ck = `https://baram-cache.internal/kopis/detail/v1/${id}`;
+  const ck = `https://baram-cache.internal/kopis/detail/v2/${id}`;
   const hit = await cacheGet(ck, DETAIL_SECONDS);
   if (hit) return json(JSON.parse(hit), 200, { "cache-control": "public, max-age=3600" });
   const text = await kopis("pblprfr/" + id, {}, key);
@@ -147,8 +160,8 @@ async function handleDetail(url, key) {
     times: tag(b, "dtguidance"),
     genre: tag(b, "genrenm"),
     state: tag(b, "prfstate"),
-    poster: tag(b, "poster").replace(/^http:\/\//, "https://"),
-    images: [...b.matchAll(/<styurl>([\s\S]*?)<\/styurl>/g)].map((m) => decodeXml(m[1]).replace(/^http:\/\//, "https://")).filter(Boolean).slice(0, 6),
+    poster: fixImg(tag(b, "poster")),
+    images: [...b.matchAll(/<styurl>([\s\S]*?)<\/styurl>/g)].map((m) => fixImg(decodeXml(m[1]))).filter(Boolean).slice(0, 6),
     links: [...b.matchAll(/<relate>([\s\S]*?)<\/relate>/g)].map((m) => ({ name: tag(m[1], "relatenm"), url: tag(m[1], "relateurl") }))
       .filter((l) => /^https?:\/\//.test(l.url)).slice(0, 4),
     venueId: tag(b, "mt10id"),
