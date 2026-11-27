@@ -7,7 +7,6 @@ window.BARAM_I18N_TABLE = {
   "활기찬 여행이 빚어내는 마법 속으로...": "Voyage actif — que la magie commence...",
   "어디?": "Où ?",
   "가고 싶은 곳이 있나요? 직접 찾기": "Une idée de destination ? Recherchez-la",
-  "사용법 영상 보기 (천천히 따라 하기)": "Vidéos tutoriels (en anglais)",
   "STAMP TOUR 열기": "Ouvrir le STAMP TOUR",
   "해당 조건의 미정복 도시를\n모두 탐험하셨습니다!": "Vous avez exploré toutes les régions\\npour ce filtre !",
   "여행 전 신청 필수 · 사는 곳과 이웃 지역은 제외 · 조건은 공식 페이지에서 확인": "Inscription avant le voyage · Hors de votre région et des régions voisines · Conditions sur le site officiel",
@@ -478,6 +477,10 @@ window.BARAM_I18N_TABLE = {
   "🇰🇷 아래 자세한 정보는 한국어만 있어요 (한국 공공데이터).": "🇰🇷 Les détails ci-dessous sont uniquement en coréen (données publiques coréennes).",
   "단체": "Groupe",
   // 🎭 공연(KOPIS, 2026-11-27)
+  "사용법 영상 보기": "Vidéos tutoriels",
+  "{name} 주변 공연 {n}개": "Spectacles près de {name} : {n}",
+  "{name} 주변 공연 (2주 안)": "Spectacles près de {name} (2 semaines)",
+  "연극·뮤지컬·콘서트·클래식·국악 공연이에요. 누르면 공연 시간·가격·예매처를 볼 수 있어요.": "Théâtre, comédies musicales, concerts, classique et gugak. Touchez-en un pour voir horaires, prix et réservation.",
   "2주 안 공연 {n}개": "Spectacles sur 2 semaines : {n}",
   " (이웃 포함)": " (alentours inclus)",
   "{t} 외": "{t} et autres",

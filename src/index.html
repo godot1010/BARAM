@@ -45,7 +45,7 @@
     L = q || (/^(ko|en|ja|zh-CN|zh-TW|fr|es)$/.test(saved || "") ? saved : auto);
   } catch (e) {}
   window.BARAM_LANG = L;
-  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=17"><\/script>');
+  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=18"><\/script>');
 })();
 </script>
 <style>
@@ -6431,6 +6431,69 @@ function PerfInfo({ d }) {
     </div>
   );
 }
+// 첫 화면 '내 위치 주변 공연' 한 줄 (2026-11-27 형 요청: 사용법 영상이 있던 자리). 같은 15개·40km 규칙.
+// 내 위치를 바꾸면 다시 받고, 공연이 없거나 못 받으면 숨김. 누르면 아래에서 공연 목록 창.
+const homePerfCache = new Map(); // 지역 이름 → Promise (같은 지역은 한 번만)
+function HomePerfLine({ location }) {
+  const [state, setState] = useState(null); // { name, list }
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!location) return;
+    let alive = true;
+    const name = location.name;
+    if (!homePerfCache.has(name)) homePerfCache.set(name, fetchPerformances(location).catch(() => { homePerfCache.delete(name); return []; }));
+    homePerfCache.get(name).then((list) => alive && setState({ name, list }));
+    return () => { alive = false; };
+  }, [location && location.name]);
+  if (!state || !location || state.name !== location.name || !state.list.length) return null;
+  const list = state.list;
+  const own = list.filter((p) => !p.area).length;
+  const first = String(list[0].title || "").replace(/\s*\[[^\]]*\]\s*$/, "");
+  const place = tr(location.name.replace(/-.*$/, ""));
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center w-full text-left text-xs font-bold rounded-full border px-3 min-w-0"
+        style={{ marginTop: 18, paddingTop: 6, paddingBottom: 6, borderColor: PERF_COLOR, color: PERF_COLOR, background: `${PERF_COLOR}12`, gap: 4 }}
+      >
+        <span className="shrink-0">🎭 {tr("{name} 주변 공연 {n}개", { name: place, n: list.length })}</span>
+        <span className="truncate min-w-0 font-normal text-[#6B5F4F]">· {tr("{t} 외", { t: first })}</span>
+        <span className="shrink-0 ml-auto">›</span>
+      </button>
+      {open && <PerfListSheet title={tr("{name} 주변 공연 (2주 안)", { name: place })} list={list} hasNeighbors={own < list.length} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+// 공연 목록 창 (첫 화면 공연 줄에서). 공연을 누르면 위에 정보 창(PlaceDetailSheet)이 겹쳐 뜬다.
+function PerfListSheet({ title, list, hasNeighbors, onClose }) {
+  useBodyScrollLock();
+  const [shown, setShown] = useState(PAGE_SIZE);
+  return (
+    <div className="fixed inset-0 flex items-end justify-center bg-black/40" style={{ zIndex: 55 }} onClick={onClose}>
+      <div className="w-full max-w-sm bg-[#F6F1E7] rounded-t-2xl border-t border-x border-[#D9CBB0] max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 bg-[#F6F1E7] px-4 pt-3 pb-2 flex items-center justify-between gap-2" style={{ zIndex: 1 }}>
+          <h2 className="font-serif text-base font-bold" style={{ color: PERF_COLOR }}>🎭 {title}</h2>
+          <CloseButton onClick={onClose} />
+        </div>
+        <div className="px-4 pb-4 space-y-2">
+          <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
+            {tr("연극·뮤지컬·콘서트·클래식·국악 공연이에요. 누르면 공연 시간·가격·예매처를 볼 수 있어요.")}
+            {hasNeighbors && <>{" "}{tr("이 지역 공연이 적어 40km 안 가까운 지역 공연도 함께 보여 드려요.")}</>}
+          </p>
+          {list.slice(0, shown).map((p) => <PerfCard key={p.id} perf={p} />)}
+          {list.length > shown && (
+            <button onClick={() => setShown((n) => n + PAGE_SIZE)} className="w-full py-2 rounded-lg text-xs font-bold text-[#6B5F4F] border border-[#D9CBB0]">
+              {tr("더 보기 ({n}곳 더)", { n: list.length - shown })}
+            </button>
+          )}
+          <p className="text-[10px] text-[#A6987F] pt-1">{tr("출처: (재)예술경영지원센터 공연예술통합전산망(www.kopis.or.kr)")}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 결과 카드 한 줄 '🎭 2주 안 공연 n개 · 제목 외' (2026-11-27 형 결정 ①). 자료는 더 알아보기 공연 칸과 같은 칸(cache)을 나눠 씀.
 // 공연이 없거나 못 받으면 줄을 숨긴다. 누르면 더 알아보기 > 문화 > 공연으로.
 function PerfLine({ spot, cache, setCache, onOpen }) {
@@ -7796,10 +7859,26 @@ function BaramApp() {
 
         <IOSInstallBanner />
 
-        {/* 내 위치 */}
+        {/* 사용법 영상 (2026-11-27 형 요청: STAMP 아래, 내 위치 칸 오른쪽 끝에 맞춰 작게). 유튜브 재생목록, 한국어 외에는 영어 재생목록 */}
+        {HOWTO_PLAYLIST && (
+          <div className="flex justify-end" style={{ marginTop: -4, marginBottom: 6 }}>
+            <a
+              href={HOWTO_PLAYLIST}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 700, color: "#6B5F4F", textDecoration: "underline", textUnderlineOffset: 3 }}
+            >
+              <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 16, height: 11, borderRadius: 3, background: "#E53935", color: "#fff", fontSize: 6 }}>▶</span>
+              {tr("사용법 영상 보기")}
+            </a>
+          </div>
+        )}
+
+        {/* 내 위치 (2026-11-27 형 요청: 위아래를 줄임 py-3 → 8px) */}
         <button
           onClick={() => setLocationDialogOpen(true)}
-          className="w-full flex items-center gap-2 bg-white/50 border border-[#D9CBB0] rounded-xl px-4 py-3 text-left"
+          className="w-full flex items-center gap-2 bg-white/50 border border-[#D9CBB0] rounded-xl px-4 text-left"
+          style={{ paddingTop: 8, paddingBottom: 8 }}
         >
           <MapPin size={16} style={{ color: accent }} />
           {/* 2026-11-14 형 요청: '내 위치' 바로 옆에 지역 이름(코스 색·굵게, 사이 간격 좁게), 검색 칸이라 돋보기는 오른쪽 그대로 */}
@@ -7927,18 +8006,8 @@ function BaramApp() {
           <Search size={15} /> {tr("가고 싶은 곳이 있나요? 직접 찾기")}
         </button>
 
-        {/* 사용법 영상: 유튜브 재생목록으로 이동 (한국어 외에는 영어 재생목록) */}
-        {HOWTO_PLAYLIST && (
-          <a
-            href={HOWTO_PLAYLIST}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ display: "flex", width: "fit-content", alignItems: "center", gap: 6, margin: "18px auto 0", fontSize: 12, fontWeight: 700, color: "#6B5F4F", textDecoration: "underline", textUnderlineOffset: 4 }}
-          >
-            <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 18, height: 13, borderRadius: 3, background: "#E53935", color: "#fff", fontSize: 7 }}>▶</span>
-            {tr("사용법 영상 보기 (천천히 따라 하기)")}
-          </a>
-        )}
+        {/* 내 위치 주변 공연 한 줄 (2026-11-27 형 요청: 사용법 영상 자리에). 누르면 공연 목록 창 */}
+        <HomePerfLine location={currentLocation} />
 
         {/* 결과 카드 */}
         {result && route && (

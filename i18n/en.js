@@ -11,7 +11,6 @@ window.BARAM_I18N_EN = {
   "활기찬 여행이 빚어내는 마법 속으로...": "Active trip — let the magic begin...",
   "어디?": "Where?",
   "가고 싶은 곳이 있나요? 직접 찾기": "Have a place in mind? Search for it",
-  "사용법 영상 보기 (천천히 따라 하기)": "How-to videos (step by step)",
   "STAMP TOUR 열기": "Open STAMP TOUR",
   "해당 조건의 미정복 도시를\n모두 탐험하셨습니다!": "You've explored every area\nfor this filter!",
   "여행 전 신청 필수 · 사는 곳과 이웃 지역은 제외 · 조건은 공식 페이지에서 확인": "Apply before you go · Not for your home or nearby areas · See the official page for terms",
@@ -516,6 +515,10 @@ window.BARAM_I18N_EN = {
   "🇰🇷 아래 자세한 정보는 한국어만 있어요 (한국 공공데이터).": "🇰🇷 Details below are in Korean only (Korean public data).",
   "단체": "Group",
   // 🎭 공연(KOPIS, 2026-11-27)
+  "사용법 영상 보기": "How-to videos",
+  "{name} 주변 공연 {n}개": "Shows near {name}: {n}",
+  "{name} 주변 공연 (2주 안)": "Shows near {name} (next 2 weeks)",
+  "연극·뮤지컬·콘서트·클래식·국악 공연이에요. 누르면 공연 시간·가격·예매처를 볼 수 있어요.": "Plays, musicals, concerts, classical and gugak. Tap one to see times, prices and where to book.",
   "2주 안 공연 {n}개": "2 weeks of shows: {n}",
   " (이웃 포함)": " (incl. nearby)",
   "{t} 외": "{t} and more",
