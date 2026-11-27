@@ -117,24 +117,38 @@ async function listForCode(code, key) {
 
 async function handleList(url, key) {
   const codes = String(url.searchParams.get("codes") || "")
-    .split(",").map((s) => s.trim()).filter((s) => /^\d{4}$/.test(s)).slice(0, 3);
-  if (codes.length === 0) return json({ error: "codes" }, 400);
+    .split(",").map((s) => s.trim()).filter((s) => /^\d{4}$/.test(s));
+  // 내 지역 + 40km 안 이웃(앱이 최대 5곳)이라 10개까지. 앞의 것이 내 지역.
+  const uniq = [...new Set(codes)].slice(0, 10);
+  if (uniq.length === 0) return json({ error: "codes" }, 400);
   const day = kstYmd(0);
-  const results = await Promise.all(codes.map(async (code) => {
+  const one = async (code) => {
     const ck = `https://baram-cache.internal/kopis/list/v2/${code}/${day}`;
     const hit = await cacheGet(ck, LIST_SECONDS);
     if (hit) return JSON.parse(hit);
     const list = await listForCode(code, key);
     await cachePut(ck, JSON.stringify(list), LIST_SECONDS);
     return list;
-  }));
+  };
+  // 한꺼번에 많이 부르면 KOPIS가 실패해서 3개씩. 이웃 지역이 실패하면 그 지역만 빼고(내 지역 실패는 오류)
+  const results = new Array(uniq.length);
+  for (let i = 0; i < uniq.length; i += 3) {
+    await Promise.all(uniq.slice(i, i + 3).map(async (code, k) => {
+      try {
+        results[i + k] = await one(code);
+      } catch (e) {
+        if (i + k === 0) throw e;
+        results[i + k] = [];
+      }
+    }));
+  }
   const seen = new Set();
   const items = [];
-  results.flat().forEach((p) => {
+  results.forEach((list, idx) => (list || []).forEach((p) => {
     if (!p.id || seen.has(p.id)) return;
     seen.add(p.id);
-    items.push(p);
-  });
+    items.push({ ...p, code: uniq[idx] });
+  }));
   return json({ items }, 200, { "cache-control": "public, max-age=600" });
 }
 

@@ -516,6 +516,10 @@ window.BARAM_I18N_EN = {
   "🇰🇷 아래 자세한 정보는 한국어만 있어요 (한국 공공데이터).": "🇰🇷 Details below are in Korean only (Korean public data).",
   "단체": "Group",
   // 🎭 공연(KOPIS, 2026-11-27)
+  "2주 안 공연 {n}개": "2 weeks of shows: {n}",
+  " (이웃 포함)": " (incl. nearby)",
+  "{t} 외": "{t} and more",
+  "이 지역 공연이 적어 40km 안 가까운 지역 공연도 함께 보여 드려요.": "Few shows here, so shows within 40 km are included too.",
   "📄 공연 소개 ({n}장)": "📄 Show details ({n})",
   "그림을 누르면 원본이 열려요. 손가락으로 벌려 크게 보세요.": "Tap an image to open the original, then pinch to zoom.",
   "자세한 정보를 불러오지 못했어요.": "Couldn't load the details.",

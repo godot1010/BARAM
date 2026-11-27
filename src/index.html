@@ -45,7 +45,7 @@
     L = q || (/^(ko|en|ja|zh-CN|zh-TW|fr|es)$/.test(saved || "") ? saved : auto);
   } catch (e) {}
   window.BARAM_LANG = L;
-  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=16"><\/script>');
+  if (L !== "ko") document.write('<script src="/i18n/' + L + '.js?v=17"><\/script>');
 })();
 </script>
 <style>
@@ -6285,22 +6285,53 @@ function perfPeriod(p) {
   if (!b || a.getTime() === b.getTime()) return tr("{d} 하루", { d: md(a) });
   return `${md(a)} ~ ${md(b)}`;
 }
-async function fetchPerformances(spotName) {
-  const codes = kopisCodesFor(spotName);
+// 이웃 더하기 규칙 (2026-11-27 형 결정 '15개·40km'): 내 지역 공연이 15개 이상이면 내 지역만,
+// 모자라면 40km 안 가까운 지역부터 하나씩 더해 15개가 되면 멈춤(이웃은 최대 5곳). 이웃 공연은 '이웃 · ○○' 표시.
+const PERF_ENOUGH = 15;
+const PERF_NEAR_KM = 40;
+const PERF_MAX_NEIGHBORS = 5;
+function perfNeighbors(spot) {
+  const own = kopisCodesFor(spot.name);
+  const used = new Set(own);
+  const out = [];
+  LOCATIONS
+    .filter((l) => l.name !== spot.name)
+    .map((l) => ({ l, km: haversineKm(spot.lat, spot.lng, l.lat, l.lng) }))
+    .filter((x) => x.km <= PERF_NEAR_KM)
+    .sort((a, b) => a.km - b.km)
+    .forEach(({ l }) => {
+      if (out.length >= PERF_MAX_NEIGHBORS) return;
+      const codes = kopisCodesFor(l.name).filter((c) => !used.has(c));
+      if (codes.length === 0) return; // 같은 코드(제주 권역 등)·코드 없는 곳은 건너뜀
+      codes.forEach((c) => used.add(c));
+      out.push({ name: l.name, short: l.name.replace(/-.*$/, "").replace(/^\S+ /, ""), codes });
+    });
+  return { own, neighbors: out };
+}
+async function fetchPerformances(spot) {
+  const { own, neighbors } = perfNeighbors(spot);
+  const codes = [...own, ...neighbors.flatMap((n) => n.codes)];
   if (codes.length === 0) return [];
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 12000);
+  const timer = setTimeout(() => ctrl.abort(), 15000);
   try {
     const res = await fetch(`/api/kopis?action=list&codes=${codes.join(",")}`, { signal: ctrl.signal });
     if (!res.ok) throw Object.assign(new Error(tr("공연 정보를 불러오지 못했어요.")), { code: "HTTP_ERROR" });
     const data = await res.json();
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const startOf = (p) => Math.max((perfDate(p.from) || today).getTime(), today.getTime());
-    return (data.items || [])
-      .filter((p) => p.id && p.title)
-      .map((p) => ({ ...p, startAt: startOf(p) }))
-      // 가까운 날 먼저, 끝없이 하는 공연(오픈런)은 뒤로
-      .sort((a, b) => (a.openrun ? 1 : 0) - (b.openrun ? 1 : 0) || a.startAt - b.startAt || String(a.title).localeCompare(String(b.title)));
+    // 가까운 날 먼저, 끝없이 하는 공연(오픈런)은 뒤로
+    const sortPerf = (list) => list.sort((a, b) => (a.openrun ? 1 : 0) - (b.openrun ? 1 : 0) || a.startAt - b.startAt || String(a.title).localeCompare(String(b.title)));
+    const all = (data.items || []).filter((p) => p.id && p.title).map((p) => ({ ...p, startAt: startOf(p) }));
+    const seen = new Set();
+    const take = (list, area) => list.filter((p) => !seen.has(p.id) && seen.add(p.id)).map((p) => (area ? { ...p, area } : p));
+    const result = sortPerf(take(all.filter((p) => own.includes(p.code))));
+    const near = [];
+    for (const n of neighbors) {
+      if (result.length + near.length >= PERF_ENOUGH) break;
+      near.push(...take(all.filter((p) => n.codes.includes(p.code)), n.short));
+    }
+    return result.concat(sortPerf(near));
   } catch (err) {
     if (err && err.name === "AbortError") throw Object.assign(new Error(tr("공연 정보가 늦게 와요.")), { code: "HTTP_ERROR" });
     throw err;
@@ -6335,7 +6366,10 @@ function PerfCard({ perf }) {
           <span className="font-bold mr-1" style={{ color: PERF_COLOR }}>{tr(perf.genre)}</span>
           <span className="text-[#6B5F4F]">{perf.openrun ? tr("{p} (계속 공연)", { p: perfPeriod(perf) }) : perfPeriod(perf)}</span>
         </p>
-        <p className="text-[11px] text-[#A6987F] truncate mt-0.5">📍 {perf.venue}</p>
+        <p className="text-[11px] text-[#A6987F] mt-0.5 flex items-center gap-1.5 min-w-0">
+          <span className="truncate min-w-0">📍 {perf.venue}</span>
+          {perf.area && <NeighborBadge area={perf.area} />}
+        </p>
       </div>
     </div>
   );
@@ -6395,6 +6429,35 @@ function PerfInfo({ d }) {
         </div>
       )}
     </div>
+  );
+}
+// 결과 카드 한 줄 '🎭 2주 안 공연 n개 · 제목 외' (2026-11-27 형 결정 ①). 자료는 더 알아보기 공연 칸과 같은 칸(cache)을 나눠 씀.
+// 공연이 없거나 못 받으면 줄을 숨긴다. 누르면 더 알아보기 > 문화 > 공연으로.
+function PerfLine({ spot, cache, setCache, onOpen }) {
+  const key = `${spot.id}:perf`;
+  const entry = cache[key];
+  useEffect(() => {
+    if (cache[key]) return;
+    setCache((prev) => (prev[key] ? prev : { ...prev, [key]: { status: "loading" } }));
+    fetchPerformances(spot)
+      .then((data) => setCache((prev) => ({ ...prev, [key]: { status: "success", data } })))
+      .catch((err) => setCache((prev) => ({ ...prev, [key]: { status: "error", message: err.message } })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  if (!entry || entry.status !== "success" || !entry.data.length) return null;
+  const list = entry.data;
+  const own = list.filter((p) => !p.area).length;
+  const first = String(list[0].title || "").replace(/\s*\[[^\]]*\]\s*$/, "");
+  return (
+    <button
+      onClick={onOpen}
+      className="flex items-center w-full text-left mt-2 text-xs font-bold rounded-full border px-2.5 py-1 min-w-0"
+      style={{ borderColor: PERF_COLOR, color: PERF_COLOR, background: `${PERF_COLOR}12`, gap: 4 }}
+    >
+      <span className="shrink-0">🎭 {tr("2주 안 공연 {n}개", { n: list.length })}{own < list.length ? tr(" (이웃 포함)") : ""}</span>
+      <span className="truncate min-w-0 font-normal text-[#6B5F4F]">· {tr("{t} 외", { t: first })}</span>
+      <span className="shrink-0 ml-auto">↓</span>
+    </button>
   );
 }
 
@@ -6502,7 +6565,7 @@ const SOURCE_FETCHERS = {
   star: (spot) => fetchStarNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
   fishing: (spot) => fetchFishingNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
   sea: (spot) => fetchSeasideNearby({ lat: spot.lat, lng: spot.lng, spotName: spot.name }),
-  perf: (spot) => fetchPerformances(spot.name),
+  perf: (spot) => fetchPerformances(spot),
 };
 
 const PAGE_SIZE = 5;
@@ -6528,8 +6591,12 @@ function tabAnim(key, i) {
   return { animationName: `baram-tab-${TAB_ANIMS[key] || "drop"}`, animationDelay: `${(i * 0.45).toFixed(2)}s` };
 }
 
-function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initialTab }) {
+function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initialTab, jump }) {
   const [tab, setTab] = useState(initialTab || "landmark");
+  // 결과 카드의 '🎭 공연' 줄을 누르면 그 탭으로 (jump = { tab, n }, n이 바뀔 때마다)
+  useEffect(() => {
+    if (jump && jump.tab && TAB_CONFIG[jump.tab] && jump.spotId === spot.id) setTab(jump.tab);
+  }, [jump && jump.n]);
   const [shown, setShown] = useState(PAGE_SIZE);
   const [retry, setRetry] = useState(0); // 실패한 탭을 다시 눌렀을 때 다시 불러오기
   const cfg = TAB_CONFIG[tab];
@@ -6761,6 +6828,7 @@ function ResultDetailTabs({ spot, from, excludeIds = [], cache, setCache, initia
         {tab === "perf" && entry && entry.status === "success" && (
           <p className="text-[11px] text-[#6B5F4F] bg-white/40 border border-dashed border-[#D9CBB0] rounded-lg px-3 py-2">
             {tr("🎭 이 지역 공연장에서 오늘부터 2주 안에 하는 연극·뮤지컬·콘서트·클래식·국악 공연이에요")}{items.length > 0 ? tr(" ({n}개)", { n: items.length }) : ""}{tr(". 누르면 공연 시간·가격·예매처를 볼 수 있어요.")}
+            {items.some((p) => p.area) && <>{" "}{tr("이 지역 공연이 적어 40km 안 가까운 지역 공연도 함께 보여 드려요.")}</>}
             {" "}{tr("출처: (재)예술경영지원센터 공연예술통합전산망(www.kopis.or.kr)")}
           </p>
         )}
@@ -6965,6 +7033,7 @@ function BaramApp() {
   const [rouletteTheme, setRouletteTheme] = useState(null); // 고른 테마 룰렛 (없으면 일반 룰렛)
   const [pickerOpen, setPickerOpen] = useState(null); // "theme" | "region" | null (아래로 열린 칸)
   const [benefitOpen, setBenefitOpen] = useState(false); // 반값여행 룰렛 결과에서 여는 혜택 설명 창
+  const [tabJump, setTabJump] = useState(null); // 결과 카드 '🎭 공연' 줄 → 더 알아보기 공연 칸
   const [resultTheme, setResultTheme] = useState(null); // 지금 여행지를 어느 테마 룰렛으로 정했는지
   const tabsTitleRef = useRef(null);
   const titleRef = useRef(null); // 머리의 BARAM 글자 (윗줄 글자 크기를 맞추려고)
@@ -7906,6 +7975,15 @@ function BaramApp() {
               </p>
             )}
             <BenefitBadges spot={result} />
+            <PerfLine
+              spot={result}
+              cache={detailCache}
+              setCache={setDetailCache}
+              onOpen={() => {
+                setTabJump((j) => ({ tab: "perf", spotId: result.id, n: ((j && j.n) || 0) + 1 }));
+                setTimeout(() => tabsTitleRef.current && tabsTitleRef.current.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+              }}
+            />
             <WeatherLine spot={result} />
 
             <div style={{ height: 12 }} />{/* 날씨 아래 가로줄은 뺌 (2026-11-07 형 요청) */}
@@ -7985,6 +8063,7 @@ function BaramApp() {
               excludeIds={planPlaceIds}
               cache={detailCache}
               setCache={setDetailCache}
+              jump={tabJump}
             />
             {/* 공공데이터 출처 표시 (날씨 줄에서 '기상청'을 빼고 여기로 옮김, 2026-10-21) */}
             {/* 2026-11-11 형 요청: 윗줄 '한국관광공사·기상청', 제주면 아랫줄에 제주관광공사 — 아랫줄은 '한국관광공사' 시작점에 맞춤 */}

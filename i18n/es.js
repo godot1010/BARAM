@@ -478,6 +478,10 @@ window.BARAM_I18N_TABLE = {
   "🇰🇷 아래 자세한 정보는 한국어만 있어요 (한국 공공데이터).": "🇰🇷 Los detalles de abajo están solo en coreano (datos públicos de Corea).",
   "단체": "Grupo",
   // 🎭 공연(KOPIS, 2026-11-27)
+  "2주 안 공연 {n}개": "Espectáculos en 2 semanas: {n}",
+  " (이웃 포함)": " (incl. alrededores)",
+  "{t} 외": "{t} y más",
+  "이 지역 공연이 적어 40km 안 가까운 지역 공연도 함께 보여 드려요.": "Hay pocos espectáculos aquí, así que se incluyen los de menos de 40 km.",
   "📄 공연 소개 ({n}장)": "📄 Presentación ({n})",
   "그림을 누르면 원본이 열려요. 손가락으로 벌려 크게 보세요.": "Toca una imagen para abrir el original y amplía con dos dedos.",
   "자세한 정보를 불러오지 못했어요.": "No se pudieron cargar los detalles.",
